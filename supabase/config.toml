@@ -1,0 +1,24 @@
+# Configuração local do Supabase CLI para o Portal Atendimento.
+#
+# ATENÇÃO: o projeto remoto (cjofyxgcuvpeeslkfawu) é COMPARTILHADO com outros sistemas da Calper.
+# Nunca rode `supabase config push` a partir daqui: sobrescreveria Auth/API de todos.
+# Este arquivo existe só para o deploy das Edge Functions do portal:
+#   npx supabase functions deploy <nome> --project-ref cjofyxgcuvpeeslkfawu --use-api
+project_id = "calper-portal_atendimento"
+
+[functions.portal_atendimento-usuarios]
+# Exige JWT válido; a função ainda confere o usuário e a permissão (a chave anon também é um JWT).
+verify_jwt = true
+
+[functions.portal_atendimento-integracao-teste]
+verify_jwt = true
+
+[functions.portal_atendimento-totvs]
+verify_jwt = true
+
+[functions.portal_atendimento-zenvia]
+verify_jwt = true
+
+# Chamado pela Zenvia (sem JWT): a função confere o cabeçalho x-atendimento-chave (chave no Vault).
+[functions.portal_atendimento-zenvia-webhook]
+verify_jwt = false

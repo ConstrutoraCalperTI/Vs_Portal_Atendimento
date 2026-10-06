@@ -1,0 +1,60 @@
+-- Contrato Calper de acesso (padrão global, docs do calper-comercial: guia-verificacao-acesso-por-aplicativo.md).
+-- A Central (schema acessos) reconhece o aplicativo e cadastra quem for liberado na tela
+-- Permissões por aplicativo quando o schema tem:
+--   <schema>.usuarios (id, email, nome, perfil, ativo)  e  <schema>.perfis (chave, nome, ordem).
+-- As telas deste modelo usam perfil_key/status e key/label; as colunas do contrato ficam em
+-- sincronia pelos gatilhos abaixo, nos dois sentidos. Aditiva: só cria colunas e funções.
+
+-- Datas de atualização das tabelas-base (a função nasce na 03).
+drop trigger if exists api_queries_atualizado_em on __APP__.api_queries;
+create trigger api_queries_atualizado_em before update on __APP__.api_queries
+  for each row execute function __APP__.definir_atualizado_em();
+drop trigger if exists integration_settings_atualizado_em on __APP__.integration_settings;
+create trigger integration_settings_atualizado_em before update on __APP__.integration_settings
+  for each row execute function __APP__.definir_atualizado_em();
+
+-- perfis: chave/nome espelham key/label (só leitura).
+alter table __APP__.perfis add column if not exists chave text generated always as (key) stored;
+alter table __APP__.perfis add column if not exists nome text generated always as (label) stored;
+
+-- usuarios: perfil/ativo de verdade, sincronizados com perfil_key/status.
+alter table __APP__.usuarios add column if not exists perfil text;
+alter table __APP__.usuarios add column if not exists ativo boolean;
+update __APP__.usuarios set perfil = perfil_key, ativo = (status = 'active')
+where perfil is distinct from perfil_key or ativo is distinct from (status = 'active');
+
+create or replace function __APP__.contrato_sincronizar_usuario()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    -- Cadastro pela Central chega com perfil/ativo; pelas telas, com perfil_key/status.
+    new.perfil_key := coalesce(new.perfil_key, new.perfil);
+    if new.ativo is not null and new.status is not distinct from 'pending' then
+      new.status := case when new.ativo then 'active' else 'inactive' end;
+    end if;
+  else
+    if new.perfil is distinct from old.perfil and new.perfil_key is not distinct from old.perfil_key then
+      new.perfil_key := new.perfil;
+    end if;
+    if new.ativo is distinct from old.ativo and new.status is not distinct from old.status then
+      new.status := case when new.ativo then 'active' else 'inactive' end;
+    end if;
+  end if;
+  new.perfil := new.perfil_key;
+  new.ativo := new.status = 'active';
+  return new;
+end;
+$$;
+
+revoke execute on function __APP__.contrato_sincronizar_usuario() from public, anon, authenticated;
+
+drop trigger if exists usuarios_contrato_calper on __APP__.usuarios;
+-- "a_" para rodar antes da proteção do proprietário (ordem alfabética dos gatilhos BEFORE).
+create trigger a_usuarios_contrato_calper
+  before insert or update on __APP__.usuarios
+  for each row execute function __APP__.contrato_sincronizar_usuario();
+
+notify pgrst, 'reload schema';

@@ -1,0 +1,392 @@
+/* Moldura das telas de acesso: marca à esquerda (grafite da sidebar + vermelho da marca), card à direita. */
+
+.auth-shell {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  background: var(--page);
+}
+
+/* ---------- Painel da marca ---------- */
+
+.auth-shell__brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 36px 48px;
+  color: #ffffff;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.35) 100%),
+    var(--sidebar);
+}
+
+/* Grade sutil ao fundo. */
+.auth-shell__brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse at 30% 40%, #000 20%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Brilho vermelho da marca, em movimento lento. */
+.auth-shell__glow {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  left: -140px;
+  top: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 41, 59, 0.28) 0%, rgba(214, 41, 59, 0) 65%);
+  filter: blur(8px);
+  animation: auth-glow 14s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes auth-glow {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(120px, 60px) scale(1.15);
+  }
+}
+
+.auth-shell__logo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #f4f4f5;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  animation: auth-rise 0.5s ease-out both;
+}
+
+.auth-shell__logo img {
+  width: 100%;
+  height: auto;
+}
+
+.auth-shell__pitch {
+  position: relative;
+  max-width: 460px;
+  animation: auth-rise 0.6s ease-out 0.08s both;
+}
+
+.auth-shell__title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.auth-shell__app {
+  margin: 6px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  /* Vermelho da marca clareado: contraste AA sobre o grafite. */
+  color: #f87171;
+}
+
+.auth-shell__text {
+  margin: 18px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--sidebar-text);
+}
+
+.auth-shell__features {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.auth-shell__features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #e4e4e7;
+  animation: auth-rise 0.5s ease-out both;
+}
+
+.auth-shell__feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(214, 41, 59, 0.12);
+  color: #fca5a5;
+}
+
+.auth-shell__copy {
+  position: relative;
+  margin: 0;
+  font-size: 12px;
+  color: #71717a;
+}
+
+/* ---------- Área do card ---------- */
+
+.auth-shell__main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 32px 24px;
+}
+
+.auth-shell__card-wrap {
+  width: 100%;
+  max-width: 420px;
+  animation: auth-rise 0.55s ease-out 0.1s both;
+}
+
+.auth-shell__legal {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Card de acesso (variante da moldura) ---------- */
+
+.auth-shell .auth-card {
+  max-width: none;
+  align-items: stretch;
+  gap: 10px;
+  padding: 32px 30px 26px;
+  text-align: left;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 18px 40px -18px rgba(24, 24, 27, 0.25);
+}
+
+.auth-shell .auth-card h1,
+.auth-shell .auth-card h2.auth-card__title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.auth-shell .auth-card > p {
+  margin: 0 0 8px;
+}
+
+.auth-shell .auth-card__link {
+  align-self: center;
+  margin-top: 4px;
+  color: var(--brand-hover);
+  text-decoration: none;
+}
+
+.auth-shell .auth-card__link:hover:not(:disabled) {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+.auth-shell .field__label {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Campo com ícone à esquerda e foco destacado. */
+.auth-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input__icon {
+  position: absolute;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.auth-input .input {
+  width: 100%;
+  height: 46px;
+  padding-left: 38px;
+  background: var(--table-head);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.auth-input .input:focus {
+  background: var(--surface);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px rgba(214, 41, 59, 0.12);
+  outline: none;
+}
+
+.auth-input:focus-within .auth-input__icon {
+  color: var(--brand);
+}
+
+.auth-input .icon-btn {
+  position: absolute;
+  right: 6px;
+}
+
+.auth-input--action .input {
+  padding-right: 44px;
+}
+
+.auth-caps {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warning-fg);
+}
+
+.auth-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-remember input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+}
+
+/* Botão com elevação e indicador de carregamento. */
+.auth-shell .auth-card__submit {
+  height: 46px;
+  box-shadow: 0 8px 18px -8px rgba(214, 41, 59, 0.55);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.auth-shell .auth-card__submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -10px rgba(214, 41, 59, 0.6);
+}
+
+.auth-shell .auth-card__submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: auth-spin 0.8s linear infinite;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* O alerta de erro treme uma vez ao aparecer. */
+.auth-shell .auth-card__alert--error {
+  animation: auth-shake 0.4s ease-in-out;
+}
+
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+/* ---------- Tablet e celular: a marca vira uma faixa acima do card ---------- */
+
+@media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+
+  .auth-shell__brand {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+  }
+
+  .auth-shell__logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .auth-shell__title {
+    font-size: 17px;
+  }
+
+  .auth-shell__app {
+    margin-top: 0;
+    font-size: 13px;
+  }
+
+  .auth-shell__text,
+  .auth-shell__features,
+  .auth-shell__copy {
+    display: none;
+  }
+
+  .auth-shell__glow {
+    width: 280px;
+    height: 280px;
+    top: -120px;
+  }
+
+  .auth-shell__main {
+    justify-content: flex-start;
+    padding: 24px 16px 32px;
+  }
+
+  .auth-shell .auth-card {
+    padding: 24px 20px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-shell *,
+  .auth-shell *::before,
+  .auth-shell *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,430 @@
+:root {
+  /* Tokens do design system Calper (mesmas cores do Gestão de Pessoas). Não use hex solto nos componentes. */
+  --brand: #d6293b;
+  --brand-hover: #a91d2c;
+  --brand-soft: #fdecee;
+  --ink: #17181c;
+  --muted: #6b7280;
+  --line: #e9eaee;
+  --page: #f5f6f8;
+  --surface: #ffffff;
+  --table-head: #fafafa;
+  --sidebar: #17181c;
+  --sidebar-hover: #232429;
+  --sidebar-sub-active: #2a2b31;
+  --sidebar-rail: #3a3a42;
+  --sidebar-text: #9a9ba3;
+
+  /* Badges */
+  --success-bg: #e8f6ed;
+  --success-fg: #166534;
+  --neutral-bg: #f1f1f3;
+  --neutral-fg: #52525b;
+  --warning-bg: #fff1e3;
+  --warning-fg: #c2410c;
+  --warning-strong: #9a3412;
+  --danger-bg: #fdecee;
+  --danger-fg: #b91c1c;
+  --info-bg: #e8effd;
+  --info-fg: #1d4ed8;
+  --info-border: #c7d7fb;
+  --online: #16a34a;
+  --shadow-brand: 0 6px 18px -8px rgba(214, 41, 59, 0.35);
+
+  /* Nomes antigos do modelo, mantidos como apelidos dos tokens acima */
+  --color-bg: var(--page);
+  --color-surface: var(--surface);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-primary: var(--brand);
+  --color-primary-soft: var(--brand-soft);
+  --color-border: var(--line);
+  --color-text: var(--ink);
+  --color-text-muted: var(--muted);
+  --color-text-inverse: #ffffff;
+  --color-text-inverse-muted: var(--sidebar-text);
+
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Toasts (sonner): o texto padrão da biblioteca não passa no contraste AA; usa as cores do projeto.
+   Só o texto muda: o sonner usa os mesmos nomes (--success-bg etc.) para o fundo, e redefini-los
+   aqui com var(--success-bg) criaria uma referência circular. */
+html [data-sonner-toaster][data-sonner-theme="light"] {
+  --success-text: var(--success-fg);
+  --error-text: var(--danger-fg);
+  --info-text: var(--info-fg);
+  --warning-text: var(--warning-strong);
+}
+
+/* Foco visível para navegação por teclado */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ---------- Base de UI compartilhada ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--brand-hover);
+}
+
+.btn--outline {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn--outline:hover:not(:disabled) {
+  background: var(--page);
+}
+
+/* Botão contornado vermelho (ex.: "Encerrar sessão") */
+.btn--danger-outline {
+  background: var(--surface);
+  border-color: var(--danger-fg);
+  color: var(--danger-fg);
+}
+
+.btn--danger-outline:hover:not(:disabled) {
+  background: var(--danger-bg);
+}
+
+/* Botões de formulário têm 44px */
+.btn--lg {
+  height: 44px;
+}
+
+.btn--warning {
+  background: var(--warning-fg);
+  color: #ffffff;
+}
+
+.btn--warning:hover:not(:disabled) {
+  background: var(--warning-strong);
+}
+
+.btn--danger {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--brand-hover);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--page);
+  color: var(--ink);
+}
+
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.icon-btn--bordered {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Campos de formulário ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.field__optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.field__help {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.field__error {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--danger-fg);
+}
+
+.input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.input--sm {
+  height: 40px;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 0;
+  border-color: var(--brand);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--danger-fg);
+}
+
+/* Campo com botão dentro (ex.: mostrar/ocultar senha) */
+.input-with-action {
+  position: relative;
+}
+
+.input-with-action .input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.input-with-action .icon-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+/* ---------- Menu suspenso e sobreposição ---------- */
+
+.menu {
+  z-index: 50;
+  min-width: 260px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px -12px rgba(24, 24, 27, 0.3);
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.menu__item[data-highlighted] {
+  background: var(--page);
+}
+
+.menu__item[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.menu__item--warning {
+  color: var(--warning-fg);
+}
+
+.menu__item--danger {
+  color: var(--danger-fg);
+}
+
+.menu__separator {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--line);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(24, 24, 27, 0.45);
+}
+
+.skeleton {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ececef 25%, #f5f5f7 50%, #ececef 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+.page-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.page-skeleton__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+/* ---------- Switch ---------- */
+
+.switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.15s ease;
+}
+
+.switch[data-state="checked"] {
+  background: var(--brand);
+}
+
+.switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.switch__thumb {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.3);
+  transform: translateX(2px);
+  transition: transform 0.15s ease;
+}
+
+.switch[data-state="checked"] .switch__thumb {
+  transform: translateX(20px);
+}
+
+/* Texto em fonte monoespaçada (ids, chaves) */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
