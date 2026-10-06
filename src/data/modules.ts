@@ -31,7 +31,7 @@ export const modules: ModuleCardData[] = [
     accent: "brand",
     to: "/gestao-atendimento",
     permission: "gestao_atendimento_central",
-    shortcuts: ["gestao_atendimento_central", "gestao_atendimento_fila", "gestao_atendimento_setores"],
+    shortcuts: ["gestao_atendimento_central", "gestao_atendimento_fila", "gestao_atendimento_setores", "gestao_atendimento_emails"],
     section: "Atendimento",
     highlighted: true,
   },

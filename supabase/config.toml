@@ -22,3 +22,6 @@ verify_jwt = true
 # Chamado pela Zenvia (sem JWT): a função confere o cabeçalho x-atendimento-chave (chave no Vault).
 [functions.portal_atendimento-zenvia-webhook]
 verify_jwt = false
+
+[functions.portal_atendimento-email]
+verify_jwt = true

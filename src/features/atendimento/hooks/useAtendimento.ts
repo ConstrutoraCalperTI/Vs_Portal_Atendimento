@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { centralService, contextoService, monitorService, zenviaService } from "../services/atendimento";
+import { emailService, type ContaEmailDados } from "../services/email";
 import type { AcaoConversa, Periodo, SalvarConexao, SetorConfig, SetorSalvar } from "../services/tipos";
 
 const RAIZ = ["atendimento"] as const;
@@ -132,3 +133,35 @@ export const useSalvarToken = () => useMudaZenvia((t: string) => zenviaService.s
 export const useTestarZenvia = () => useMudaZenvia(() => zenviaService.testar());
 export const useAssinarZenvia = () => useMudaZenvia(() => zenviaService.assinar());
 export const useEnviarTeste = () => useMutation({ mutationFn: (p: { numeroId: number; telefone: string }) => zenviaService.enviarTeste(p.numeroId, p.telefone) });
+
+// ---------- Contas de e-mail ----------
+
+const EMAILS = [...RAIZ, "emails"] as const;
+const GOOGLE = [...RAIZ, "google"] as const;
+
+export function useContasEmail() {
+  return useQuery({ queryKey: EMAILS, queryFn: () => emailService.lista(), refetchInterval: 60_000 });
+}
+
+function useMudaEmail<T, R>(fn: (dados: T) => Promise<R>) {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => void queryClient.invalidateQueries({ queryKey: EMAILS }) });
+}
+
+export const useSalvarContaEmail = () => useMudaEmail((p: ContaEmailDados & { id?: number }) => emailService.salvar(p));
+export const useSenhaContaEmail = () => useMudaEmail((p: { id: number; senha: string }) => emailService.senha(p.id, p.senha));
+export const useHabilitarContasEmail = () => useMudaEmail((p: { ids: number[]; habilitada: boolean }) => emailService.habilitar(p.ids, p.habilitada));
+export const useExcluirContaEmail = () => useMudaEmail((id: number) => emailService.excluir(id));
+export const useTestarContaEmail = () => useMudaEmail((p: { id: number; enviarPara?: string }) => emailService.testar(p.id, p.enviarPara));
+
+export function useGoogleWorkspace() {
+  return useQuery({ queryKey: GOOGLE, queryFn: () => emailService.google() });
+}
+
+function useMudaGoogle<T, R>(fn: (dados: T) => Promise<R>) {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => void queryClient.invalidateQueries({ queryKey: GOOGLE }) });
+}
+
+export const useSalvarChaveGoogle = () => useMudaGoogle((json: string) => emailService.salvarChaveGoogle(json));
+export const useTestarGoogle = () => useMudaGoogle((email: string) => emailService.testarGoogle(email));

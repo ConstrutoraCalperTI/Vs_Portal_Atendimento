@@ -194,6 +194,10 @@ export type Database = {
         Row: {
           atualizado_em: string
           atualizado_por: string | null
+          google_sa_definido_em: string | null
+          google_sa_email: string | null
+          google_sa_segredo_id: string | null
+          google_verificacao: Json | null
           id: boolean
           ligado: boolean
           telefones_piloto: string[]
@@ -206,6 +210,10 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           atualizado_por?: string | null
+          google_sa_definido_em?: string | null
+          google_sa_email?: string | null
+          google_sa_segredo_id?: string | null
+          google_verificacao?: Json | null
           id?: boolean
           ligado?: boolean
           telefones_piloto?: string[]
@@ -218,6 +226,10 @@ export type Database = {
         Update: {
           atualizado_em?: string
           atualizado_por?: string | null
+          google_sa_definido_em?: string | null
+          google_sa_email?: string | null
+          google_sa_segredo_id?: string | null
+          google_verificacao?: Json | null
           id?: boolean
           ligado?: boolean
           telefones_piloto?: string[]
@@ -327,6 +339,273 @@ export type Database = {
             columns: ["ultimo_atendente_id"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_email_contas: {
+        Row: {
+          assinatura: string | null
+          atualizado_em: string
+          atualizado_por: string | null
+          copia_oculta: string | null
+          criado_em: string
+          cursor: string | null
+          email: string
+          exibir_no_envio: boolean
+          habilitada: boolean
+          id: number
+          ignorar_remetentes: string[]
+          imap_host: string | null
+          imap_porta: number
+          imap_seguranca: string
+          intervalo_min: number
+          juntar_respostas: boolean
+          ler_desde: string
+          logo_path: string | null
+          marcar_lido: boolean
+          modo: string
+          mover_para: string | null
+          nome: string
+          nome_remetente: string | null
+          padrao_do_setor: boolean
+          pasta: string
+          provedor: string
+          responder_para: string | null
+          senha_mascara: string | null
+          senha_segredo_id: string | null
+          setor_id: number
+          smtp_host: string | null
+          smtp_porta: number
+          status: string
+          ultima_leitura_em: string | null
+          ultimo_erro: string | null
+          usar_logo: boolean
+          usuario: string | null
+          verificacao: Json | null
+        }
+        Insert: {
+          assinatura?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          copia_oculta?: string | null
+          criado_em?: string
+          cursor?: string | null
+          email: string
+          exibir_no_envio?: boolean
+          habilitada?: boolean
+          id?: never
+          ignorar_remetentes?: string[]
+          imap_host?: string | null
+          imap_porta?: number
+          imap_seguranca?: string
+          intervalo_min?: number
+          juntar_respostas?: boolean
+          ler_desde?: string
+          logo_path?: string | null
+          marcar_lido?: boolean
+          modo?: string
+          mover_para?: string | null
+          nome: string
+          nome_remetente?: string | null
+          padrao_do_setor?: boolean
+          pasta?: string
+          provedor?: string
+          responder_para?: string | null
+          senha_mascara?: string | null
+          senha_segredo_id?: string | null
+          setor_id: number
+          smtp_host?: string | null
+          smtp_porta?: number
+          status?: string
+          ultima_leitura_em?: string | null
+          ultimo_erro?: string | null
+          usar_logo?: boolean
+          usuario?: string | null
+          verificacao?: Json | null
+        }
+        Update: {
+          assinatura?: string | null
+          atualizado_em?: string
+          atualizado_por?: string | null
+          copia_oculta?: string | null
+          criado_em?: string
+          cursor?: string | null
+          email?: string
+          exibir_no_envio?: boolean
+          habilitada?: boolean
+          id?: never
+          ignorar_remetentes?: string[]
+          imap_host?: string | null
+          imap_porta?: number
+          imap_seguranca?: string
+          intervalo_min?: number
+          juntar_respostas?: boolean
+          ler_desde?: string
+          logo_path?: string | null
+          marcar_lido?: boolean
+          modo?: string
+          mover_para?: string | null
+          nome?: string
+          nome_remetente?: string | null
+          padrao_do_setor?: boolean
+          pasta?: string
+          provedor?: string
+          responder_para?: string | null
+          senha_mascara?: string | null
+          senha_segredo_id?: string | null
+          setor_id?: number
+          smtp_host?: string | null
+          smtp_porta?: number
+          status?: string
+          ultima_leitura_em?: string | null
+          ultimo_erro?: string | null
+          usar_logo?: boolean
+          usuario?: string | null
+          verificacao?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_email_contas_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_email_recebidos: {
+        Row: {
+          anexos: Json
+          assunto: string | null
+          cc: string[]
+          conta_id: number
+          de: string
+          de_nome: string | null
+          estado: string
+          html: string | null
+          id: number
+          importado_em: string
+          in_reply_to: string | null
+          message_id: string
+          para: string[]
+          provedor_id: string | null
+          recebido_em: string
+          referencias: string | null
+          texto: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          anexos?: Json
+          assunto?: string | null
+          cc?: string[]
+          conta_id: number
+          de: string
+          de_nome?: string | null
+          estado?: string
+          html?: string | null
+          id?: never
+          importado_em?: string
+          in_reply_to?: string | null
+          message_id: string
+          para?: string[]
+          provedor_id?: string | null
+          recebido_em: string
+          referencias?: string | null
+          texto?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          anexos?: Json
+          assunto?: string | null
+          cc?: string[]
+          conta_id?: number
+          de?: string
+          de_nome?: string | null
+          estado?: string
+          html?: string | null
+          id?: never
+          importado_em?: string
+          in_reply_to?: string | null
+          message_id?: string
+          para?: string[]
+          provedor_id?: string | null
+          recebido_em?: string
+          referencias?: string | null
+          texto?: string | null
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_email_recebidos_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "at_email_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_email_saida: {
+        Row: {
+          assunto: string
+          cc: string[]
+          conta_id: number
+          criado_em: string
+          criado_por: string | null
+          enviado_em: string | null
+          erro: string | null
+          estado: string
+          html: string | null
+          id: number
+          in_reply_to: string | null
+          para: string[]
+          provedor_id: string | null
+          referencias: string | null
+          tentativas: number
+          texto: string | null
+        }
+        Insert: {
+          assunto: string
+          cc?: string[]
+          conta_id: number
+          criado_em?: string
+          criado_por?: string | null
+          enviado_em?: string | null
+          erro?: string | null
+          estado?: string
+          html?: string | null
+          id?: never
+          in_reply_to?: string | null
+          para: string[]
+          provedor_id?: string | null
+          referencias?: string | null
+          tentativas?: number
+          texto?: string | null
+        }
+        Update: {
+          assunto?: string
+          cc?: string[]
+          conta_id?: number
+          criado_em?: string
+          criado_por?: string | null
+          enviado_em?: string | null
+          erro?: string | null
+          estado?: string
+          html?: string | null
+          id?: never
+          in_reply_to?: string | null
+          para?: string[]
+          provedor_id?: string | null
+          referencias?: string | null
+          tentativas?: number
+          texto?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_email_saida_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "at_email_contas"
             referencedColumns: ["id"]
           },
         ]
@@ -924,7 +1203,26 @@ export type Database = {
           ultima_previa: string
         }[]
       }
+      at_email_conta_excluir: { Args: { p_id: number }; Returns: undefined }
+      at_email_conta_habilitar: {
+        Args: { p_habilitada: boolean; p_ids: number[] }
+        Returns: number
+      }
+      at_email_conta_salvar: { Args: { p: Json }; Returns: number }
+      at_email_conta_senha: {
+        Args: { p_id: number; p_senha: string }
+        Returns: undefined
+      }
+      at_email_contas_lista: { Args: never; Returns: Json }
+      at_email_credenciais: {
+        Args: { p_conta: number }
+        Returns: {
+          google_sa: string
+          senha: string
+        }[]
+      }
       at_gestor_de: { Args: { p_setor: number }; Returns: boolean }
+      at_google_sa_salvar: { Args: { p_json: string }; Returns: undefined }
       at_indicadores_janela: {
         Args: { p_fim: string; p_ini: string; p_setores: number[] }
         Returns: Json

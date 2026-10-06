@@ -13,6 +13,7 @@ import "../features/configuracoes/pages/Integracoes.css";
 
 const Central = lazy(() => import("../features/atendimento/pages/Central").then((m) => ({ default: m.Central })));
 const FilaHorarios = lazy(() => import("../features/atendimento/pages/FilaHorarios").then((m) => ({ default: m.FilaHorarios })));
+const ContasEmail = lazy(() => import("../features/atendimento/pages/ContasEmail").then((m) => ({ default: m.ContasEmail })));
 const Setores = lazy(() => import("../features/atendimento/pages/Setores").then((m) => ({ default: m.Setores })));
 
 // Gestão de Atendimento: item `gestao_atendimento` do menuRegistry. Cada tela é uma seção
@@ -24,6 +25,7 @@ const SECOES: { id: MenuItemId; segmento: string }[] = [
   { id: "gestao_atendimento_central", segmento: "central" },
   { id: "gestao_atendimento_fila", segmento: "fila" },
   { id: "gestao_atendimento_setores", segmento: "setores" },
+  { id: "gestao_atendimento_emails", segmento: "emails" },
 ];
 
 export function GestaoAtendimento() {
@@ -67,6 +69,7 @@ export function GestaoAtendimento() {
           <Route path="central" element={pode("gestao_atendimento_central") ? <Central /> : <NotFound />} />
           <Route path="fila" element={pode("gestao_atendimento_fila") ? <FilaHorarios /> : <NotFound />} />
           <Route path="setores" element={pode("gestao_atendimento_setores") ? <Setores /> : <NotFound />} />
+          <Route path="emails" element={pode("gestao_atendimento_emails") ? <ContasEmail /> : <NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

@@ -1,0 +1,274 @@
+import { edgeFunction } from "../../../config/app";
+import type { Json } from "../../../lib/database.types";
+import { supabase } from "../../../lib/supabase";
+import { DATA_SOURCE } from "../../configuracoes/services";
+import { fromFunction, fromPostgrest } from "../../configuracoes/services/supabase/errors";
+import { ServiceError } from "../../configuracoes/services/types";
+import { esperar, mockContexto } from "./mock";
+
+// Gestão de Atendimento › Contas de e-mail (estrutura da Movidesk). Cada conta pertence a um setor.
+// Leitura pela RPC at_email_contas_lista (sem segredo); escrita pelas RPCs at_email_conta_*; teste pela
+// Edge Function <schema>-email. A chave do Google fica em Integrações › Google Workspace.
+
+export type ProvedorEmail = "google" | "outlook" | "exchange" | "yahoo" | "uol" | "bol" | "terra" | "ig" | "ibest" | "manual";
+export type ModoEmail = "api_google" | "imap_smtp";
+
+export interface PassoTeste {
+  passo: string;
+  ok: boolean;
+  detalhe: string;
+}
+
+export interface VerificacaoEmail {
+  em: string;
+  ok: boolean;
+  passos: PassoTeste[];
+}
+
+export interface ContaEmailDados {
+  nome: string;
+  email: string;
+  setorId: number | null;
+  nomeRemetente: string;
+  exibirNoEnvio: boolean;
+  padraoDoSetor: boolean;
+  usarLogo: boolean;
+  habilitada: boolean;
+  provedor: ProvedorEmail;
+  modo: ModoEmail;
+  imapHost: string;
+  imapPorta: number;
+  imapSeguranca: "ssl" | "starttls";
+  smtpHost: string;
+  smtpPorta: number;
+  usuario: string;
+  pasta: string;
+  intervaloMin: number;
+  lerDesde: string;
+  marcarLido: boolean;
+  moverPara: string;
+  juntarRespostas: boolean;
+  ignorarRemetentes: string[];
+  responderPara: string;
+  copiaOculta: string;
+  assinatura: string;
+}
+
+export interface ContaEmail extends ContaEmailDados {
+  id: number;
+  setorNome: string;
+  senhaMascara: string | null;
+  status: "conectado" | "falha" | "aguardando";
+  ultimoErro: string | null;
+  ultimaLeituraEm: string | null;
+  verificacao: VerificacaoEmail | null;
+  naFila: number;
+}
+
+export interface GoogleWorkspace {
+  contaServico: string | null;
+  definidoEm: string | null;
+  verificacao: (VerificacaoEmail & { caixa: string }) | null;
+}
+
+/** Servidores sugeridos por provedor (como o "Selecione o provedor" da Movidesk). */
+export const PROVEDORES: { id: ProvedorEmail; rotulo: string; imap: string; smtp: string; aviso?: string }[] = [
+  { id: "google", rotulo: "Google Workspace / Gmail", imap: "imap.gmail.com", smtp: "smtp.gmail.com" },
+  { id: "outlook", rotulo: "Outlook / Microsoft 365", imap: "outlook.office365.com", smtp: "smtp.office365.com", aviso: "O Microsoft 365 só aceita envio pela porta 587, que o servidor do portal bloqueia. O recebimento funciona; o envio por essas contas exige outra solução." },
+  { id: "exchange", rotulo: "Exchange", imap: "", smtp: "" },
+  { id: "yahoo", rotulo: "Yahoo", imap: "imap.mail.yahoo.com", smtp: "smtp.mail.yahoo.com" },
+  { id: "uol", rotulo: "Uol", imap: "imap.uol.com.br", smtp: "smtps.uol.com.br" },
+  { id: "bol", rotulo: "Bol", imap: "imap.bol.com.br", smtp: "smtps.bol.com.br" },
+  { id: "terra", rotulo: "Terra", imap: "imap.terra.com.br", smtp: "smtp.terra.com.br" },
+  { id: "ig", rotulo: "Ig", imap: "imap.ig.com.br", smtp: "smtp.ig.com.br" },
+  { id: "ibest", rotulo: "IBest", imap: "imap.ibest.com.br", smtp: "smtp.ibest.com.br" },
+  { id: "manual", rotulo: "Definir manualmente", imap: "", smtp: "" },
+];
+
+export function contaNova(setorId: number | null): ContaEmailDados {
+  return {
+    nome: "", email: "", setorId, nomeRemetente: "", exibirNoEnvio: true, padraoDoSetor: false, usarLogo: false, habilitada: true,
+    provedor: "google", modo: "api_google", imapHost: "imap.gmail.com", imapPorta: 993, imapSeguranca: "ssl", smtpHost: "smtp.gmail.com", smtpPorta: 465,
+    usuario: "", pasta: "INBOX", intervaloMin: 1, lerDesde: new Date().toISOString().slice(0, 10), marcarLido: true, moverPara: "",
+    juntarRespostas: true, ignorarRemetentes: ["mailer-daemon@", "noreply@", "no-reply@"], responderPara: "", copiaOculta: "", assinatura: "",
+  };
+}
+
+export interface EmailService {
+  lista(): Promise<ContaEmail[]>;
+  salvar(p: ContaEmailDados & { id?: number }): Promise<number>;
+  senha(id: number, senha: string): Promise<void>;
+  habilitar(ids: number[], habilitada: boolean): Promise<number>;
+  excluir(id: number): Promise<void>;
+  testar(id: number, enviarPara?: string): Promise<VerificacaoEmail>;
+  google(): Promise<GoogleWorkspace>;
+  salvarChaveGoogle(json: string): Promise<void>;
+  testarGoogle(email: string): Promise<VerificacaoEmail & { caixa: string }>;
+}
+
+async function rpc<T>(nome: string, args?: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.rpc(nome as never, args as never);
+  if (error) throw fromPostgrest(error);
+  return data as T;
+}
+
+async function funcao<T>(corpo: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(edgeFunction("email"), { body: corpo });
+  if (error) throw await fromFunction(error);
+  return data as T;
+}
+
+const supabaseEmail: EmailService = {
+  lista: () => rpc<ContaEmail[]>("at_email_contas_lista"),
+  salvar: (p) => rpc<number>("at_email_conta_salvar", { p: p as unknown as Json }),
+  senha: (id, senha) => rpc<void>("at_email_conta_senha", { p_id: id, p_senha: senha }),
+  habilitar: (ids, habilitada) => rpc<number>("at_email_conta_habilitar", { p_ids: ids, p_habilitada: habilitada }),
+  excluir: (id) => rpc<void>("at_email_conta_excluir", { p_id: id }),
+  testar: (id, enviarPara) => funcao<VerificacaoEmail>({ acao: "testar", contaId: id, enviarPara: enviarPara ?? null }),
+  async google() {
+    const { data, error } = await supabase.from("at_config").select("google_sa_email, google_sa_definido_em, google_verificacao").maybeSingle();
+    if (error) throw fromPostgrest(error);
+    return {
+      contaServico: data?.google_sa_email ?? null,
+      definidoEm: data?.google_sa_definido_em ?? null,
+      verificacao: (data?.google_verificacao as unknown as GoogleWorkspace["verificacao"]) ?? null,
+    };
+  },
+  salvarChaveGoogle: (json) => rpc<void>("at_google_sa_salvar", { p_json: json }),
+  testarGoogle: (email) => funcao<VerificacaoEmail & { caixa: string }>({ acao: "google_testar", email }),
+};
+
+// ---------- Modo simulado (as contas do mockup) ----------
+
+type ContaMock = ContaEmail & { senha: string | null; historico: boolean };
+let seq = 20;
+const setorPorNome = (nome: string) => ({ Financeiro: 1, "Relacionamento com o cliente": 2, "Assistência técnica": 3 } as Record<string, number>)[nome] ?? 3;
+const base = (id: number, nome: string, email: string, setor: string, extra: Partial<ContaMock> = {}): ContaMock => ({
+  ...contaNova(setorPorNome(setor)),
+  id, nome, email, setorNome: setor, nomeRemetente: `Calper · ${nome}`, senhaMascara: null, status: "conectado", ultimoErro: null,
+  ultimaLeituraEm: new Date(Date.now() - 60_000).toISOString(), verificacao: null, naFila: 0, senha: null, historico: true, ...extra,
+});
+const contas: ContaMock[] = [
+  base(1, "CFTV", "cftv@calper.com.br", "Assistência técnica", { padraoDoSetor: true }),
+  base(2, "Cobrança", "cobranca@calper.com.br", "Financeiro", { naFila: 1, padraoDoSetor: true }),
+  base(3, "Comercial", "comercial@calper.com.br", "Relacionamento com o cliente"),
+  base(4, "Dept° Pessoal", "dp@calper.com.br", "Financeiro", {
+    provedor: "manual", modo: "imap_smtp", imapHost: "imap.exemplo.com.br", smtpHost: "smtp.exemplo.com.br", usuario: "dp@calper.com.br",
+    senhaMascara: "••••••••4f", senha: "x", status: "falha", ultimoErro: "Invalid credentials (Failure)", ultimaLeituraEm: new Date(Date.now() - 7_200_000).toISOString(),
+  }),
+  base(5, "Jurídico", "juridico@calper.com.br", "Relacionamento com o cliente", { status: "aguardando", ultimaLeituraEm: null, historico: false }),
+  base(6, "chamados.sistemas@calper.com.br", "chamados.sistemas@calper.com.br", "Assistência técnica", { habilitada: false, status: "aguardando", ultimaLeituraEm: null }),
+];
+const google: GoogleWorkspace = { contaServico: null, definidoEm: null, verificacao: null };
+
+async function contexto() {
+  return mockContexto.contexto();
+}
+
+async function exigirSupervisor() {
+  if (!(await contexto()).supervisor) throw new ServiceError("FORBIDDEN", "Só a supervisão geral cadastra contas de e-mail.");
+}
+
+const mockEmail: EmailService = {
+  async lista() {
+    const ctx = await contexto();
+    const meus = new Set(ctx.setores.filter((s) => s.papel !== "atendente").map((s) => s.id));
+    return contas.filter((c) => ctx.supervisor || meus.has(c.setorId ?? 0)).map(({ senha: _s, historico: _h, ...c }) => structuredClone(c));
+  },
+  async salvar(p) {
+    await exigirSupervisor();
+    const email = p.email.trim().toLowerCase();
+    if (p.nome.trim().length < 2) throw new ServiceError("INVALID_INPUT", "Informe o nome da conta (2 a 80 letras).", "nome");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ServiceError("INVALID_INPUT", "Endereço de e-mail inválido.", "email");
+    if (contas.some((c) => c.email === email && c.id !== p.id)) throw new ServiceError("DUPLICATE", "Já existe uma conta com esse endereço.", "email");
+    if (!p.setorId) throw new ServiceError("INVALID_INPUT", "Escolha o setor que recebe os chamados desta conta.", "setorId");
+    if (p.modo === "api_google" && p.provedor !== "google") throw new ServiceError("INVALID_INPUT", "A conexão por API só existe para contas do Google Workspace.", "modo");
+    if (p.modo === "imap_smtp" && (!p.imapHost.trim() || !p.smtpHost.trim())) throw new ServiceError("INVALID_INPUT", "Informe os servidores de entrada (IMAP) e de saída (SMTP).", "imapHost");
+    if ([25, 587].includes(p.smtpPorta)) throw new ServiceError("INVALID_INPUT", "Use a porta 465 (SSL): o servidor do portal bloqueia as portas 25 e 587.", "smtpPorta");
+    const setorNome = (await contexto()).setores.find((s) => s.id === p.setorId)?.nome ?? "—";
+    if (p.padraoDoSetor) for (const c of contas) if (c.setorId === p.setorId && c.id !== p.id) c.padraoDoSetor = false;
+    const existente = contas.find((c) => c.id === p.id);
+    if (existente) {
+      Object.assign(existente, p, { email, setorNome, status: existente.modo !== p.modo ? "aguardando" : existente.status });
+      return existente.id;
+    }
+    const nova: ContaMock = { ...p, id: ++seq, email, setorNome, senhaMascara: null, status: "aguardando", ultimoErro: null, ultimaLeituraEm: null, verificacao: null, naFila: 0, senha: null, historico: false };
+    contas.push(nova);
+    return nova.id;
+  },
+  async senha(id, senha) {
+    await exigirSupervisor();
+    if (senha.length < 4) throw new ServiceError("INVALID_INPUT", "Informe a senha da conta (ou a senha de app).", "senha");
+    const c = contas.find((x) => x.id === id);
+    if (!c) throw new ServiceError("NOT_FOUND", "Conta não encontrada.");
+    Object.assign(c, { senha, senhaMascara: `••••••••${senha.slice(-2)}`, status: "aguardando" });
+  },
+  async habilitar(ids, habilitada) {
+    await exigirSupervisor();
+    let n = 0;
+    for (const c of contas) {
+      if (!ids.includes(c.id)) continue;
+      c.habilitada = habilitada;
+      n++;
+    }
+    return n;
+  },
+  async excluir(id) {
+    await exigirSupervisor();
+    const c = contas.find((x) => x.id === id);
+    if (!c) throw new ServiceError("NOT_FOUND", "Conta não encontrada.");
+    if (c.historico) throw new ServiceError("INVALID_INPUT", "Esta conta já tem e-mails no histórico. Desabilite em vez de excluir.");
+    contas.splice(contas.indexOf(c), 1);
+  },
+  async testar(id, enviarPara) {
+    await esperar(700);
+    await exigirSupervisor();
+    const c = contas.find((x) => x.id === id);
+    if (!c) throw new ServiceError("NOT_FOUND", "Conta não encontrada.");
+    const passos: PassoTeste[] =
+      c.modo === "api_google"
+        ? google.contaServico
+          ? [
+              { passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${c.email}` },
+              { passo: `Leitura da pasta ${c.pasta}`, ok: true, detalhe: "128 e-mails, 3 não lidos" },
+            ]
+          : [{ passo: "Conexão com o Google Workspace", ok: false, detalhe: "A chave da conta de serviço ainda não foi salva (Configurações › Integrações › Google Workspace)." }]
+        : [
+            { passo: `Conexão com ${c.imapHost}:${c.imapPorta}`, ok: true, detalhe: "* OK pronto" },
+            c.senha ? { passo: `Login de ${c.usuario || c.email}`, ok: true, detalhe: "aceito" } : { passo: `Login de ${c.usuario || c.email}`, ok: false, detalhe: "Senha não informada." },
+          ];
+    if (enviarPara && passos.every((p) => p.ok)) passos.push({ passo: `E-mail de teste para ${enviarPara}`, ok: true, detalhe: "Modo simulado: nada foi enviado." });
+    const ok = passos.every((p) => p.ok);
+    c.verificacao = { em: new Date().toISOString(), ok, passos };
+    c.status = ok ? "conectado" : "falha";
+    c.ultimoErro = ok ? null : (passos.find((p) => !p.ok)?.detalhe ?? null);
+    return c.verificacao;
+  },
+  async google() {
+    await esperar();
+    return structuredClone(google);
+  },
+  async salvarChaveGoogle(json) {
+    await esperar();
+    let j: { type?: string; client_email?: string; private_key?: string };
+    try {
+      j = JSON.parse(json);
+    } catch {
+      throw new ServiceError("INVALID_INPUT", "Arquivo inválido: envie o JSON da chave da conta de serviço do Google Cloud.", "chave");
+    }
+    if (j.type !== "service_account" || !j.client_email || !j.private_key?.startsWith("-----BEGIN PRIVATE KEY-----")) {
+      throw new ServiceError("INVALID_INPUT", "O JSON precisa ser de uma conta de serviço (type, client_email e private_key).", "chave");
+    }
+    Object.assign(google, { contaServico: j.client_email, definidoEm: new Date().toISOString(), verificacao: null });
+  },
+  async testarGoogle(email) {
+    await esperar(600);
+    const passos: PassoTeste[] = google.contaServico
+      ? [{ passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${email}` }, { passo: "Leitura da pasta INBOX", ok: true, detalhe: "Modo simulado" }]
+      : [{ passo: "Conexão com o Google Workspace", ok: false, detalhe: "A chave da conta de serviço ainda não foi salva." }];
+    google.verificacao = { em: new Date().toISOString(), caixa: email, ok: passos.every((p) => p.ok), passos };
+    return google.verificacao;
+  },
+};
+
+export const emailService: EmailService = DATA_SOURCE === "mock" ? mockEmail : supabaseEmail;
