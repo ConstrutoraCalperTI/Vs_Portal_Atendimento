@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import * as RadioGroup from "@radix-ui/react-radio-group";
+import { EquipesDoUsuario } from "../../cadastros/pages/EquipesDoUsuario";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Info, X } from "lucide-react";
 import { useId, useState } from "react";
@@ -300,6 +301,8 @@ function UserForm({ state, roles: allRoles, onClose }: { state: UserSheetState; 
             </span>
           </div>
         )}
+
+        {state.mode === "edit" && <EquipesDoUsuario usuarioId={state.user.id} />}
 
         <p className="sheet__notice">
           <Info size={16} aria-hidden="true" />

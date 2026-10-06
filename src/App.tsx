@@ -10,7 +10,8 @@ import { Home } from "./pages/Home";
 import { NotFound } from "./pages/NotFound";
 
 // Telas de Configurações carregam sob demanda (formulários, zod e diálogos ficam fora do bundle inicial).
-const Usuarios = lazy(() => import("./features/configuracoes/pages/Usuarios").then((m) => ({ default: m.Usuarios })));
+const UsuariosSecoes = lazy(() => import("./features/configuracoes/pages/UsuariosSecoes").then((m) => ({ default: m.UsuariosSecoes })));
+const Pessoas = lazy(() => import("./features/cadastros/pages/Pessoas").then((m) => ({ default: m.Pessoas })));
 const PerfisPermissoes = lazy(() =>
   import("./features/configuracoes/pages/PerfisPermissoes").then((m) => ({ default: m.PerfisPermissoes })),
 );
@@ -38,7 +39,8 @@ const TrocarSenha = lazy(() =>
 const pages: Record<TopLevelMenuId, ReactElement> = {
   home: <Home />,
   gestao_atendimento: <GestaoAtendimento />,
-  manage_users: <Usuarios />,
+  manage_users: <UsuariosSecoes />,
+  manage_pessoas: <Pessoas />,
   manage_permissions: <PerfisPermissoes />,
   manage_app_access: <PermissoesAplicativo />,
   configure_integrations: <Integracoes />,

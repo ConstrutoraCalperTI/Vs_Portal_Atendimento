@@ -203,6 +203,8 @@ const rolePermissions: Record<RoleKey, PermissionRules> = {
     gestao_atendimento_monitor: true,
     gestao_atendimento_supervisao: true,
     manage_users: true,
+    manage_users_equipes: true,
+    manage_pessoas: true,
     manage_permissions: true,
     view_audit_logs: true,
     manage_sessions: true,

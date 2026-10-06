@@ -1,7 +1,7 @@
 import { ChangeOwnPasswordDialog } from "../../auth/ChangeOwnPasswordDialog";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Lock, Plus, Search, UserRound, Users as UsersIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
 import { SUPER_ADMIN_ROLE, type RoleKey } from "../../../config/app";
@@ -44,7 +44,8 @@ function errorMessage(error: unknown): string {
   return error instanceof ServiceError ? error.message : "Não foi possível concluir a ação. Tente novamente.";
 }
 
-export function Usuarios() {
+/** `nav`: barra de seções (Usuários | Equipes), montada em UsuariosSecoes. */
+export function Usuarios({ nav }: { nav?: ReactNode } = {}) {
   const item = getMenuItem("manage_users");
   const { user: me, role: myRole } = useAccess();
 
@@ -227,6 +228,8 @@ export function Usuarios() {
           </button>
         }
       />
+
+      {nav}
 
       <Tabs.Root
         className="card users"

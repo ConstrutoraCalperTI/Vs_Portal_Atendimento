@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
   Building2,
+  Contact,
   Eye,
   FileText,
   Gauge,
@@ -113,6 +114,23 @@ const definitions = [
     icon: Users,
     group: "configuracoes",
     description: "Quem pode entrar no sistema e com qual perfil.",
+  },
+  {
+    id: "manage_users_equipes",
+    label: "Equipes",
+    path: "/configuracoes/usuarios/equipes",
+    icon: UsersRound,
+    group: "configuracoes",
+    description: "Grupos de atendentes dentro de um setor; o usuário pode estar em várias equipes.",
+    parent: "manage_users",
+  },
+  {
+    id: "manage_pessoas",
+    label: "Pessoas",
+    path: "/configuracoes/pessoas",
+    icon: Contact,
+    group: "configuracoes",
+    description: "Quem abre chamados: clientes, empresas e departamentos. Criadas sozinhas no primeiro e-mail ou WhatsApp, ou cadastradas à mão.",
   },
   {
     id: "manage_permissions",

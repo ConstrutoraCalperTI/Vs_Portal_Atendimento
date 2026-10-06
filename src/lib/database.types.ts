@@ -255,6 +255,7 @@ export type Database = {
           nome_contato: string | null
           nota_interna: string | null
           numero_id: number
+          pessoa_id: number | null
           setor_id: number
           telefone: string
           ultima_msg_atendente_em: string | null
@@ -276,6 +277,7 @@ export type Database = {
           nome_contato?: string | null
           nota_interna?: string | null
           numero_id: number
+          pessoa_id?: number | null
           setor_id: number
           telefone: string
           ultima_msg_atendente_em?: string | null
@@ -297,6 +299,7 @@ export type Database = {
           nome_contato?: string | null
           nota_interna?: string | null
           numero_id?: number
+          pessoa_id?: number | null
           setor_id?: number
           telefone?: string
           ultima_msg_atendente_em?: string | null
@@ -325,6 +328,13 @@ export type Database = {
             columns: ["numero_id"]
             isOneToOne: false
             referencedRelation: "at_numeros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_conversas_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
             referencedColumns: ["id"]
           },
           {
@@ -489,6 +499,7 @@ export type Database = {
           in_reply_to: string | null
           message_id: string
           para: string[]
+          pessoa_id: number | null
           provedor_id: string | null
           recebido_em: string
           referencias: string | null
@@ -509,6 +520,7 @@ export type Database = {
           in_reply_to?: string | null
           message_id: string
           para?: string[]
+          pessoa_id?: number | null
           provedor_id?: string | null
           recebido_em: string
           referencias?: string | null
@@ -529,6 +541,7 @@ export type Database = {
           in_reply_to?: string | null
           message_id?: string
           para?: string[]
+          pessoa_id?: number | null
           provedor_id?: string | null
           recebido_em?: string
           referencias?: string | null
@@ -541,6 +554,13 @@ export type Database = {
             columns: ["conta_id"]
             isOneToOne: false
             referencedRelation: "at_email_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_email_recebidos_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
             referencedColumns: ["id"]
           },
         ]
@@ -606,6 +626,87 @@ export type Database = {
             columns: ["conta_id"]
             isOneToOne: false
             referencedRelation: "at_email_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_equipe_membros: {
+        Row: {
+          equipe_id: number
+          usuario_id: string
+        }
+        Insert: {
+          equipe_id: number
+          usuario_id: string
+        }
+        Update: {
+          equipe_id?: number
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_equipe_membros_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "at_equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_equipe_membros_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_equipes: {
+        Row: {
+          ativa: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          descricao: string | null
+          id: number
+          lider_id: string | null
+          nome: string
+          setor_id: number | null
+        }
+        Insert: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          descricao?: string | null
+          id?: never
+          lider_id?: string | null
+          nome: string
+          setor_id?: number | null
+        }
+        Update: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          descricao?: string | null
+          id?: never
+          lider_id?: string | null
+          nome?: string
+          setor_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_equipes_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_equipes_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "at_setores"
             referencedColumns: ["id"]
           },
         ]
@@ -779,6 +880,187 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      at_pessoa_anexos: {
+        Row: {
+          enviado_em: string
+          enviado_por: string | null
+          id: number
+          mime: string | null
+          nome: string
+          path: string
+          pessoa_id: number
+          tamanho: number | null
+        }
+        Insert: {
+          enviado_em?: string
+          enviado_por?: string | null
+          id?: never
+          mime?: string | null
+          nome: string
+          path: string
+          pessoa_id: number
+          tamanho?: number | null
+        }
+        Update: {
+          enviado_em?: string
+          enviado_por?: string | null
+          id?: never
+          mime?: string | null
+          nome?: string
+          path?: string
+          pessoa_id?: number
+          tamanho?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_pessoa_anexos_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_pessoa_contatos: {
+        Row: {
+          criado_em: string
+          id: number
+          pessoa_id: number
+          principal: boolean
+          tipo: string
+          valor: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: never
+          pessoa_id: number
+          principal?: boolean
+          tipo: string
+          valor: string
+        }
+        Update: {
+          criado_em?: string
+          id?: never
+          pessoa_id?: number
+          principal?: boolean
+          tipo?: string
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_pessoa_contatos_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_pessoa_relacoes: {
+        Row: {
+          cargo: string | null
+          empresa_id: number
+          pessoa_id: number
+        }
+        Insert: {
+          cargo?: string | null
+          empresa_id: number
+          pessoa_id: number
+        }
+        Update: {
+          cargo?: string | null
+          empresa_id?: number
+          pessoa_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_pessoa_relacoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_pessoa_relacoes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_pessoas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          avatar_path: string | null
+          classificacao: string
+          cod_ref: string | null
+          cod_ref_adicional: string | null
+          criado_em: string
+          criado_por: string | null
+          documento: string | null
+          dominios: string[]
+          habilitada: boolean
+          id: number
+          nome: string
+          observacoes: string | null
+          origem: string
+          origem_detalhe: string | null
+          ramo: string | null
+          razao_social: string | null
+          sinalizadores: string[]
+          tipo: string
+          ultimo_contato_em: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          avatar_path?: string | null
+          classificacao?: string
+          cod_ref?: string | null
+          cod_ref_adicional?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          dominios?: string[]
+          habilitada?: boolean
+          id?: never
+          nome: string
+          observacoes?: string | null
+          origem?: string
+          origem_detalhe?: string | null
+          ramo?: string | null
+          razao_social?: string | null
+          sinalizadores?: string[]
+          tipo?: string
+          ultimo_contato_em?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          avatar_path?: string | null
+          classificacao?: string
+          cod_ref?: string | null
+          cod_ref_adicional?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          dominios?: string[]
+          habilitada?: boolean
+          id?: never
+          nome?: string
+          observacoes?: string | null
+          origem?: string
+          origem_detalhe?: string | null
+          ramo?: string | null
+          razao_social?: string | null
+          sinalizadores?: string[]
+          tipo?: string
+          ultimo_contato_em?: string | null
+        }
+        Relationships: []
       }
       at_setor_gestores: {
         Row: {
@@ -1174,6 +1456,10 @@ export type Database = {
         }[]
       }
       at_config_salvar: { Args: { p: Json }; Returns: undefined }
+      at_contato_normalizar: {
+        Args: { p_tipo: string; p_valor: string }
+        Returns: string
+      }
       at_contexto: { Args: never; Returns: Json }
       at_conversa_editar: {
         Args: { p: Json; p_conversa: number }
@@ -1203,6 +1489,8 @@ export type Database = {
           ultima_previa: string
         }[]
       }
+      at_documento_valido: { Args: { p: string }; Returns: boolean }
+      at_dominio_publico: { Args: { p_dominio: string }; Returns: boolean }
       at_email_conta_excluir: { Args: { p_id: number }; Returns: undefined }
       at_email_conta_habilitar: {
         Args: { p_habilitada: boolean; p_ids: number[] }
@@ -1221,6 +1509,19 @@ export type Database = {
           senha: string
         }[]
       }
+      at_equipe_excluir: { Args: { p_id: number }; Returns: undefined }
+      at_equipe_salvar: { Args: { p: Json }; Returns: number }
+      at_equipes_candidatos: {
+        Args: never
+        Returns: {
+          email: string
+          id: string
+          nome: string
+        }[]
+      }
+      at_equipes_lista: { Args: never; Returns: Json }
+      at_exigir_equipes: { Args: never; Returns: string }
+      at_exigir_pessoas: { Args: never; Returns: string }
       at_gestor_de: { Args: { p_setor: number }; Returns: boolean }
       at_google_sa_salvar: { Args: { p_json: string }; Returns: undefined }
       at_indicadores_janela: {
@@ -1278,10 +1579,53 @@ export type Database = {
         Returns: Json
       }
       at_monitor_setores: { Args: { p_setor?: number }; Returns: number[] }
+      at_pessoa_anexo_registrar: {
+        Args: {
+          p_mime: string
+          p_nome: string
+          p_path: string
+          p_pessoa: number
+          p_tamanho: number
+        }
+        Returns: number
+      }
+      at_pessoa_anexo_remover: { Args: { p_id: number }; Returns: string }
+      at_pessoa_detalhe: { Args: { p_id: number }; Returns: Json }
+      at_pessoa_excluir: { Args: { p_id: number }; Returns: Json }
+      at_pessoa_identificar: {
+        Args: {
+          p_nome?: string
+          p_origem_detalhe?: string
+          p_tipo: string
+          p_valor: string
+        }
+        Returns: number
+      }
+      at_pessoa_mesclar: {
+        Args: { p_fica: number; p_sai: number }
+        Returns: undefined
+      }
+      at_pessoa_salvar: { Args: { p: Json }; Returns: number }
+      at_pessoas_busca: {
+        Args: { p_busca: string; p_tipos?: string[] }
+        Returns: {
+          email: string
+          id: number
+          nome: string
+          tipo: string
+        }[]
+      }
+      at_pessoas_lista: { Args: { p?: Json }; Returns: Json }
       at_ping: { Args: never; Returns: boolean }
+      at_pode_equipes: { Args: never; Returns: boolean }
       at_setor_config_salvar: { Args: { p: Json }; Returns: undefined }
       at_setor_salvar: { Args: { p: Json }; Returns: number }
       at_supervisor: { Args: never; Returns: boolean }
+      at_usuario_equipes: { Args: { p_usuario: string }; Returns: number[] }
+      at_usuario_equipes_salvar: {
+        Args: { p_equipes: number[]; p_usuario: string }
+        Returns: undefined
+      }
       at_ve_conversa: {
         Args: { p_atendente: string; p_setor: number; p_ultimo?: string }
         Returns: boolean
