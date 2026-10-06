@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Database, FileCode2, KeyRound, MessageCircle } from "lucide-react";
+import { Database, FileCode2, MessageCircle } from "lucide-react";
 import { lazy } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router";
 import { Breadcrumb } from "../../../components/Breadcrumb";
@@ -13,9 +13,6 @@ import "./Integracoes.css";
 
 const IntegracaoZenvia = lazy(() =>
   import("../../atendimento/pages/IntegracaoZenvia").then((m) => ({ default: m.IntegracaoZenvia })),
-);
-const IntegracaoGoogle = lazy(() =>
-  import("../../atendimento/pages/IntegracaoGoogle").then((m) => ({ default: m.IntegracaoGoogle })),
 );
 const IntegracaoConsultas = lazy(() =>
   import("./integracoes/IntegracaoConsultas").then((m) => ({ default: m.IntegracaoConsultas })),
@@ -45,7 +42,6 @@ const SECTIONS: Section[] = [
   { path: "totvs", label: "TOTVS RM", icon: Database, permission: "configure_integrations" },
   { path: "consultas", label: "Consultas SQL", icon: FileCode2, permission: "configure_integrations" },
   { path: "zenvia", label: "Zenvia WhatsApp", icon: MessageCircle, permission: "atendimento_zenvia" },
-  { path: "google", label: "Google Workspace", icon: KeyRound, permission: "atendimento_google" },
 ];
 
 export function Integracoes() {
@@ -83,7 +79,6 @@ export function Integracoes() {
         <Route path="email" element={<Navigate to={`${page.path}/totvs`} replace />} />
         <Route path="totvs" element={<IntegracaoTotvs />} />
         <Route path="consultas" element={<IntegracaoConsultas />} />
-        <Route path="google" element={hasPermission("atendimento_google") ? <IntegracaoGoogle /> : <NotFound />} />
         <Route path="zenvia" element={hasPermission("atendimento_zenvia") ? <IntegracaoZenvia /> : <NotFound />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

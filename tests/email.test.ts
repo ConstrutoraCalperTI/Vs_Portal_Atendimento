@@ -2,7 +2,7 @@
 // serviço do Google (assinatura conferida com a chave pública).
 import { describe, expect, it } from "vitest";
 import type { Socket } from "../supabase/functions/_shared/email/conexao.ts";
-import { assertion, emailDoIdToken, erroGoogle, tokenPorRefresh, trocarCodigo, urlAutorizacao } from "../supabase/functions/_shared/email/gmail.ts";
+import { appGoogle, emailDoIdToken, erroGoogle, tokenPorRefresh, trocarCodigo, urlAutorizacao } from "../supabase/functions/_shared/email/gmail.ts";
 import { aspas, lerStatus, testarImap, type Rede } from "../supabase/functions/_shared/email/imap.ts";
 import { cabecalho, montarMensagem, pontoDuplo } from "../supabase/functions/_shared/email/mime.ts";
 import { testarSmtp } from "../supabase/functions/_shared/email/smtp.ts";
@@ -108,27 +108,17 @@ describe("SMTP", () => {
   });
 });
 
-describe("Google (conta de serviço)", () => {
-  it("JWT RS256 com sub = caixa e escopos do Gmail, assinatura válida", async () => {
-    const par = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, true, ["sign", "verify"]);
-    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", par.privateKey));
-    const pem = `-----BEGIN PRIVATE KEY-----\n${btoa(String.fromCharCode(...pkcs8)).match(/.{1,64}/g)!.join("\n")}\n-----END PRIVATE KEY-----\n`;
-    const jwt = await assertion({ client_email: "portal@projeto.iam.gserviceaccount.com", private_key: pem }, "cftv@calper.com.br", 1000);
-    const [cab, corpo, sig] = jwt.split(".");
-    const dec = (s: string) => JSON.parse(atob(s.replace(/-/g, "+").replace(/_/g, "/")));
-    expect(dec(cab!)).toEqual({ alg: "RS256", typ: "JWT" });
-    expect(dec(corpo!)).toMatchObject({ iss: "portal@projeto.iam.gserviceaccount.com", sub: "cftv@calper.com.br", iat: 1000, exp: 4600 });
-    expect(dec(corpo!).scope).toBe("https://mail.google.com/");
-    const outro = await assertion({ client_email: "p@x", private_key: pem }, "a@b.com", 1000, ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"]);
-    expect(dec(outro.split(".")[1]!).scope).toBe("https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send");
-    const assinatura = Uint8Array.from(atob(sig!.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(sig!.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
-    const ok = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", par.publicKey, assinatura, new TextEncoder().encode(`${cab}.${corpo}`));
-    expect(ok).toBe(true);
+describe("Google: aplicativo do portal e erros", () => {
+  it("aplicativo OAuth vem dos secrets; sem os dois valores, não está configurado", () => {
+    const env = (m: Record<string, string>) => (k: string) => m[k];
+    expect(appGoogle(env({ GOOGLE_OAUTH_CLIENT_ID: " id.apps.googleusercontent.com ", GOOGLE_OAUTH_CLIENT_SECRET: "x" }))).toEqual({ clientId: "id.apps.googleusercontent.com", clientSecret: "x" });
+    expect(appGoogle(env({ GOOGLE_OAUTH_CLIENT_ID: "id" }))).toBeNull();
+    expect(appGoogle(env({}))).toBeNull();
   });
 
   it("erros comuns do Google viram mensagem com a causa", () => {
-    expect(erroGoogle(401, '{"error":"unauthorized_client","error_description":"Client is unauthorized"}')).toMatch(/Clientes da API/);
-    expect(erroGoogle(400, '{"error":"invalid_grant","error_description":"Invalid email"}')).toMatch(/endereço existe/);
+    expect(erroGoogle(401, '{"error":"invalid_client","error_description":"The OAuth client was not found."}')).toMatch(/ID do cliente/);
+    expect(erroGoogle(400, '{"error":"invalid_grant","error_description":"Bad Request"}')).toMatch(/Reautorizar com Gmail/);
   });
 });
 

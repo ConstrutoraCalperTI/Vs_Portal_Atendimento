@@ -134,10 +134,9 @@ export const useTestarZenvia = () => useMudaZenvia(() => zenviaService.testar())
 export const useAssinarZenvia = () => useMudaZenvia(() => zenviaService.assinar());
 export const useEnviarTeste = () => useMutation({ mutationFn: (p: { numeroId: number; telefone: string }) => zenviaService.enviarTeste(p.numeroId, p.telefone) });
 
-// ---------- Contas de e-mail ----------
+// ---------- Central Email ----------
 
 const EMAILS = [...RAIZ, "emails"] as const;
-const GOOGLE = [...RAIZ, "google"] as const;
 
 export function useContasEmail() {
   return useQuery({ queryKey: EMAILS, queryFn: () => emailService.lista(), refetchInterval: 60_000 });
@@ -155,16 +154,3 @@ export const useExcluirContaEmail = () => useMudaEmail((id: number) => emailServ
 export const useAutorizarGoogle = () => useMutation({ mutationFn: (id: number) => emailService.autorizarGoogle(id) });
 export const useTestarContaEmail = () => useMudaEmail((p: { id: number; enviarPara?: string }) => emailService.testar(p.id, p.enviarPara));
 
-export function useGoogleWorkspace() {
-  return useQuery({ queryKey: GOOGLE, queryFn: () => emailService.google() });
-}
-
-function useMudaGoogle<T, R>(fn: (dados: T) => Promise<R>) {
-  const queryClient = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => void queryClient.invalidateQueries({ queryKey: GOOGLE }) });
-}
-
-export const useSalvarChaveGoogle = () => useMudaGoogle((json: string) => emailService.salvarChaveGoogle(json));
-export const useSalvarOAuthGoogle = () => useMudaGoogle((p: { clientId: string; clientSecret: string }) => emailService.salvarOAuthGoogle(p.clientId, p.clientSecret));
-export const useSalvarEscoposGoogle = () => useMudaGoogle((escopos: string[]) => emailService.salvarEscoposGoogle(escopos));
-export const useTestarGoogle = () => useMudaGoogle((email: string) => emailService.testarGoogle(email));

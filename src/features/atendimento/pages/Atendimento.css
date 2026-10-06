@@ -1068,7 +1068,7 @@
   }
 }
 
-/* ---------- Contas de e-mail (estrutura da Movidesk) ---------- */
+/* ---------- Central Email (estrutura da Movidesk) ---------- */
 
 .em-head {
   display: flex;
@@ -1399,36 +1399,34 @@
 .em-oauth {
   display: grid;
   gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--table-head, #fcfcfd);
 }
 
 .em-oauth__topo {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
+/* Botão "Autorizar com Gmail" no formato da Movidesk/Google: quadrado branco com o G e faixa azul. */
 .em-gbtn {
   display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  height: 40px;
-  padding: 0 16px;
-  border: 1px solid #dadce0;
-  border-radius: 6px;
-  background: #fff;
-  color: #3c4043;
+  align-items: stretch;
+  height: 50px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #4285f4;
+  border-radius: 2px;
+  background: #4285f4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  color: #fff;
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .em-gbtn:hover:not(:disabled) {
-  background: #f8f9fa;
+  background: #3367d6;
 }
 
 .em-gbtn:disabled {
@@ -1437,9 +1435,59 @@
 }
 
 .em-gbtn__g {
-  width: 18px;
-  height: 18px;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  background: #fff;
+}
+
+.em-gbtn__g svg {
+  width: 30px;
+  height: 30px;
+}
+
+.em-gbtn__txt {
+  display: grid;
+  place-items: center;
+  padding: 0 26px;
+}
+
+.em-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.em-nota svg {
   flex: none;
+  margin-top: 2px;
+}
+
+.em-nota--p {
+  font-size: 12.5px;
+}
+
+.em-tit {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.em-forte {
+  font-weight: 700;
+}
+
+.em-campo-medio {
+  max-width: 420px;
+}
+
+.em-l2--estreito {
+  max-width: 720px;
 }
 
 .em-tag-novo {

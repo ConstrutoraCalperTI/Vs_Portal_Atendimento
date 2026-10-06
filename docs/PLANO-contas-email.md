@@ -179,6 +179,26 @@ Pedido do Wagner: conectar as contas do Google como a Movidesk, com o botão "Re
 
 Checklist:
 - [x] mockup `docs/mockups/email-oauth-google.html` aprovado pelo Wagner (06/10/2026); status da lista alinhados ("Aguardando autorização", "Reautorizar")
+- [x] **Correção do Wagner (06/10/2026):** a referência é a tela da Movidesk, não o mockup. A aba de recebimento ficou igual à Movidesk:
+  - Habilitar recebimento;
+  - botão azul "Autorizar/Reautorizar com Gmail" e a nota OAuth2;
+  - Caixa para recebimento de e-mails;
+  - Mecanismo de autenticação (Auto) e Importar a partir de;
+  - Apagar depois de N dias;
+  - Marcar como lido, com a nota;
+  - Importar e-mails como Ticket;
+  - as 4 opções de abertura, com a nota;
+  - rodapé com Excluir, Cancelar, Testar, Salvar e criar um novo e Salvar.
+- [x] Para o Google, a conta usa sempre `oauth_google`. A mesma autorização libera recebimento e envio (escopo `https://mail.google.com/`), e a aba de envio mostra isso.
+- [x] Saíram da tela (continuam no banco com o valor padrão):
+  - escolha de modo;
+  - Ler a cada;
+  - Mover para pasta;
+  - ignorar remetentes;
+  - inclusão de ações;
+  - campo "enviar teste para" (o teste vai para o e-mail de quem está logado);
+  - delegação em Integrações.
+- A seção 2 (recebimento) de `email-oauth-google.html` foi **substituída** pela tela da Movidesk.
 - [x] ensaio:
   - `state` de uso único;
   - retorno fora de https recusado;
@@ -193,6 +213,41 @@ Checklist:
 - [x] 23 testes Vitest (URL de autorização, troca de código, id_token, token revogado)
 - [x] Playwright no modo simulado: botão, janela, retorno, aviso único, status "Autorizado como…", Testar ok; 390 px sem rolagem lateral
 - [ ] TI criar o ID do cliente OAuth e o portal receber; autorizar uma caixa real (ex.: cftv@) e testar
+
+## 4d. Central Email sem a integração Google Workspace (06/10/2026)
+
+Pedido do Wagner: tirar a integração Google Workspace do projeto, para não deixar sujeira, e renomear a seção para **Central Email**.
+
+- **Saiu da tela e do código:**
+  - a aba Configurações › Integrações › Google Workspace;
+  - o item `atendimento_google` do menuRegistry;
+  - a delegação no domínio (conta de serviço, escopos, `google_testar`);
+  - os serviços e hooks do Google Workspace.
+- **No banco não se mexeu** (migração só aditiva): ficam colunas e funções sem uso (`at_google_sa_*`, `at_google_escopos_salvar`, `at_google_oauth_salvar/ler`). Uma limpeza delas precisa da sua autorização explícita.
+- **O aplicativo OAuth do portal** (ID do cliente + chave secreta) virou *secret* das Edge Functions, configurado uma vez, sem tela:
+  ```bash
+  npx supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<COLOQUE_O_ID_AQUI> GOOGLE_OAUTH_CLIENT_SECRET=<COLOQUE_A_CHAVE_AQUI> --project-ref cjofyxgcuvpeeslkfawu
+  ```
+- **Passo a passo da TI, uma vez, no Google Cloud Console** (projeto da Calper):
+  1. APIs e serviços › ative a **Gmail API**.
+  2. Tela de consentimento OAuth › Tipo de usuário **Interno**. Nome: "Portal Atendimento".
+  3. Credenciais › Criar credenciais › **ID do cliente OAuth** › **Aplicativo da Web**. Em URIs de redirecionamento autorizados, cole `https://cjofyxgcuvpeeslkfawu.supabase.co/functions/v1/portal_atendimento-google-oauth`.
+  4. Grave o ID do cliente e a chave secreta com o comando acima.
+- **Cada conta é autorizada individualmente:**
+  1. cadastre a conta (que já existe no Google);
+  2. em Configurações de recebimento, clique em **Autorizar com Gmail**;
+  3. entre no Google com a própria caixa e clique em Permitir.
+
+  Enquanto não for autorizada, a lista mostra "Aguardando autorização". A autorização (refresh token da caixa, no Vault) vale para receber e para enviar.
+- **Sincronização:** a leitura automática (F4, pg_cron) e o envio das respostas (F5) **ainda não existem**. Hoje a autorização só valida a caixa: lê a pasta e manda o e-mail de teste. A F4 vai ler somente contas habilitadas, com recebimento habilitado e autorizadas.
+
+Checklist:
+- [x] Integração Google Workspace removida (tela, menu, serviços, delegação na Edge)
+- [x] Aplicativo OAuth lido de `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`; Edge Functions publicadas
+- [x] Seção renomeada para "Central Email" (menu, título, mockup)
+- [ ] TI criar o ID do cliente OAuth e gravar os secrets
+- [ ] Autorizar a primeira caixa real e testar
+- [ ] F4 leitura automática e F5 envio
 
 ## 5. Decisões para o Wagner (na aprovação do mockup)
 

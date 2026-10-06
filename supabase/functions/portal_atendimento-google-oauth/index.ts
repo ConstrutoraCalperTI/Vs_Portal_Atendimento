@@ -6,7 +6,7 @@
 // que avisa a janela que abriu a autorização e se fecha.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { testarGmailComToken, trocarCodigo } from "../_shared/email/gmail.ts";
+import { APP_GOOGLE_AUSENTE, appGoogle, testarGmailComToken, trocarCodigo } from "../_shared/email/gmail.ts";
 
 const texto = (status: number, msg: string) => new Response(msg, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
@@ -34,11 +34,10 @@ Deno.serve(async (req) => {
   if (!code) return voltar({ status: "erro", msg: "O Google não devolveu o código de autorização." });
 
   try {
-    const app = await db.rpc("at_google_oauth_ler");
-    const l = (app.data as { client_id: string | null; client_secret: string | null }[] | null)?.[0];
-    if (!l?.client_id || !l.client_secret) return voltar({ status: "erro", msg: "O aplicativo OAuth do Google não está configurado no portal." });
+    const app = appGoogle();
+    if (!app) return voltar({ status: "erro", msg: APP_GOOGLE_AUSENTE });
     const redirectUri = `${url}/functions/v1/portal_atendimento-google-oauth`;
-    const t = await trocarCodigo(fetch, { clientId: l.client_id, clientSecret: l.client_secret, code, redirectUri });
+    const t = await trocarCodigo(fetch, { ...app, code, redirectUri });
     if (!t.email) return voltar({ status: "erro", msg: "O Google não informou qual conta autorizou." });
     // Quem autoriza precisa entrar com a própria caixa da conta (não com o e-mail pessoal).
     if (t.email !== e.email.toLowerCase()) {

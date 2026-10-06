@@ -1,48 +1,23 @@
-// API do Gmail com conta de serviço do Google Workspace (delegação no domínio): o portal pede um token
-// "em nome de" cada caixa @calper.com.br, sem senha por conta. Só HTTPS: roda em Edge Function.
-// Configuração da TI (uma vez): Google Cloud › conta de serviço › chave JSON; Admin do Workspace ›
-// Segurança › Controles de API › Delegação em todo o domínio › Clientes da API › Adicionar novo: o client_id
-// da conta e os escopos. O Google só emite o token se os escopos pedidos estiverem EXATAMENTE nessa lista;
-// por isso os escopos são configuráveis (padrão: https://mail.google.com/, o mesmo já usado na Calper).
+// API do Gmail com OAuth2 por conta ("Autorizar com Gmail", como a Movidesk). Cada caixa é autorizada por quem
+// tem a senha dela; o refresh token fica no Vault e vale para ler e para enviar (escopo https://mail.google.com/).
+// O aplicativo OAuth do portal (ID do cliente + chave secreta) é configurado uma vez pela TI no Google Cloud e
+// fica nos secrets das Edge Functions: GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET. Só HTTPS.
 
 import type { Passo } from "./conexao.ts";
 import { base64url } from "./mime.ts";
 
-export const ESCOPOS_PADRAO = ["https://mail.google.com/"];
 const GMAIL = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 type Fetch = typeof fetch;
 
-export interface ChaveServico {
-  client_email: string;
-  private_key: string;
-  token_uri?: string;
+/** Aplicativo OAuth do portal, lido dos secrets da função. null = ainda não configurado. */
+export function appGoogle(env: (k: string) => string | undefined = (k) => (globalThis as { Deno?: { env: { get(k: string): string | undefined } } }).Deno?.env.get(k)): { clientId: string; clientSecret: string } | null {
+  const clientId = env("GOOGLE_OAUTH_CLIENT_ID")?.trim();
+  const clientSecret = env("GOOGLE_OAUTH_CLIENT_SECRET")?.trim();
+  return clientId && clientSecret ? { clientId, clientSecret } : null;
 }
 
-function pemParaDer(pem: string): ArrayBuffer {
-  const b64 = pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes.buffer;
-}
-
-const b64urlBytes = (bytes: Uint8Array) => {
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-};
-
-/** Monta o JWT (assertion) da conta de serviço para a caixa `caixa`. */
-export async function assertion(chave: ChaveServico, caixa: string, agora = Math.floor(Date.now() / 1000), escopos: string[] = ESCOPOS_PADRAO): Promise<string> {
-  const cab = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const corpo = base64url(
-    JSON.stringify({ iss: chave.client_email, sub: caixa, scope: escopos.join(" "), aud: chave.token_uri ?? "https://oauth2.googleapis.com/token", iat: agora, exp: agora + 3600 }),
-  );
-  const k = await crypto.subtle.importKey("pkcs8", pemParaDer(chave.private_key), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
-  const assinatura = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", k, new TextEncoder().encode(`${cab}.${corpo}`)));
-  return `${cab}.${corpo}.${b64urlBytes(assinatura)}`;
-}
+export const APP_GOOGLE_AUSENTE = "O aplicativo Google do portal ainda não foi configurado (secrets GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET). Fale com a TI.";
 
 /** Erro do Google em português, com a causa mais comum de cada código. */
 export function erroGoogle(status: number, corpo: string): string {
@@ -53,23 +28,11 @@ export function erroGoogle(status: number, corpo: string): string {
   } catch {
     /* não-JSON */
   }
-  if (/unauthorized_client/i.test(msg)) {
-    return "O Google recusou a delegação: o Client ID da conta de serviço não está em Clientes da API ou os escopos cadastrados lá não são os mesmos que o portal pede (Admin › Segurança › Controles de API › Delegação em todo o domínio).";
+  if (/invalid_client|unauthorized_client/i.test(msg)) {
+    return "O Google recusou o aplicativo do portal: confira o ID do cliente e a chave secreta nos secrets das Edge Functions.";
   }
-  if (/invalid_grant/i.test(msg)) return `O Google recusou a caixa: confira se o endereço existe no Workspace (${msg}).`;
+  if (/invalid_grant/i.test(msg)) return `O Google recusou a autorização: clique em Reautorizar com Gmail (${msg}).`;
   return `Google respondeu ${status}: ${msg}`;
-}
-
-export async function tokenDaCaixa(f: Fetch, chave: ChaveServico, caixa: string, escopos: string[] = ESCOPOS_PADRAO): Promise<string> {
-  const r = await f(chave.token_uri ?? "https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: await assertion(chave, caixa, undefined, escopos) }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  const texto = await r.text();
-  if (!r.ok) throw new Error(erroGoogle(r.status, texto));
-  return (JSON.parse(texto) as { access_token: string }).access_token;
 }
 
 /** Pasta: "INBOX" e marcadores do sistema usam o próprio id; marcador criado pelo usuário é buscado pelo nome. */
@@ -102,8 +65,6 @@ export async function enviarGmail(f: Fetch, token: string, mensagemRfc822: strin
 }
 
 // ---------------------------------------------------------------- OAuth2 por conta ("Autorizar com Gmail")
-// A TI cria um "ID do cliente OAuth" (Aplicativo da Web, tela de consentimento Interna). Alguém entra no Google
-// com a própria caixa e autoriza; o refresh token fica no Vault. Mesmo modelo da Movidesk.
 
 export const ESCOPOS_OAUTH = ["https://mail.google.com/", "openid", "email"];
 
@@ -163,7 +124,7 @@ export async function tokenPorRefresh(f: Fetch, p: { clientId: string; clientSec
   return (JSON.parse(texto) as { access_token: string }).access_token;
 }
 
-/** Leitura da pasta e (opcional) envio de teste com um token já obtido (OAuth ou conta de serviço). */
+/** Leitura da pasta e (opcional) envio de teste com o token da caixa. */
 export async function testarGmailComToken(
   f: Fetch,
   obterToken: () => Promise<string>,
@@ -178,35 +139,6 @@ export async function testarGmailComToken(
     passos.push({ passo: conexao.passo, ok: true, detalhe: conexao.detalhe });
   } catch (e) {
     passos.push({ passo: conexao.passo, ok: false, detalhe: String(e instanceof Error ? e.message : e) });
-    return passos;
-  }
-  try {
-    const st = await rotulo(f, token, pasta);
-    passos.push({ passo: `Leitura da pasta ${pasta}`, ok: true, detalhe: `${st.total} e-mails, ${st.naoLidas} não lidos` });
-  } catch (e) {
-    passos.push({ passo: `Leitura da pasta ${pasta}`, ok: false, detalhe: String(e instanceof Error ? e.message : e) });
-  }
-  if (teste) {
-    try {
-      await enviarGmail(f, token, teste.mensagem);
-      passos.push({ passo: `E-mail de teste para ${teste.para}`, ok: true, detalhe: "enviado (fica em Enviados da caixa)" });
-    } catch (e) {
-      passos.push({ passo: `E-mail de teste para ${teste.para}`, ok: false, detalhe: String(e instanceof Error ? e.message : e) });
-    }
-  }
-  return passos;
-}
-
-/** Teste pela API: autorização da caixa, leitura da pasta e (opcional) envio de teste. */
-export async function testarGmail(f: Fetch, chave: ChaveServico | null, caixa: string, pasta: string, teste?: { mensagem: string; para: string }, escopos: string[] = ESCOPOS_PADRAO): Promise<Passo[]> {
-  const passos: Passo[] = [];
-  if (!chave) return [{ passo: "Conexão com o Google Workspace", ok: false, detalhe: "A chave da conta de serviço ainda não foi salva (Configurações › Integrações › Google Workspace)." }];
-  let token: string;
-  try {
-    token = await tokenDaCaixa(f, chave, caixa, escopos);
-    passos.push({ passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${caixa} (${escopos.join(", ")})` });
-  } catch (e) {
-    passos.push({ passo: "Conexão com o Google Workspace", ok: false, detalhe: String(e instanceof Error ? e.message : e) });
     return passos;
   }
   try {

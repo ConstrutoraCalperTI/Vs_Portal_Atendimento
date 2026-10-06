@@ -176,32 +176,38 @@
   details.alt { margin-top: 16px; padding: 14px 18px; }
   details.alt summary { cursor: pointer; font-weight: 600; }
   @media (max-width: 900px) { .grade2 { grid-template-columns: 1fr; } }
+  .tit-mvd { margin: 0; font-size: 17px; font-weight: 500; color: var(--muted); }
+  .gbtn-mvd { display: inline-flex; align-items: stretch; height: 50px; padding: 0; overflow: hidden; border: 1px solid #4285f4; border-radius: 2px; background: #4285f4; color: #fff; font-weight: 700; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .gbtn-mvd:hover { background: #3367d6; }
+  .gbtn-mvd .g { display: grid; place-items: center; width: 50px; background: #fff; }
+  .gbtn-mvd .t { display: grid; place-items: center; padding: 0 26px; font-size: 15px; }
+  .nota { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+  .nota.peq { font-size: 12.5px; margin-top: 4px; }
+  .btn-ok { background: #16a34a; border-color: #16a34a; color: #fff; }
 </style>
 </head>
 <body>
-<div class="faixa"><b>Mockup para aprovação · "Autorizar com Gmail" (como a Movidesk).</b> Cada caixa é conectada com um clique: quem tem a senha entra no Google e autoriza. Clique nos itens, botões e telas. Dados de exemplo.</div>
+<div class="faixa"><b>Mockup para aprovação · Central Email (igual à Movidesk).</b> Cada conta de e-mail é cadastrada e depois autorizada <b>individualmente</b> no Google (botão Autorizar com Gmail); só depois disso ela fica ativa e sincronizada. A mesma autorização libera receber e enviar.</div>
 <div class="app">
   <nav class="sidebar">
     <div class="sidebar__label">MENU PRINCIPAL</div>
     <button class="item on">Gestão de Atendimento</button>
-    <button class="sub" data-ir="lista">Contas de e-mail</button>
-    <button class="item">Configurações</button>
-    <button class="sub" data-ir="integ">Integrações › Google Workspace</button>
+    <button class="sub" data-ir="lista">Central Email</button>
   </nav>
   <div class="main">
     <header class="topbar"><div class="logo"><i></i><span class="app-nome">Portal Atendimento</span></div><span style="color:var(--muted)">Wagner Antunes</span></header>
     <div class="conteudo">
       <div class="secoes">
         <button class="secao" data-ir="lista">1 · Lista de contas</button>
-        <button class="secao on" data-ir="receb">2 · Configurações de recebimento</button>
-        <button class="secao" data-ir="integ">3 · Integrações › Google Workspace</button>
+        <button class="secao on" data-ir="receb">2 · Central Email</button>
+        
       </div>
 
       <!-- ============ 1. LISTA ============ -->
       <section class="tela" id="t-lista">
-        <div class="bread">Gestão de Atendimento › <b>Contas de e-mail</b></div>
+        <div class="bread">Gestão de Atendimento › <b>Central Email</b></div>
         <div class="card">
-          <div class="lista-head"><div class="tit"><b>Contas de e-mail</b><small>A coluna Provedor mostra como cada caixa está conectada.</small></div><button class="btn btn-p">+ Adicionar</button></div>
+          <div class="lista-head"><div class="tit"><b>Central Email</b><small>A coluna Provedor mostra como cada caixa está conectada.</small></div><button class="btn btn-p">+ Adicionar</button></div>
           <div class="tabela"><table>
             <thead><tr><th>Habilitado</th><th>E-mail</th><th>Setor</th><th>Provedor</th><th>Status</th></tr></thead>
             <tbody>
@@ -217,81 +223,71 @@
 
       <!-- ============ 2. RECEBIMENTO ============ -->
       <section class="tela on" id="t-receb">
-        <div class="bread">Gestão de Atendimento › Contas de e-mail › <b>juridico@calper.com.br</b></div>
+        <div class="bread">Gestão de Atendimento › Central Email › <b>juridico@calper.com.br</b></div>
         <div class="card form-wrap">
-          <div class="abas"><button class="aba">Dados da conta</button><button class="aba on">Configurações de recebimento</button><button class="aba">Configurações de envio</button></div>
+          <div class="abas"><button class="aba" data-aba="princ">Principal</button><button class="aba on" data-aba="receb">Configurações de recebimento</button><button class="aba" data-aba="envio">Configurações de envio</button></div>
           <div class="corpo">
-            <div class="pane on">
+            <div class="pane" id="a-princ">
+              <div class="l2">
+                <div><label class="lbl">Nome da conta</label><input class="input" value="Jurídico"></div>
+                <div><label class="lbl">Endereço de e-mail</label><input class="input" value="juridico@calper.com.br"></div>
+              </div>
+              <div><span class="lbl">Selecione o provedor de e-mail</span>
+                <div class="radios"><label><input type="radio" name="pv" checked> Google Workspace / Gmail</label><label><input type="radio" name="pv"> Microsoft 365 / Outlook</label><label><input type="radio" name="pv"> Outro (IMAP/SMTP)</label></div>
+              </div>
+              <div class="notice info">Basta cadastrar a conta que <b>já existe no Google</b>. Na aba Configurações de recebimento, o botão <b>Autorizar com Gmail</b> vincula a caixa, e a mesma autorização vale para receber e enviar.</div>
+            </div>
+
+            <div class="pane on" id="a-receb">
+              <h3 class="tit-mvd">Configurações de recebimento</h3>
               <label class="chk"><input type="checkbox" checked> Habilitar recebimento de e-mails</label>
-
+              <div class="estados">Ver estado (exemplo):
+                <button class="btn btn-sm" data-est="pend">Não autorizada</button>
+                <button class="btn btn-sm" data-est="ok">Autorizada</button>
+                <button class="btn btn-sm" data-est="er">Revogada</button>
+              </div>
+              <div class="oauth-top">
+                <button class="gbtn-mvd" id="b-autorizar"><span class="g"><svg class="glogo" viewBox="0 0 48 48" style="stroke:none;width:28px;height:28px"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.2C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.6 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6C6.6 42.6 14.6 48 24 48z"/></svg></span><span class="t" id="b-txt">Autorizar com Gmail</span></button>
+                <div class="st" id="st"><span class="bola pend"></span><span>Ainda não autorizada. Clique e entre no Google com <b>juridico@calper.com.br</b>.</span></div>
+              </div>
+              <p class="nota">ⓘ Este provedor utiliza autenticação segura via OAuth2. Por isso, é necessário conceder ao Portal Atendimento autorização para acessar suas informações, enviar e receber e-mails no seu nome. Essa autorização pode ser revogada a qualquer momento.</p>
+              <div><label class="lbl">Caixa para recebimento de e-mails</label><input class="input" value="INBOX"></div>
+              <div class="l2" style="max-width:720px">
+                <div><label class="lbl">Mecanismo de autenticação</label><select class="input" disabled><option>Auto</option></select></div>
+                <div><label class="lbl">Importar somente mensagens recebidas a partir de:</label><input class="input" type="date" value="2026-10-06"></div>
+              </div>
+              <div class="inl"><label class="chk"><input type="checkbox" checked> Apagar as mensagens já processadas depois de</label><input class="input" type="number" value="30" style="width:90px"> dias</div>
+              <div><label class="chk"><input type="checkbox" checked> Marcar e-mail como lido ao importá-lo</label>
+                <p class="nota peq">ⓘ Se este parâmetro estiver marcado o sistema irá marcar a mensagem como lida antes de importá-la.</p></div>
+              <div style="max-width:420px"><label class="lbl"><b>Importar e-mails como:</b></label><select class="input" disabled><option>Ticket</option></select></div>
               <div>
-                <span class="lbl">Como conectar esta caixa</span>
-                <div class="modo">
-                  <button class="on"><b>Autorizar com Gmail <span class="novo-tag">NOVO · PADRÃO</span></b><span>Um clique, como na Movidesk.</span></button>
-                  <button><b>Delegação no domínio</b><span>Conta de serviço (TI), sem clique por caixa.</span></button>
-                  <button><b>IMAP / SMTP</b><span>Outros provedores, com senha.</span></button>
-                </div>
-              </div>
-
-              <div class="oauth">
-                <div class="estados">Ver estado (exemplo):
-                  <button class="btn btn-sm" data-est="pend">Não autorizada</button>
-                  <button class="btn btn-sm" data-est="ok">Autorizada</button>
-                  <button class="btn btn-sm" data-est="er">Revogada</button>
-                </div>
-                <div class="oauth-top">
-                  <button class="gbtn" id="b-autorizar">
-                    <svg class="glogo" viewBox="0 0 48 48" style="stroke:none"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.2C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.6 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6C6.6 42.6 14.6 48 24 48z"/></svg>
-                    <span id="b-txt">Autorizar com Gmail</span>
-                  </button>
-                  <div class="st" id="st"><span class="bola pend"></span><span>Aguardando autorização. Entre no Google com <b>juridico@calper.com.br</b>.</span></div>
-                </div>
-                <div class="notice info">Abre uma janela do Google. Quem tem a senha da caixa entra e clica em <b>Permitir</b>. O portal confere se é a mesma caixa da conta, guarda a autorização no cofre e já testa a leitura. Não pedimos a senha da caixa.</div>
-              </div>
-
-              <div class="sep"></div>
-              <div class="l2">
-                <div><label class="lbl">Caixa para recebimento</label><select class="input"><option>INBOX (Caixa de entrada)</option><option>Chamados</option></select></div>
-                <div><label class="lbl">Importar somente e-mails recebidos a partir de</label><input class="input" type="date" value="2026-10-06"></div>
-              </div>
-              <div class="l2">
-                <div><label class="lbl">Ler a cada</label><select class="input"><option>2 minutos</option><option>5 minutos</option><option>15 minutos</option></select></div>
-                <div><label class="lbl">Importar e-mails como</label><select class="input" disabled><option>Ticket</option></select></div>
-              </div>
-              <div class="inl"><label class="chk"><input type="checkbox" checked> Apagar e-mails processados depois de</label><input class="input" type="number" value="30" style="width:80px"> dias</div>
-              <label class="chk"><input type="checkbox" checked> Marcar e-mail como lido após importar</label>
-              <div class="inl"><label class="chk"><input type="checkbox"> Mover para a pasta</label><input class="input" placeholder="Processados" style="width:180px"></div>
-
-              <div class="sep"></div>
-              <div>
-                <span class="lbl">ABRIR NOVOS TICKETS</span>
+                <span class="lbl">Habilitar a importação de e-mails para a abertura de novos tickets</span>
                 <div class="radios-col">
                   <label><input type="radio" name="ab" checked> De qualquer remetente</label>
-                  <label><input type="radio" name="ab"> Somente de quem já está em Pessoas</label>
-                  <label><input type="radio" name="ab"> De quem está em Pessoas ou do mesmo domínio de uma empresa cadastrada</label>
-                  <label><input type="radio" name="ab"> Não abrir (só incluir ações em tickets existentes)</label>
+                  <label><input type="radio" name="ab"> Somente se o remetente estiver cadastrado como cliente (Pessoas)</label>
+                  <label><input type="radio" name="ab"> Somente se o remetente estiver cadastrado como cliente ou o seu domínio estiver relacionado a uma empresa cadastrada</label>
+                  <label><input type="radio" name="ab"> Não habilitar</label>
                 </div>
+                <p class="nota peq">ⓘ Este parâmetro define se o sistema deve transformar e-mails em tickets ou se deve ignorar novas mensagens. Você pode aceitar e-mails somente se o remetente estiver cadastrado, somente se o domínio do e-mail estiver relacionado a uma empresa cadastrada em Pessoas ou pode aceitar e-mails de qualquer remetente.</p>
               </div>
-              <label class="chk"><input type="checkbox" checked> Habilitar a inclusão de ações em tickets já existentes (respostas no mesmo assunto)</label>
-              <div><label class="lbl">Ignorar e-mails destes remetentes</label><input class="input" placeholder="noreply@, mailer-daemon@"></div>
+            </div>
+
+            <div class="pane" id="a-envio">
+              <div class="notice info">O envio usa a <b>mesma autorização do Google</b> feita em Configurações de recebimento (botão Autorizar com Gmail): as respostas saem pela própria conta e ficam em "Enviados" do Gmail. Não há servidor nem senha para configurar.</div>
+              <div class="l2">
+                <div><label class="lbl">Responder para (opcional)</label><input class="input" placeholder="igual ao endereço da conta"></div>
+                <div><label class="lbl">Cópia oculta de todas as respostas (opcional)</label><input class="input" placeholder="ex.: arquivo@calper.com.br"></div>
+              </div>
+              <div><label class="lbl">Assinatura das respostas</label><textarea class="input">--
+{atendente}
+Calper · Jurídico</textarea></div>
             </div>
           </div>
-          <div class="barra-acoes"><button class="btn">Testar configurações</button><div class="dir"><button class="btn btn-txt">Cancelar</button><button class="btn btn-p">Salvar</button></div></div>
+          <div class="barra-acoes"><button class="btn btn-perigo">Excluir</button><button class="btn btn-txt">Cancelar</button><div class="dir"><button class="btn">Testar configurações</button><button class="btn">Salvar e criar um novo</button><button class="btn btn-p">Salvar</button></div></div>
         </div>
       </section>
 
-      <!-- ============ 3. INTEGRAÇÃO ============ -->
-      <section class="tela" id="t-integ">
-        <div class="bread">Configurações › Integrações › <b>Google Workspace</b> <span style="color:var(--muted)">(só super admin)</span></div>
-        <div class="grade2">
-          <section class="card sec">
-            <h2>Autorizar com Gmail (OAuth)</h2>
-            <p>Com o aplicativo OAuth do portal configurado, todas as contas de e-mail ganham o botão <b>Autorizar com Gmail</b>. É feito uma vez só.</p>
-            <div class="st"><span class="bola pend"></span><span><b>Aplicativo OAuth do portal:</b> ainda não configurado.</span></div>
-            <div><label class="lbl">ID do cliente</label><input class="input" placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com"></div>
-            <div><label class="lbl">Chave secreta do cliente</label><input class="input" type="password" placeholder="GOCSPX-…"><p class="ajuda">Fica guardada no cofre do Supabase; não aparece de novo.</p></div>
-            <div><button class="btn btn-p">Salvar aplicativo</button></div>
-          </section>
+      
           <section class="card sec">
             <h2>Passo a passo para a TI (uma vez)</h2>
             <ol class="passos-ti">
@@ -304,9 +300,7 @@
             </ol>
           </section>
         </div>
-        <details class="card alt"><summary>Alternativa: delegação em todo o domínio (conta de serviço, sem autorizar caixa por caixa)</summary>
-          <p style="color:var(--muted);margin:12px 0 0">Mantida como está hoje: JSON da conta de serviço + escopos iguais aos de Admin › Clientes da API (<code>https://mail.google.com/</code>).</p>
-        </details>
+        
       </section>
     </div>
   </div>
@@ -342,11 +336,15 @@
   document.querySelectorAll('[data-ir]').forEach(e => e.addEventListener('click', () => ir(e.dataset.ir)));
   document.querySelectorAll('.modo button').forEach(b => b.addEventListener('click', () => { document.querySelectorAll('.modo button').forEach(x => x.classList.toggle('on', x === b)); }));
   const estados = {
-    pend: ['pend', 'Autorizar com Gmail', 'Aguardando autorização. Entre no Google com <b>juridico@calper.com.br</b>.'],
-    ok: ['ok', 'Reautorizar com Gmail', 'Autorizado como <b>juridico@calper.com.br</b> · 06/10/2026 16:42 por Wagner Antunes. Teste: caixa lida (128 e-mails).'],
+    pend: ['pend', 'Autorizar com Gmail', 'Ainda não autorizada. Clique e entre no Google com <b>juridico@calper.com.br</b>.'],
+    ok: ['ok', 'Reautorizar com Gmail', 'Autorizado como <b>juridico@calper.com.br</b> em 06/10/2026 16:42: recebimento e envio liberados.'],
     er: ['er', 'Reautorizar com Gmail', 'A autorização foi revogada ou a senha da caixa mudou. Clique em <b>Reautorizar com Gmail</b>.'],
   };
   function estado(k) { const [c, b, t] = estados[k]; $('#st').innerHTML = `<span class="bola ${c}"></span><span>${t}</span>`; $('#b-txt').textContent = b; }
+  document.querySelectorAll('[data-aba]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-aba]').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('#a-princ,#a-receb,#a-envio').forEach(x => x.classList.toggle('on', x.id === 'a-' + b.dataset.aba));
+  }));
   document.querySelectorAll('[data-est]').forEach(b => b.addEventListener('click', () => estado(b.dataset.est)));
   function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 2600); }
   $('#b-autorizar').addEventListener('click', () => { $('#pop-google').classList.remove('oculto'); $('#pop-ret').classList.add('oculto'); $('#pop').classList.add('on'); });
