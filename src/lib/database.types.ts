@@ -406,7 +406,7 @@ export type Database = {
           responder_para: string | null
           senha_mascara: string | null
           senha_segredo_id: string | null
-          setor_id: number
+          setor_id: number | null
           smtp_host: string | null
           smtp_porta: number
           status: string
@@ -453,7 +453,7 @@ export type Database = {
           responder_para?: string | null
           senha_mascara?: string | null
           senha_segredo_id?: string | null
-          setor_id: number
+          setor_id?: number | null
           smtp_host?: string | null
           smtp_porta?: number
           status?: string
@@ -500,7 +500,7 @@ export type Database = {
           responder_para?: string | null
           senha_mascara?: string | null
           senha_segredo_id?: string | null
-          setor_id?: number
+          setor_id?: number | null
           smtp_host?: string | null
           smtp_porta?: number
           status?: string

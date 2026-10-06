@@ -1,5 +1,5 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { CheckCircle2, CircleCheck, CircleX, Mail, MoreVertical, Plus, RefreshCw, XCircle, Info } from "lucide-react";
+import { CheckCircle2, CircleCheck, CircleX, Mail, MoreVertical, Plus, RefreshCw, XCircle, Info, KeyRound } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -10,16 +10,8 @@ import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
 import { formatDateTime } from "../../../utils/dates";
-import {
-  useContasEmail,
-  useContexto,
-  useExcluirContaEmail,
-  useHabilitarContasEmail,
-  useSalvarContaEmail,
-  useSenhaContaEmail,
-  useTestarContaEmail,
-  useAutorizarGoogle,
-} from "../hooks/useAtendimento";
+import { useContasEmail, useContexto, useExcluirContaEmail, useHabilitarContasEmail, useSalvarContaEmail, useSenhaContaEmail, useTestarContaEmail, useAutorizarGoogle, useAppGoogle } from "../hooks/useAtendimento";
+import { AppGoogleDialog } from "./AppGoogleDialog";
 import { contaNova, PROVEDORES, type AbrirTickets, type ContaEmail, type ContaEmailDados, type ProvedorEmail, type VerificacaoEmail } from "../services/email";
 import type { MensagemOAuth } from "./OAuthRetorno";
 import type { Setor } from "../services/tipos";
@@ -68,12 +60,12 @@ export function ContasEmail() {
     const atual = editando === "nova" ? null : (contas.data.find((c) => c.id === editando.id) ?? editando);
     return <FormConta key={atual?.id ?? "nova"} conta={atual} setores={contexto.data.setores} podeEditar={supervisor} onFechar={() => setEditando(null)} onNova={() => setEditando("nova")} onAbrir={(c) => setEditando(c)} />;
   }
-  return <Lista contas={contas.data} supervisor={supervisor} semSetores={contexto.data.setores.length === 0} onAbrir={setEditando} />;
+  return <Lista contas={contas.data} supervisor={supervisor} onAbrir={setEditando} />;
 }
 
 // ---------------------------------------------------------------- Lista
 
-function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail[]; supervisor: boolean; semSetores: boolean; onAbrir: (c: ContaEmail | "nova") => void }) {
+function Lista({ contas, supervisor, onAbrir }: { contas: ContaEmail[]; supervisor: boolean; onAbrir: (c: ContaEmail | "nova") => void }) {
   const ids = useId();
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState<StatusLista | "">("");
@@ -81,12 +73,17 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
   const habilitar = useHabilitarContasEmail();
   const testar = useTestarContaEmail();
   const [testandoTodas, setTestandoTodas] = useState(false);
+  const [appAberto, setAppAberto] = useState(false);
+  const { isSuperAdmin } = useAccess();
+  const app = useAppGoogle();
+  const usaGoogle = contas.length === 0 || contas.some((c) => c.provedor === "google");
+  const appPendente = isSuperAdmin && app.isSuccess && !app.data.clientId && usaGoogle;
 
   const q = busca.trim().toLowerCase();
   const visiveis = useMemo(
     () =>
       contas
-        .filter((c) => q.length < 3 || `${c.nome} ${c.email} ${c.setorNome}`.toLowerCase().includes(q))
+        .filter((c) => q.length < 3 || `${c.nome} ${c.email} ${c.setorNome ?? ""}`.toLowerCase().includes(q))
         .filter((c) => !status || statusDe(c) === status)
         .sort((a, b) => a.email.localeCompare(b.email)),
     [contas, q, status],
@@ -114,7 +111,7 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
     toast.info(`${ok} de ${alvo.length} conta(s) conectada(s)`);
   };
   const exportar = () => {
-    const linhas = [["Nome", "Endereço", "Setor", "Provedor", "Status", "E-mails na fila", "Habilitado"], ...visiveis.map((c) => [c.nome, c.email, c.setorNome, PROVEDORES.find((p) => p.id === c.provedor)?.rotulo ?? c.provedor, STATUS[statusDe(c)].rotulo, String(c.naFila), c.habilitada ? "Sim" : "Não"])];
+    const linhas = [["Nome", "Endereço", "Setor", "Provedor", "Status", "E-mails na fila", "Habilitado"], ...visiveis.map((c) => [c.nome, c.email, c.setorNome ?? "", PROVEDORES.find((p) => p.id === c.provedor)?.rotulo ?? c.provedor, STATUS[statusDe(c)].rotulo, String(c.naFila), c.habilitada ? "Sim" : "Não"])];
     const csv = "﻿" + linhas.map((l) => l.map((v) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -131,7 +128,7 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
           <small>Exibindo {visiveis.length} de um total de {contas.length} registro(s)</small>
         </div>
         {supervisor && (
-          <button type="button" className="btn btn--primary" disabled={semSetores} title={semSetores ? "Cadastre um setor antes" : undefined} onClick={() => onAbrir("nova")}>
+          <button type="button" className="btn btn--primary" onClick={() => onAbrir("nova")}>
             <Plus size={16} aria-hidden="true" />
             Nova conta
           </button>
@@ -146,6 +143,9 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
               <DropdownMenu.Content align="end" sideOffset={4} className="menu">
+                {isSuperAdmin && (
+                  <DropdownMenu.Item className="menu__item" onSelect={() => setAppAberto(true)}><KeyRound size={15} aria-hidden="true" />Aplicativo do Google (chaves)</DropdownMenu.Item>
+                )}
                 <DropdownMenu.Item className="menu__item" onSelect={() => void testarTodas()}><RefreshCw size={15} aria-hidden="true" />Testar todas as contas</DropdownMenu.Item>
                 <DropdownMenu.Item className="menu__item" onSelect={() => lote(true)}><CircleCheck size={15} aria-hidden="true" />Habilitar marcadas</DropdownMenu.Item>
                 <DropdownMenu.Item className="menu__item menu__item--warning" onSelect={() => lote(false)}><CircleX size={15} aria-hidden="true" />Desabilitar marcadas</DropdownMenu.Item>
@@ -171,11 +171,20 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
         </div>
       </div>
 
+      {appPendente && (
+        <div className="em-aviso-app" role="note">
+          <KeyRound size={16} aria-hidden="true" />
+          <span>Para vincular contas do Google, configure uma vez o <b>Aplicativo do Google</b> (ID do cliente e chave secreta). A chave fica oculta e guardada no banco.</span>
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => setAppAberto(true)}>Configurar</button>
+        </div>
+      )}
+      <AppGoogleDialog open={appAberto} onOpenChange={setAppAberto} />
+
       {contas.length === 0 ? (
         <EmptyState
           icon={Mail}
           title="Nenhuma conta de e-mail"
-          description={semSetores ? "Cadastre um setor em Setores e números: cada conta entrega os chamados na fila de um setor." : supervisor ? "Cadastre a primeira conta em Nova conta." : "A supervisão geral ainda não cadastrou contas para os seus setores."}
+          description={supervisor ? "Clique em Nova conta, informe o e-mail que já existe no Google e o setor, e depois em Autorizar com Gmail." : "A supervisão geral ainda não cadastrou contas para os seus setores."}
         />
       ) : (
         <div className="at-tab-wrap">
@@ -207,7 +216,7 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
                     </td>
                     <td>{c.nome}</td>
                     <td>{c.email}</td>
-                    <td><span className="at-tag">{c.setorNome}</span></td>
+                    <td>{c.setorNome ? <span className="at-tag">{c.setorNome}</span> : <span className="em-sem">Sem setor</span>}</td>
                     <td className="em-nowrap">{c.modo === "oauth_google" ? "Gmail (OAuth)"  : (PROVEDORES.find((p) => p.id === c.provedor)?.rotulo ?? c.provedor)}</td>
                     <td><span className={`em-st ${STATUS[st].classe}`} title={c.ultimoErro ?? undefined}>{STATUS[st].rotulo}</span></td>
                     <td className="n">{c.naFila}</td>
@@ -252,7 +261,9 @@ function FormConta({
   onAbrir: (c: ContaEmail) => void;
 }) {
   const ids = useId();
-  const { user } = useAccess();
+  const { user, isSuperAdmin } = useAccess();
+  const appG = useAppGoogle();
+  const appFalta = isSuperAdmin && appG.isSuccess && !appG.data.clientId;
   const salvar = useSalvarContaEmail();
   const salvarSenha = useSenhaContaEmail();
   const testar = useTestarContaEmail();
@@ -260,7 +271,7 @@ function FormConta({
   const autorizar = useAutorizarGoogle();
   const queryClient = useQueryClient();
   const [aba, setAba] = useState<Aba>("principal");
-  const [d, setD] = useState<ContaEmailDados>(() => (conta ? { ...conta } : contaNova(setores[0]?.id ?? null)));
+  const [d, setD] = useState<ContaEmailDados>(() => (conta ? { ...conta } : contaNova(null)));
   const [senha, setSenha] = useState("");
   const ignorar = (conta?.ignorarRemetentes ?? contaNova(null).ignorarRemetentes).join(", ");
   const [erro, setErro] = useState<{ campo?: string; mensagem: string } | null>(null);
@@ -395,15 +406,15 @@ function FormConta({
             </div>
             <div className="em-l2">
               <div className="field">
-                <label className="field__label" htmlFor={`${ids}-setor`}>Setor (fila que recebe os chamados)</label>
+                <label className="field__label" htmlFor={`${ids}-setor`}>Setor (opcional)</label>
                 <select id={`${ids}-setor`} className="input" value={d.setorId ?? ""} onChange={(e) => muda("setorId", e.target.value ? Number(e.target.value) : null)}>
-                  <option value="">Escolha…</option>
+                  <option value="">Sem setor (vincular depois)</option>
                   {setores.map((s) => (
                     <option key={s.id} value={s.id}>{s.nome}</option>
                   ))}
                 </select>
                 {erroDe("setorId")}
-                <span className="field__help">Faz o papel da "Marca" da Movidesk: define a fila, a equipe e o horário dos chamados desta conta.</span>
+                <span className="field__help">Opcional: a conta funciona só com a autorização do Google. O vínculo com setor/equipe pode ser feito depois.</span>
               </div>
               <div className="field">
                 <label className="field__label" htmlFor={`${ids}-rem`}>Nome de exibição do remetente</label>
@@ -459,6 +470,7 @@ function FormConta({
                     <span className="em-st-linha"><span className="em-bola em-bola--pend" aria-hidden="true" /><span>Ainda não autorizada. Clique e entre no Google com <b>{d.email || "o endereço da conta"}</b>.</span></span>
                   )}
                 </div>
+                {appFalta && <p className="em-aviso" role="note">O Aplicativo do Google ainda não foi configurado. {isSuperAdmin ? "Configure em Central Email › Opções › Aplicativo do Google (chaves)." : "Peça ao super admin para configurar (uma vez)."}</p>}
                 <p className="em-nota"><Info size={15} aria-hidden="true" />Este provedor utiliza autenticação segura via OAuth2. Por isso, é necessário conceder ao Portal Atendimento autorização para acessar suas informações, enviar e receber e-mails no seu nome. Essa autorização pode ser revogada a qualquer momento.</p>
               </div>
             ) : (

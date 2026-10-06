@@ -224,15 +224,19 @@ Pedido do Wagner: tirar a integração Google Workspace do projeto, para não de
   - a delegação no domínio (conta de serviço, escopos, `google_testar`);
   - os serviços e hooks do Google Workspace.
 - **No banco não se mexeu** (migração só aditiva): ficam colunas e funções sem uso (`at_google_sa_*`, `at_google_escopos_salvar`, `at_google_oauth_salvar/ler`). Uma limpeza delas precisa da sua autorização explícita.
-- **O aplicativo OAuth do portal** (ID do cliente + chave secreta) virou *secret* das Edge Functions, configurado uma vez, sem tela:
-  ```bash
-  npx supabase secrets set GOOGLE_OAUTH_CLIENT_ID=<COLOQUE_O_ID_AQUI> GOOGLE_OAUTH_CLIENT_SECRET=<COLOQUE_A_CHAVE_AQUI> --project-ref cjofyxgcuvpeeslkfawu
-  ```
+- **Aplicativo do Google (ID do cliente + chave secreta):** cadastrado **dentro do sistema** pelo super admin, uma vez só, em Central Email › Opções › **Aplicativo do Google (chaves)**. Enquanto não houver, aparece o aviso "Configurar" no topo da lista.
+  - A chave secreta fica oculta (campo de senha) e é guardada no cofre do banco (Vault); o ID fica em `at_config`.
+  - Só as Edge Functions leem a chave (`at_google_oauth_ler`). Os secrets `GOOGLE_OAUTH_CLIENT_*` valem só como reserva; não é preciso rodar nenhum comando.
+- **Conta sem setor** (migração `20261006220000`, aditiva):
+  - a conta de e-mail existe só com a autorização do Google;
+  - o setor é opcional ("Sem setor (vincular depois)");
+  - o vínculo com equipe vem depois;
+  - quem cadastra continua sendo quem tem a permissão de supervisão da Gestão de Atendimento (o super admin tem).
 - **Passo a passo da TI, uma vez, no Google Cloud Console** (projeto da Calper):
   1. APIs e serviços › ative a **Gmail API**.
   2. Tela de consentimento OAuth › Tipo de usuário **Interno**. Nome: "Portal Atendimento".
   3. Credenciais › Criar credenciais › **ID do cliente OAuth** › **Aplicativo da Web**. Em URIs de redirecionamento autorizados, cole `https://cjofyxgcuvpeeslkfawu.supabase.co/functions/v1/portal_atendimento-google-oauth`.
-  4. Grave o ID do cliente e a chave secreta com o comando acima.
+  4. Cole o ID do cliente e a chave secreta em Central Email › Opções › Aplicativo do Google (chaves).
 - **Cada conta é autorizada individualmente:**
   1. cadastre a conta (que já existe no Google);
   2. em Configurações de recebimento, clique em **Autorizar com Gmail**;
@@ -243,9 +247,10 @@ Pedido do Wagner: tirar a integração Google Workspace do projeto, para não de
 
 Checklist:
 - [x] Integração Google Workspace removida (tela, menu, serviços, delegação na Edge)
-- [x] Aplicativo OAuth lido de `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`; Edge Functions publicadas
+- [x] Aplicativo do Google cadastrado na própria Central Email (chave oculta, no Vault); Edge Functions leem do banco e foram publicadas
+- [x] Conta de e-mail sem setor: migração 20261006220000 ensaiada e aplicada; "Nova conta" não depende mais de setor
 - [x] Seção renomeada para "Central Email" (menu, título, mockup)
-- [ ] TI criar o ID do cliente OAuth e gravar os secrets
+- [ ] TI criar o ID do cliente OAuth e o super admin colar em Central Email › Opções › Aplicativo do Google
 - [ ] Autorizar a primeira caixa real e testar
 - [ ] F4 leitura automática e F5 envio
 

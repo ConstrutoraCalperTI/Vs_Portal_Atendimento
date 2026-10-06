@@ -2,13 +2,13 @@
 //   testar         {contaId, enviarPara?}  autorização, leitura da pasta e (opcional) e-mail de teste
 //   oauth_iniciar  {contaId, retorno}      URL do "Autorizar com Gmail" (o Google volta em portal_atendimento-google-oauth)
 //   rede           {}                      diagnóstico: o servidor alcança imap.gmail.com:993 e smtp.gmail.com:465?
-// Leitura (F4) e envio (F5) entram aqui como novas ações. Tokens e senhas vêm do Vault; o aplicativo OAuth do
-// Google vem dos secrets GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET.
+// Leitura (F4) e envio (F5) entram aqui como novas ações. Tokens, senhas e a chave do Aplicativo do Google
+// (Central Email › Opções) vêm do Vault.
 
 import { corsHeaders, errorResponse, fromRpcError, json, PortalError, portalContext, type AdminClient } from "../_shared/portal.ts";
 import type { Passo, Socket } from "../_shared/email/conexao.ts";
 import { Linhas } from "../_shared/email/conexao.ts";
-import { APP_GOOGLE_AUSENTE, appGoogle, testarGmailComToken, tokenPorRefresh, urlAutorizacao } from "../_shared/email/gmail.ts";
+import { APP_GOOGLE_AUSENTE, appGoogleDe, testarGmailComToken, tokenPorRefresh, urlAutorizacao } from "../_shared/email/gmail.ts";
 import { testarImap, type Rede } from "../_shared/email/imap.ts";
 import { montarMensagem, novoMessageId } from "../_shared/email/mime.ts";
 import { testarSmtp } from "../_shared/email/smtp.ts";
@@ -30,9 +30,13 @@ async function papel(req: Request): Promise<{ db: AdminClient; callerId: string;
   return { db: admin, callerId: caller.id, email: caller.email ?? "", superAdmin, supervisor: superAdmin || sup.data === true };
 }
 
-/** Aplicativo OAuth do portal (secrets da função). */
-function clienteOAuth(): { clientId: string; clientSecret: string } {
-  const app = appGoogle();
+/** Aplicativo OAuth do portal (Central Email › Aplicativo do Google; chave no Vault). */
+async function clienteOAuth(db: AdminClient): Promise<{ clientId: string; clientSecret: string }> {
+  const app = await appGoogleDe(async () => {
+    const { data, error } = await db.rpc("at_google_oauth_ler");
+    if (error) throw fromRpcError(error);
+    return (data as { client_id: string | null; client_secret: string | null }[] | null)?.[0];
+  });
   if (!app) throw new PortalError("INTEGRATION_NOT_CONFIGURED", APP_GOOGLE_AUSENTE);
   return app;
 }
@@ -80,7 +84,7 @@ Deno.serve(async (req) => {
       if (conta.error) throw fromRpcError(conta.error);
       if (!conta.data) throw new PortalError("NOT_FOUND", "Conta não encontrada.", 404);
       if (conta.data.provedor !== "google") throw new PortalError("INVALID_INPUT", "Autorizar com Gmail só vale para contas do Google Workspace / Gmail.");
-      const { clientId } = clienteOAuth();
+      const { clientId } = await clienteOAuth(eu.db);
       const st = await eu.db.rpc("at_email_oauth_estado_criar", { p_conta: conta.data.id, p_usuario: eu.callerId, p_retorno: String(corpo.retorno ?? "") });
       if (st.error) throw fromRpcError(st.error);
       return json({ url: urlAutorizacao({ clientId, redirectUri: urlRetornoGoogle(), state: st.data as string, caixa: conta.data.email }) });
@@ -112,7 +116,7 @@ Deno.serve(async (req) => {
       if (c.modo === "oauth_google") {
         const refresh = await eu.db.rpc("at_email_oauth_token", { p_conta: c.id });
         if (refresh.error) throw fromRpcError(refresh.error);
-        const app = clienteOAuth();
+        const app = await clienteOAuth(eu.db);
         passos = await testarGmailComToken(
           fetch,
           async () => {

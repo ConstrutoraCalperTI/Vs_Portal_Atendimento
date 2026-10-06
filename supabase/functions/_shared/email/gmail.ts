@@ -1,7 +1,8 @@
 // API do Gmail com OAuth2 por conta ("Autorizar com Gmail", como a Movidesk). Cada caixa é autorizada por quem
 // tem a senha dela; o refresh token fica no Vault e vale para ler e para enviar (escopo https://mail.google.com/).
-// O aplicativo OAuth do portal (ID do cliente + chave secreta) é configurado uma vez pela TI no Google Cloud e
-// fica nos secrets das Edge Functions: GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET. Só HTTPS.
+// O aplicativo OAuth do portal (ID do cliente + chave secreta) é cadastrado uma vez pelo super admin em
+// Central Email › Opções › Aplicativo do Google: o ID fica em at_config e a chave no Vault (lidos só pelo servidor,
+// at_google_oauth_ler). Os secrets GOOGLE_OAUTH_CLIENT_ID/SECRET valem só como reserva. Só HTTPS.
 
 import type { Passo } from "./conexao.ts";
 import { base64url } from "./mime.ts";
@@ -10,14 +11,21 @@ const GMAIL = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 type Fetch = typeof fetch;
 
-/** Aplicativo OAuth do portal, lido dos secrets da função. null = ainda não configurado. */
+/** Reserva: aplicativo OAuth nos secrets da função. null = não configurado ali. */
 export function appGoogle(env: (k: string) => string | undefined = (k) => (globalThis as { Deno?: { env: { get(k: string): string | undefined } } }).Deno?.env.get(k)): { clientId: string; clientSecret: string } | null {
   const clientId = env("GOOGLE_OAUTH_CLIENT_ID")?.trim();
   const clientSecret = env("GOOGLE_OAUTH_CLIENT_SECRET")?.trim();
   return clientId && clientSecret ? { clientId, clientSecret } : null;
 }
 
-export const APP_GOOGLE_AUSENTE = "O aplicativo Google do portal ainda não foi configurado (secrets GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET). Fale com a TI.";
+export const APP_GOOGLE_AUSENTE = "O Aplicativo do Google ainda não foi configurado: Central Email › Opções › Aplicativo do Google (chaves).";
+
+/** Aplicativo OAuth do portal: o cadastrado na Central Email (banco + Vault) e, na falta dele, os secrets. */
+export async function appGoogleDe(ler: () => Promise<{ client_id: string | null; client_secret: string | null } | null | undefined>): Promise<{ clientId: string; clientSecret: string } | null> {
+  const l = await ler();
+  if (l?.client_id && l.client_secret) return { clientId: l.client_id, clientSecret: l.client_secret };
+  return appGoogle();
+}
 
 /** Erro do Google em português, com a causa mais comum de cada código. */
 export function erroGoogle(status: number, corpo: string): string {

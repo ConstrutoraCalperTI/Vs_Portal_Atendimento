@@ -137,6 +137,7 @@ export const useEnviarTeste = () => useMutation({ mutationFn: (p: { numeroId: nu
 // ---------- Central Email ----------
 
 const EMAILS = [...RAIZ, "emails"] as const;
+const APP_GOOGLE = [...RAIZ, "app-google"] as const;
 
 export function useContasEmail() {
   return useQuery({ queryKey: EMAILS, queryFn: () => emailService.lista(), refetchInterval: 60_000 });
@@ -152,5 +153,17 @@ export const useSenhaContaEmail = () => useMudaEmail((p: { id: number; senha: st
 export const useHabilitarContasEmail = () => useMudaEmail((p: { ids: number[]; habilitada: boolean }) => emailService.habilitar(p.ids, p.habilitada));
 export const useExcluirContaEmail = () => useMudaEmail((id: number) => emailService.excluir(id));
 export const useAutorizarGoogle = () => useMutation({ mutationFn: (id: number) => emailService.autorizarGoogle(id) });
+
+export function useAppGoogle() {
+  return useQuery({ queryKey: APP_GOOGLE, queryFn: () => emailService.appGoogle() });
+}
+
+export function useSalvarAppGoogle() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (p: { clientId: string; clientSecret: string }) => emailService.salvarAppGoogle(p.clientId, p.clientSecret),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: APP_GOOGLE }),
+  });
+}
 export const useTestarContaEmail = () => useMudaEmail((p: { id: number; enviarPara?: string }) => emailService.testar(p.id, p.enviarPara));
 
