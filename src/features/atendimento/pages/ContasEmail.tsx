@@ -49,9 +49,9 @@ const statusDe = (c: ContaEmail): StatusLista => {
 
 const ABRIR: { id: AbrirTickets; rotulo: string }[] = [
   { id: "qualquer", rotulo: "De qualquer remetente" },
-  { id: "cliente", rotulo: "Somente se o remetente estiver cadastrado em Pessoas" },
-  { id: "cliente_ou_dominio", rotulo: "Somente se o remetente estiver em Pessoas ou o domínio for de uma empresa cadastrada" },
-  { id: "nao", rotulo: "Não habilitar" },
+  { id: "cliente", rotulo: "Somente de quem já está em Pessoas" },
+  { id: "cliente_ou_dominio", rotulo: "De quem está em Pessoas ou do mesmo domínio de uma empresa cadastrada" },
+  { id: "nao", rotulo: "Não abrir (só incluir ações em tickets existentes)" },
 ];
 
 /** Gestão de Atendimento › Contas de e-mail (estrutura da Movidesk). */
@@ -208,7 +208,7 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
                     <td>{c.nome}</td>
                     <td>{c.email}</td>
                     <td><span className="at-tag">{c.setorNome}</span></td>
-                    <td>{c.modo === "oauth_google" ? "Gmail (OAuth)" : c.modo === "api_google" ? "Google (delegação)" : (PROVEDORES.find((p) => p.id === c.provedor)?.rotulo ?? c.provedor)}</td>
+                    <td className="em-nowrap">{c.modo === "oauth_google" ? "Gmail (OAuth)" : c.modo === "api_google" ? "Google (delegação)" : (PROVEDORES.find((p) => p.id === c.provedor)?.rotulo ?? c.provedor)}</td>
                     <td><span className={`em-st ${STATUS[st].classe}`} title={c.ultimoErro ?? undefined}>{STATUS[st].rotulo}</span></td>
                     <td className="n">{c.naFila}</td>
                     <td>{c.ultimaLeituraEm ? hora(c.ultimaLeituraEm) : "—"}</td>
@@ -262,7 +262,7 @@ function FormConta({
   const [aba, setAba] = useState<Aba>("principal");
   const [d, setD] = useState<ContaEmailDados>(() => (conta ? { ...conta } : contaNova(setores[0]?.id ?? null)));
   const [senha, setSenha] = useState("");
-  const [ignorar, setIgnorar] = useState((conta?.ignorarRemetentes ?? contaNova(null).ignorarRemetentes).join("\n"));
+  const [ignorar, setIgnorar] = useState((conta?.ignorarRemetentes ?? contaNova(null).ignorarRemetentes).join(", "));
   const [erro, setErro] = useState<{ campo?: string; mensagem: string } | null>(null);
   const [enviarPara, setEnviarPara] = useState(user?.email ?? "");
   const [resultado, setResultado] = useState<VerificacaoEmail | null>(conta?.verificacao ?? null);
@@ -370,7 +370,7 @@ function FormConta({
     <section className="card em-form" aria-labelledby={`${ids}-t`}>
       <h2 id={`${ids}-t`} className="visually-hidden">{conta ? conta.nome : "Nova conta de e-mail"}</h2>
       <div className="em-abas" role="tablist" aria-label="Seções da conta">
-        {([["principal", "Principal"], ["receb", "Configurações de recebimento"], ["envio", "Configurações de envio"]] as const).map(([id, rotulo]) => (
+        {([["principal", "Dados da conta"], ["receb", "Configurações de recebimento"], ["envio", "Configurações de envio"]] as const).map(([id, rotulo]) => (
           <button key={id} type="button" role="tab" aria-selected={aba === id} className={`em-aba${aba === id ? " em-aba--on" : ""}`} onClick={() => setAba(id)}>
             {rotulo}
           </button>
@@ -436,22 +436,22 @@ function FormConta({
 
         {aba === "receb" && (
           <div className="em-pane">
-            <Chk id={`${ids}-rh`} rotulo="Habilitar recebimento de e-mails" ajuda="Desmarcado, a conta continua podendo enviar respostas, mas o portal não lê a caixa." checked={d.receberHabilitado} onChange={(v) => muda("receberHabilitado", v)} />
+            <Chk id={`${ids}-rh`} rotulo="Habilitar recebimento de e-mails" checked={d.receberHabilitado} onChange={(v) => muda("receberHabilitado", v)} />
             {google && (
               <div className="field">
-                <span className="field__label">Como o sistema acessa a caixa</span>
-                <div className="em-modo" role="radiogroup" aria-label="Modo de acesso">
+                <span className="field__label">Como conectar esta caixa</span>
+                <div className="em-modo" role="radiogroup" aria-label="Como conectar esta caixa">
                   <button type="button" role="radio" aria-checked={d.modo === "oauth_google"} className={d.modo === "oauth_google" ? "em-modo--on" : undefined} onClick={() => muda("modo", "oauth_google")}>
-                    <b>Autorizar com Gmail (recomendado)</b>
-                    <span>Quem tem a senha da caixa entra no Google e autoriza o portal, como na Movidesk.</span>
+                    <b>Autorizar com Gmail <span className="em-tag-novo">NOVO · PADRÃO</span></b>
+                    <span>Um clique, como na Movidesk.</span>
                   </button>
                   <button type="button" role="radio" aria-checked={d.modo === "api_google"} className={d.modo === "api_google" ? "em-modo--on" : undefined} onClick={() => muda("modo", "api_google")}>
                     <b>Delegação no domínio</b>
-                    <span>A TI autoriza uma conta de serviço para todas as caixas (Integrações › Google Workspace).</span>
+                    <span>Conta de serviço (TI), sem clique por caixa.</span>
                   </button>
                   <button type="button" role="radio" aria-checked={d.modo === "imap_smtp"} className={d.modo === "imap_smtp" ? "em-modo--on" : undefined} onClick={() => muda("modo", "imap_smtp")}>
-                    <b>IMAP/SMTP com senha de app</b>
-                    <span>Exige verificação em 2 etapas na conta e uma senha de app de 16 letras.</span>
+                    <b>IMAP / SMTP</b>
+                    <span>Outros provedores, com senha.</span>
                   </button>
                 </div>
                 {erroDe("modo")}
@@ -459,19 +459,27 @@ function FormConta({
             )}
             {oauth ? (
               <div className="em-oauth">
-                <button type="button" className="em-gbtn" disabled={somenteLeitura || ocupado || autorizar.isPending} onClick={() => void autorizarAgora()}>
-                  <span className="em-gbtn__g" aria-hidden="true">G</span>
-                  <span>{autorizar.isPending ? "Abrindo o Google…" : conta?.oauthEmail ? "Reautorizar com Gmail" : "Autorizar com Gmail"}</span>
-                </button>
+                <div className="em-oauth__topo">
+                  <button type="button" className="em-gbtn" disabled={somenteLeitura || ocupado || autorizar.isPending} onClick={() => void autorizarAgora()}>
+                    <svg className="em-gbtn__g" viewBox="0 0 48 48" aria-hidden="true">
+                      <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.2C12.5 13.7 17.8 9.5 24 9.5z" />
+                      <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z" />
+                      <path fill="#FBBC05" d="M10.6 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6z" />
+                      <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6C6.6 42.6 14.6 48 24 48z" />
+                    </svg>
+                    <span>{autorizar.isPending ? "Abrindo o Google…" : conta?.oauthEmail ? "Reautorizar com Gmail" : "Autorizar com Gmail"}</span>
+                  </button>
+                  {conta?.oauthEmail && conta.status === "falha" && /reautoriz/i.test(conta.ultimoErro ?? "") ? (
+                    <span className="em-st-linha"><span className="em-bola em-bola--er" aria-hidden="true" /><span>A autorização foi revogada ou a senha da caixa mudou. Clique em <b>Reautorizar com Gmail</b>.</span></span>
+                  ) : conta?.oauthEmail ? (
+                    <span className="em-st-linha"><span className="em-bola em-bola--ok" aria-hidden="true" /><span>Autorizado como <b>{conta.oauthEmail}</b>{conta.oauthAutorizadoEm ? ` · ${formatDateTime(conta.oauthAutorizadoEm)}` : ""}{conta.oauthAutorizadoPor ? ` por ${conta.oauthAutorizadoPor}` : ""}.</span></span>
+                  ) : (
+                    <span className="em-st-linha"><span className="em-bola em-bola--pend" aria-hidden="true" /><span>Aguardando autorização. Entre no Google com <b>{d.email || "o endereço da conta"}</b>.</span></span>
+                  )}
+                </div>
                 <p className="em-info">
-                  Este provedor usa autenticação segura via OAuth2. Por isso, é preciso conceder ao Portal Atendimento autorização para ler e enviar e-mails em nome desta caixa. A autorização pode ser revogada a qualquer momento na conta Google.
+                  Abre uma janela do Google. Quem tem a senha da caixa entra e clica em <b>Permitir</b>. O portal confere se é a mesma caixa da conta, guarda a autorização no cofre e já testa a leitura. Não pedimos a senha da caixa.
                 </p>
-                {conta?.oauthEmail ? (
-                  <span className="em-st em-st--ok">Autorizado como {conta.oauthEmail}{conta.oauthAutorizadoEm ? ` · ${formatDateTime(conta.oauthAutorizadoEm)}` : ""}{conta.oauthAutorizadoPor ? ` · por ${conta.oauthAutorizadoPor}` : ""}</span>
-                ) : (
-                  <span className="em-st em-st--aguardando">Ainda não autorizada</span>
-                )}
-                <span className="field__help">Entre no Google com <b>{d.email || "o endereço da conta"}</b> (não com o seu e-mail pessoal). O navegador precisa permitir a janela do Google.</span>
               </div>
             ) : api ? (
               <p className="em-info">A conta usa a chave da conta de serviço salva em <b>Configurações › Integrações › Google Workspace</b>. Não há servidor nem senha para preencher aqui.</p>
@@ -510,15 +518,20 @@ function FormConta({
               </>
             )}
             <hr className="em-sep" />
-            <div className="field">
-              <label className="field__label" htmlFor={`${ids}-pa`}>Caixa para recebimento de e-mails</label>
-              <input id={`${ids}-pa`} className="input" value={d.pasta} onChange={(e) => muda("pasta", e.target.value)} />
-            </div>
-            <div className="em-l3">
+            <div className="em-l2">
               <div className="field">
-                <label className="field__label" htmlFor={`${ids}-ld`}>Importar somente mensagens recebidas a partir de</label>
+                <label className="field__label" htmlFor={`${ids}-pa`}>Caixa para recebimento</label>
+                <input id={`${ids}-pa`} className="input" list={`${ids}-pastas`} value={d.pasta} onChange={(e) => muda("pasta", e.target.value)} placeholder="INBOX" />
+                <datalist id={`${ids}-pastas`}>
+                  <option value="INBOX">INBOX (Caixa de entrada)</option>
+                </datalist>
+              </div>
+              <div className="field">
+                <label className="field__label" htmlFor={`${ids}-ld`}>Importar somente e-mails recebidos a partir de</label>
                 <input id={`${ids}-ld`} className="input" type="date" value={d.lerDesde} onChange={(e) => muda("lerDesde", e.target.value)} />
               </div>
+            </div>
+            <div className="em-l2">
               <div className="field">
                 <label className="field__label" htmlFor={`${ids}-in`}>Ler a cada</label>
                 <select id={`${ids}-in`} className="input" value={d.intervaloMin} onChange={(e) => muda("intervaloMin", Number(e.target.value))}>
@@ -534,25 +547,22 @@ function FormConta({
                 </select>
               </div>
             </div>
-            <div className="em-chk">
+            <div className="em-chk em-chk--inl">
               <input id={`${ids}-ap`} type="checkbox" checked={d.apagarAposDias !== null} onChange={(e) => muda("apagarAposDias", e.target.checked ? 30 : null)} />
-              <div>
-                <label htmlFor={`${ids}-ap`} className="em-inl">
-                  Apagar as mensagens já processadas depois de
-                  <input className="input input--sm" type="number" min={1} max={3650} value={d.apagarAposDias ?? 30} disabled={d.apagarAposDias === null} aria-label="Dias para apagar" onChange={(e) => muda("apagarAposDias", Number(e.target.value))} />
-                  dias
-                </label>
-                {erroDe("apagarAposDias")}
-                <span className="field__help">Apaga da caixa do Google (vai para a lixeira); o chamado e a cópia no portal continuam.</span>
-              </div>
+              <label htmlFor={`${ids}-ap`}>Apagar e-mails processados depois de</label>
+              <input className="input em-inl__num" type="number" min={1} max={3650} value={d.apagarAposDias ?? 30} disabled={d.apagarAposDias === null} aria-label="Dias para apagar" onChange={(e) => muda("apagarAposDias", Number(e.target.value))} />
+              <span>dias</span>
             </div>
-            <Chk id={`${ids}-r1`} rotulo="Marcar e-mail como lido ao importá-lo" ajuda="Marcado, o portal marca a mensagem como lida na caixa ao importá-la." checked={d.marcarLido} onChange={(v) => muda("marcarLido", v)} />
-            <div className="field">
-              <label className="field__label" htmlFor={`${ids}-mv`}>Mover para a pasta depois de importar (opcional)</label>
-              <input id={`${ids}-mv`} className="input" value={d.moverPara} onChange={(e) => muda("moverPara", e.target.value)} placeholder="ex.: Importados pelo portal" />
+            {erroDe("apagarAposDias")}
+            <Chk id={`${ids}-r1`} rotulo="Marcar e-mail como lido após importar" checked={d.marcarLido} onChange={(v) => muda("marcarLido", v)} />
+            <div className="em-chk em-chk--inl">
+              <input id={`${ids}-mvc`} type="checkbox" checked={d.moverPara !== ""} onChange={(e) => muda("moverPara", e.target.checked ? "Processados" : "")} />
+              <label htmlFor={`${ids}-mvc`}>Mover para a pasta</label>
+              <input className="input em-inl__txt" value={d.moverPara} disabled={d.moverPara === ""} aria-label="Pasta de destino" placeholder="Processados" onChange={(e) => muda("moverPara", e.target.value)} />
             </div>
+            <hr className="em-sep" />
             <div className="field">
-              <span className="field__label" id={`${ids}-ab`}>Habilitar a importação de e-mails para a abertura de novos tickets</span>
+              <span className="field__label" id={`${ids}-ab`}>ABRIR NOVOS TICKETS</span>
               <div className="em-radios em-radios--col" role="radiogroup" aria-labelledby={`${ids}-ab`}>
                 {ABRIR.map((o) => (
                   <label key={o.id}>
@@ -561,13 +571,11 @@ function FormConta({
                   </label>
                 ))}
               </div>
-              <span className="field__help">Define se o e-mail vira ticket ou é ignorado: de qualquer remetente, só de quem está em Pessoas, de quem está em Pessoas ou é de um domínio de empresa cadastrada, ou nenhum.</span>
             </div>
-            <Chk id={`${ids}-r2`} rotulo="Habilitar a inclusão de ações em tickets já existentes através da importação de e-mails" ajuda='Marcado, a resposta do cliente vira uma nova ação no ticket (pelo "[#10241]" no assunto e pelo histórico do e-mail). Desmarcado, essas respostas são ignoradas.' checked={d.juntarRespostas} onChange={(v) => muda("juntarRespostas", v)} />
+            <Chk id={`${ids}-r2`} rotulo="Habilitar a inclusão de ações em tickets já existentes (respostas no mesmo assunto)" checked={d.juntarRespostas} onChange={(v) => muda("juntarRespostas", v)} />
             <div className="field">
-              <label className="field__label" htmlFor={`${ids}-ig`}>Ignorar e-mails destes remetentes ou domínios (um por linha)</label>
-              <textarea id={`${ids}-ig`} className="input" rows={4} value={ignorar} onChange={(e) => setIgnorar(e.target.value)} />
-              <span className="field__help">Evita ticket de resposta automática, aviso de entrega e marketing. Vale o começo do endereço (noreply@) ou o domínio (@rdstation.com.br).</span>
+              <label className="field__label" htmlFor={`${ids}-ig`}>Ignorar e-mails destes remetentes</label>
+              <input id={`${ids}-ig`} className="input" value={ignorar} onChange={(e) => setIgnorar(e.target.value)} placeholder="noreply@, mailer-daemon@" />
             </div>
           </div>
         )}

@@ -24,8 +24,9 @@ export function IntegracaoGoogle() {
   return (
     <>
       <OAuthGoogle />
-      <details className="em-alt">
+      <details className="card em-alt">
         <summary>Alternativa: delegação em todo o domínio (conta de serviço, sem autorizar caixa por caixa)</summary>
+        <p className="em-alt__txt">Mantida como está hoje: JSON da conta de serviço + escopos iguais aos de Admin › Clientes da API (<code>https://mail.google.com/</code>).</p>
         <DelegacaoGoogle />
       </details>
     </>
@@ -50,16 +51,14 @@ function OAuthGoogle() {
     <div className="at-grade2">
       <section className="card at-sec" aria-labelledby={`${ids}-t`}>
         <h2 id={`${ids}-t`}>Autorizar com Gmail (OAuth)</h2>
-        <p>Com o aplicativo OAuth do portal configurado, cada conta de e-mail ganha o botão <b>Autorizar com Gmail</b>: quem tem a senha da caixa entra no Google e autoriza, como na Movidesk. O token de cada caixa fica no cofre do Supabase.</p>
-        <div className="zv-passo">
-          <span className={`zv-passo__ic zv-passo__ic--${configurado ? "ok" : "pend"}`} aria-hidden="true">{configurado ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}</span>
-          <div className="zv-passo__txt">
-            <b>Aplicativo OAuth do portal</b>
-            <span>{configurado ? <>ID do cliente: {g.data.oauthClientId}{g.data.oauthDefinidoEm ? ` · ${formatDateTime(g.data.oauthDefinidoEm)}` : ""}. A chave secreta fica no cofre.</> : "Ainda não configurado."}</span>
-          </div>
+        <p>Com o aplicativo OAuth do portal configurado, todas as contas de e-mail ganham o botão <b>Autorizar com Gmail</b>. É feito uma vez só.</p>
+        <div className="em-st-linha">
+          <span className={`em-bola em-bola--${configurado ? "ok" : "pend"}`} aria-hidden="true" />
+          <span><b>Aplicativo OAuth do portal:</b> {configurado ? <>configurado (ID do cliente {g.data.oauthClientId}{g.data.oauthDefinidoEm ? ` · ${formatDateTime(g.data.oauthDefinidoEm)}` : ""}).</> : "ainda não configurado."}</span>
         </div>
         <form
           className="em-pane"
+          autoComplete="off"
           onSubmit={(e) => {
             e.preventDefault();
             setErro(null);
@@ -78,12 +77,13 @@ function OAuthGoogle() {
         >
           <div className="field">
             <label className="field__label" htmlFor={`${ids}-cid`}>ID do cliente</label>
-            <input id={`${ids}-cid`} className="input" value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={g.data.oauthClientId ?? "000000000000-xxxxxxxx.apps.googleusercontent.com"} />
+            <input id={`${ids}-cid`} name="google_oauth_client_id" className="input" autoComplete="off" spellCheck={false} data-1p-ignore data-lpignore="true" value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={g.data.oauthClientId ?? "000000000000-xxxxxxxx.apps.googleusercontent.com"} />
             {erro?.campo === "clientId" && <span className="field__error" role="alert">{erro.mensagem}</span>}
           </div>
           <div className="field">
             <label className="field__label" htmlFor={`${ids}-sec`}>Chave secreta do cliente</label>
-            <input id={`${ids}-sec`} className="input" type="password" autoComplete="off" value={segredo} onChange={(e) => setSegredo(e.target.value)} placeholder={configurado ? "Guardada no cofre. Digite para trocar." : "GOCSPX-…"} />
+            <input id={`${ids}-sec`} name="google_oauth_client_secret" className="input" type="password" autoComplete="new-password" data-1p-ignore data-lpignore="true" value={segredo} onChange={(e) => setSegredo(e.target.value)} placeholder={configurado ? "Guardada no cofre. Digite para trocar." : "GOCSPX-…"} />
+            <span className="field__help">Fica guardada no cofre do Supabase; não aparece de novo.</span>
             {erro?.campo === "clientSecret" && <span className="field__error" role="alert">{erro.mensagem}</span>}
           </div>
           {erro && !erro.campo && <p className="field__error" role="alert">{erro.mensagem}</p>}
@@ -105,11 +105,11 @@ function OAuthGoogle() {
             APIs e serviços › Credenciais › <b>Criar credenciais › ID do cliente OAuth</b> › Tipo <b>Aplicativo da Web</b>. Em <b>URIs de redirecionamento autorizados</b>, cole:
             <span className="em-copiar">
               <code>{redirect}</code>
-              <button type="button" className="icon-btn" aria-label="Copiar URI de redirecionamento" onClick={() => copiar(redirect)}><Copy size={14} aria-hidden="true" /></button>
+              <button type="button" className="btn btn--outline btn--sm" onClick={() => copiar(redirect)}><Copy size={14} aria-hidden="true" />Copiar</button>
             </span>
           </li>
-          <li>Copie o <b>ID do cliente</b> e a <b>Chave secreta do cliente</b> que o Google mostrar e salve ao lado.</li>
-          <li>Em <b>Gestão de Atendimento › Contas de e-mail</b>, abra a conta › Configurações de recebimento › <b>Autorizar com Gmail</b>, entrando no Google com a própria caixa (ex.: cftv@calper.com.br).</li>
+          <li>Copie o <b>ID do cliente</b> e a <b>Chave secreta</b> e salve ao lado.</li>
+          <li>Em cada conta de e-mail: <b>Autorizar com Gmail</b>.</li>
         </ol>
         <p className="at-sec__ajuda">Escopo pedido: <code>https://mail.google.com/</code> (ler, marcar e enviar), o mesmo da Movidesk. A autorização de cada caixa pode ser revogada na conta Google (Segurança › Apps de terceiros) ou pelo Admin.</p>
       </section>
@@ -149,7 +149,7 @@ function DelegacaoGoogle() {
   return (
     <div className="at-grade2">
       <section className="card at-sec" aria-labelledby={`${ids}-t`}>
-        <h2 id={`${ids}-t`}>Google Workspace (Contas de e-mail)</h2>
+        <h2 id={`${ids}-t`}>Delegação em todo o domínio</h2>
         <p>O portal entra como mais um cliente em <b>Delegação em todo o domínio</b> e lê e envia pelas caixas @calper.com.br sem a senha de cada conta. A chave fica no cofre do Supabase.</p>
 
         <div className="zv-passo">
@@ -238,7 +238,7 @@ function DelegacaoGoogle() {
       </section>
 
       <section className="card at-sec" aria-labelledby={`${ids}-ti`}>
-        <h2 id={`${ids}-ti`}>Passo a passo para a TI (uma vez)</h2>
+        <h2 id={`${ids}-ti`}>Passo a passo da delegação (TI)</h2>
         <ol className="em-passos-ti">
           <li><b>Google Cloud Console</b> (no projeto da Calper) › APIs e serviços › ative a <b>Gmail API</b>.</li>
           <li>IAM e administrador › <b>Contas de serviço</b> › crie "portal-atendimento" › aba Chaves › Adicionar chave › <b>JSON</b>. Envie o arquivo no passo 1 ao lado.</li>
