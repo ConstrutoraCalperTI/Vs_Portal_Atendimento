@@ -29,6 +29,7 @@ const Login = lazy(() => import("./features/auth/pages/Login").then((m) => ({ de
 const RedefinirSenha = lazy(() =>
   import("./features/auth/pages/RedefinirSenha").then((m) => ({ default: m.RedefinirSenha })),
 );
+const OAuthRetorno = lazy(() => import("./features/atendimento/pages/OAuthRetorno").then((m) => ({ default: m.OAuthRetorno })));
 const TrocarSenha = lazy(() =>
   import("./features/configuracoes/pages/TrocarSenha").then((m) => ({ default: m.TrocarSenha })),
 );
@@ -59,6 +60,8 @@ function App() {
       {/* Públicas: entrada e destino do link de "Esqueci minha senha". */}
       <Route path={LOGIN_PATH} element={<Standalone><Login /></Standalone>} />
       <Route path="/redefinir-senha" element={<Standalone><RedefinirSenha /></Standalone>} />
+      {/* Fim do "Autorizar com Gmail" (janela aberta pela tela da conta de e-mail). */}
+      <Route path="/oauth/google" element={<Standalone><OAuthRetorno /></Standalone>} />
 
       {/* Autenticado, mas fora do layout: a troca de senha bloqueia o resto do portal. */}
       <Route

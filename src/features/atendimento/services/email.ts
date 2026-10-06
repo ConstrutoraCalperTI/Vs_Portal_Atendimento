@@ -11,7 +11,8 @@ import { esperar, mockContexto } from "./mock";
 // Edge Function <schema>-email. A chave do Google fica em Integrações › Google Workspace.
 
 export type ProvedorEmail = "google" | "outlook" | "exchange" | "yahoo" | "uol" | "bol" | "terra" | "ig" | "ibest" | "manual";
-export type ModoEmail = "api_google" | "imap_smtp";
+export type ModoEmail = "oauth_google" | "api_google" | "imap_smtp";
+export type AbrirTickets = "qualquer" | "cliente" | "cliente_ou_dominio" | "nao";
 
 export interface PassoTeste {
   passo: string;
@@ -52,9 +53,15 @@ export interface ContaEmailDados {
   responderPara: string;
   copiaOculta: string;
   assinatura: string;
+  receberHabilitado: boolean;
+  apagarAposDias: number | null;
+  abrirTickets: AbrirTickets;
 }
 
 export interface ContaEmail extends ContaEmailDados {
+  oauthEmail: string | null;
+  oauthAutorizadoEm: string | null;
+  oauthAutorizadoPor: string | null;
   id: number;
   setorNome: string;
   senhaMascara: string | null;
@@ -72,6 +79,9 @@ export const ESCOPOS_GOOGLE = {
 } as const;
 
 export interface GoogleWorkspace {
+  /** Aplicativo OAuth do "Autorizar com Gmail". */
+  oauthClientId: string | null;
+  oauthDefinidoEm: string | null;
   contaServico: string | null;
   clientId: string | null;
   escopos: string[];
@@ -96,9 +106,10 @@ export const PROVEDORES: { id: ProvedorEmail; rotulo: string; imap: string; smtp
 export function contaNova(setorId: number | null): ContaEmailDados {
   return {
     nome: "", email: "", setorId, nomeRemetente: "", exibirNoEnvio: true, padraoDoSetor: false, usarLogo: false, habilitada: true,
-    provedor: "google", modo: "api_google", imapHost: "imap.gmail.com", imapPorta: 993, imapSeguranca: "ssl", smtpHost: "smtp.gmail.com", smtpPorta: 465,
+    provedor: "google", modo: "oauth_google", imapHost: "imap.gmail.com", imapPorta: 993, imapSeguranca: "ssl", smtpHost: "smtp.gmail.com", smtpPorta: 465,
     usuario: "", pasta: "INBOX", intervaloMin: 1, lerDesde: new Date().toISOString().slice(0, 10), marcarLido: true, moverPara: "",
     juntarRespostas: true, ignorarRemetentes: ["mailer-daemon@", "noreply@", "no-reply@"], responderPara: "", copiaOculta: "", assinatura: "",
+    receberHabilitado: true, apagarAposDias: null, abrirTickets: "qualquer",
   };
 }
 
@@ -109,9 +120,12 @@ export interface EmailService {
   habilitar(ids: number[], habilitada: boolean): Promise<number>;
   excluir(id: number): Promise<void>;
   testar(id: number, enviarPara?: string): Promise<VerificacaoEmail>;
+  /** URL do "Autorizar com Gmail" (abre numa janela; o Google volta para /oauth/google). */
+  autorizarGoogle(id: number): Promise<string>;
   google(): Promise<GoogleWorkspace>;
   salvarChaveGoogle(json: string): Promise<void>;
   salvarEscoposGoogle(escopos: string[]): Promise<void>;
+  salvarOAuthGoogle(clientId: string, clientSecret: string): Promise<void>;
   testarGoogle(email: string): Promise<VerificacaoEmail & { caixa: string }>;
 }
 
@@ -134,10 +148,19 @@ const supabaseEmail: EmailService = {
   habilitar: (ids, habilitada) => rpc<number>("at_email_conta_habilitar", { p_ids: ids, p_habilitada: habilitada }),
   excluir: (id) => rpc<void>("at_email_conta_excluir", { p_id: id }),
   testar: (id, enviarPara) => funcao<VerificacaoEmail>({ acao: "testar", contaId: id, enviarPara: enviarPara ?? null }),
+  async autorizarGoogle(id) {
+    const r = await funcao<{ url: string }>({ acao: "oauth_iniciar", contaId: id, retorno: window.location.origin });
+    return r.url;
+  },
   async google() {
-    const { data, error } = await supabase.from("at_config").select("google_sa_email, google_sa_client_id, google_escopos, google_sa_definido_em, google_verificacao").maybeSingle();
+    const { data, error } = await supabase
+      .from("at_config")
+      .select("google_oauth_client_id, google_oauth_definido_em, google_sa_email, google_sa_client_id, google_escopos, google_sa_definido_em, google_verificacao")
+      .maybeSingle();
     if (error) throw fromPostgrest(error);
     return {
+      oauthClientId: data?.google_oauth_client_id ?? null,
+      oauthDefinidoEm: data?.google_oauth_definido_em ?? null,
       contaServico: data?.google_sa_email ?? null,
       clientId: data?.google_sa_client_id ?? null,
       escopos: data?.google_escopos ?? [...ESCOPOS_GOOGLE.completo],
@@ -147,6 +170,7 @@ const supabaseEmail: EmailService = {
   },
   salvarChaveGoogle: (json) => rpc<void>("at_google_sa_salvar", { p_json: json }),
   salvarEscoposGoogle: (escopos) => rpc<void>("at_google_escopos_salvar", { p_escopos: escopos }),
+  salvarOAuthGoogle: (clientId, clientSecret) => rpc<void>("at_google_oauth_salvar", { p_client_id: clientId, p_client_secret: clientSecret }),
   testarGoogle: (email) => funcao<VerificacaoEmail & { caixa: string }>({ acao: "google_testar", email }),
 };
 
@@ -158,7 +182,8 @@ const setorPorNome = (nome: string) => ({ Financeiro: 1, "Relacionamento com o c
 const base = (id: number, nome: string, email: string, setor: string, extra: Partial<ContaMock> = {}): ContaMock => ({
   ...contaNova(setorPorNome(setor)),
   id, nome, email, setorNome: setor, nomeRemetente: `Calper · ${nome}`, senhaMascara: null, status: "conectado", ultimoErro: null,
-  ultimaLeituraEm: new Date(Date.now() - 60_000).toISOString(), verificacao: null, naFila: 0, senha: null, historico: true, ...extra,
+  ultimaLeituraEm: new Date(Date.now() - 60_000).toISOString(), verificacao: null, naFila: 0, senha: null, historico: true,
+  oauthEmail: email, oauthAutorizadoEm: new Date(Date.now() - 86_400_000).toISOString(), oauthAutorizadoPor: "Wagner Antunes", ...extra,
 });
 const contas: ContaMock[] = [
   base(1, "CFTV", "cftv@calper.com.br", "Assistência técnica", { padraoDoSetor: true }),
@@ -168,10 +193,10 @@ const contas: ContaMock[] = [
     provedor: "manual", modo: "imap_smtp", imapHost: "imap.exemplo.com.br", smtpHost: "smtp.exemplo.com.br", usuario: "dp@calper.com.br",
     senhaMascara: "••••••••4f", senha: "x", status: "falha", ultimoErro: "Invalid credentials (Failure)", ultimaLeituraEm: new Date(Date.now() - 7_200_000).toISOString(),
   }),
-  base(5, "Jurídico", "juridico@calper.com.br", "Relacionamento com o cliente", { status: "aguardando", ultimaLeituraEm: null, historico: false }),
+  base(5, "Jurídico", "juridico@calper.com.br", "Relacionamento com o cliente", { status: "aguardando", ultimaLeituraEm: null, historico: false, oauthEmail: null, oauthAutorizadoEm: null, oauthAutorizadoPor: null }),
   base(6, "chamados.sistemas@calper.com.br", "chamados.sistemas@calper.com.br", "Assistência técnica", { habilitada: false, status: "aguardando", ultimaLeituraEm: null }),
 ];
-const google: GoogleWorkspace = { contaServico: null, clientId: null, escopos: [...ESCOPOS_GOOGLE.completo], definidoEm: null, verificacao: null };
+const google: GoogleWorkspace = { oauthClientId: null, oauthDefinidoEm: null, contaServico: null, clientId: null, escopos: [...ESCOPOS_GOOGLE.completo], definidoEm: null, verificacao: null };
 
 async function contexto() {
   return mockContexto.contexto();
@@ -194,17 +219,19 @@ const mockEmail: EmailService = {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ServiceError("INVALID_INPUT", "Endereço de e-mail inválido.", "email");
     if (contas.some((c) => c.email === email && c.id !== p.id)) throw new ServiceError("DUPLICATE", "Já existe uma conta com esse endereço.", "email");
     if (!p.setorId) throw new ServiceError("INVALID_INPUT", "Escolha o setor que recebe os chamados desta conta.", "setorId");
-    if (p.modo === "api_google" && p.provedor !== "google") throw new ServiceError("INVALID_INPUT", "A conexão por API só existe para contas do Google Workspace.", "modo");
+    if (p.modo !== "imap_smtp" && p.provedor !== "google") throw new ServiceError("INVALID_INPUT", "A autorização pelo Google só existe para contas do Google Workspace / Gmail.", "modo");
     if (p.modo === "imap_smtp" && (!p.imapHost.trim() || !p.smtpHost.trim())) throw new ServiceError("INVALID_INPUT", "Informe os servidores de entrada (IMAP) e de saída (SMTP).", "imapHost");
     if ([25, 587].includes(p.smtpPorta)) throw new ServiceError("INVALID_INPUT", "Use a porta 465 (SSL): o servidor do portal bloqueia as portas 25 e 587.", "smtpPorta");
     const setorNome = (await contexto()).setores.find((s) => s.id === p.setorId)?.nome ?? "—";
     if (p.padraoDoSetor) for (const c of contas) if (c.setorId === p.setorId && c.id !== p.id) c.padraoDoSetor = false;
     const existente = contas.find((c) => c.id === p.id);
     if (existente) {
-      Object.assign(existente, p, { email, setorNome, status: existente.modo !== p.modo ? "aguardando" : existente.status });
+      // A autorização do Google não vem do formulário (como no banco, a gravação não mexe nela).
+      const { oauthEmail, oauthAutorizadoEm, oauthAutorizadoPor } = existente;
+      Object.assign(existente, p, { email, setorNome, status: existente.modo !== p.modo ? "aguardando" : existente.status, oauthEmail, oauthAutorizadoEm, oauthAutorizadoPor });
       return existente.id;
     }
-    const nova: ContaMock = { ...p, id: ++seq, email, setorNome, senhaMascara: null, status: "aguardando", ultimoErro: null, ultimaLeituraEm: null, verificacao: null, naFila: 0, senha: null, historico: false };
+    const nova: ContaMock = { ...p, id: ++seq, email, setorNome, senhaMascara: null, status: "aguardando", ultimoErro: null, ultimaLeituraEm: null, verificacao: null, naFila: 0, senha: null, historico: false, oauthEmail: null, oauthAutorizadoEm: null, oauthAutorizadoPor: null };
     contas.push(nova);
     return nova.id;
   },
@@ -238,7 +265,14 @@ const mockEmail: EmailService = {
     const c = contas.find((x) => x.id === id);
     if (!c) throw new ServiceError("NOT_FOUND", "Conta não encontrada.");
     const passos: PassoTeste[] =
-      c.modo === "api_google"
+      c.modo === "oauth_google"
+        ? c.oauthEmail
+          ? [
+              { passo: "Autorização do Google (OAuth)", ok: true, detalhe: `autorizado como ${c.oauthEmail}` },
+              { passo: `Leitura da pasta ${c.pasta}`, ok: true, detalhe: "128 e-mails, 3 não lidos" },
+            ]
+          : [{ passo: "Autorização do Google (OAuth)", ok: false, detalhe: "A caixa ainda não foi autorizada: clique em Autorizar com Gmail." }]
+        : c.modo === "api_google"
         ? google.contaServico
           ? [
               { passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${c.email}` },
@@ -256,6 +290,15 @@ const mockEmail: EmailService = {
     c.ultimoErro = ok ? null : (passos.find((p) => !p.ok)?.detalhe ?? null);
     return c.verificacao;
   },
+  async autorizarGoogle(id) {
+    await esperar(300);
+    await exigirSupervisor();
+    const c = contas.find((x) => x.id === id);
+    if (!c) throw new ServiceError("NOT_FOUND", "Conta não encontrada.");
+    // Modo simulado: finge o vaivém com o Google e já volta autorizado.
+    Object.assign(c, { modo: "oauth_google", oauthEmail: c.email, oauthAutorizadoEm: new Date().toISOString(), oauthAutorizadoPor: "Você", status: "conectado", ultimoErro: null });
+    return `${window.location.origin}/oauth/google?${new URLSearchParams({ status: "ok", conta: String(id), email: c.email }).toString()}`;
+  },
   async google() {
     await esperar();
     return structuredClone(google);
@@ -272,6 +315,12 @@ const mockEmail: EmailService = {
       throw new ServiceError("INVALID_INPUT", "O JSON precisa ser de uma conta de serviço (type, client_email e private_key).", "chave");
     }
     Object.assign(google, { contaServico: j.client_email, clientId: j.client_id ?? null, definidoEm: new Date().toISOString(), verificacao: null });
+  },
+  async salvarOAuthGoogle(clientId, clientSecret) {
+    await esperar();
+    if (!/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(clientId.trim())) throw new ServiceError("INVALID_INPUT", "ID do cliente inválido: termina em .apps.googleusercontent.com.", "clientId");
+    if (!clientSecret.trim() && !google.oauthClientId) throw new ServiceError("INVALID_INPUT", "Informe a chave secreta do cliente.", "clientSecret");
+    Object.assign(google, { oauthClientId: clientId.trim(), oauthDefinidoEm: new Date().toISOString() });
   },
   async salvarEscoposGoogle(escopos) {
     await esperar();

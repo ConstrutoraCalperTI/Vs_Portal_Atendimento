@@ -1,5 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { CheckCircle2, CircleCheck, CircleX, Mail, MoreVertical, Plus, RefreshCw, XCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
@@ -17,8 +18,10 @@ import {
   useSalvarContaEmail,
   useSenhaContaEmail,
   useTestarContaEmail,
+  useAutorizarGoogle,
 } from "../hooks/useAtendimento";
-import { contaNova, PROVEDORES, type ContaEmail, type ContaEmailDados, type ProvedorEmail, type VerificacaoEmail } from "../services/email";
+import { contaNova, PROVEDORES, type AbrirTickets, type ContaEmail, type ContaEmailDados, type ProvedorEmail, type VerificacaoEmail } from "../services/email";
+import type { MensagemOAuth } from "./OAuthRetorno";
 import type { Setor } from "../services/tipos";
 import { hora } from "./util";
 import "./Atendimento.css";
@@ -26,13 +29,30 @@ import "./Atendimento.css";
 const msgErro = (e: unknown, padrao: string) => (e instanceof ServiceError ? e.message : padrao);
 
 type Status = "conectado" | "falha" | "aguardando" | "inativo";
-const STATUS: Record<Status, { rotulo: string; classe: string }> = {
+type StatusLista = Status | "autorizar" | "reautorizar";
+const STATUS: Record<StatusLista, { rotulo: string; classe: string }> = {
   conectado: { rotulo: "Conectado", classe: "em-st--ok" },
   falha: { rotulo: "Falha na conexão", classe: "em-st--falha" },
   aguardando: { rotulo: "Aguardando teste", classe: "em-st--aguardando" },
   inativo: { rotulo: "Inativo", classe: "em-st--inativo" },
+  autorizar: { rotulo: "Aguardando autorização", classe: "em-st--aguardando" },
+  reautorizar: { rotulo: "Reautorizar", classe: "em-st--falha" },
 };
-const statusDe = (c: ContaEmail): Status => (c.habilitada ? c.status : "inativo");
+const statusDe = (c: ContaEmail): StatusLista => {
+  if (!c.habilitada) return "inativo";
+  if (c.modo === "oauth_google") {
+    if (!c.oauthEmail) return "autorizar";
+    if (c.status === "falha" && /reautoriz/i.test(c.ultimoErro ?? "")) return "reautorizar";
+  }
+  return c.status;
+};
+
+const ABRIR: { id: AbrirTickets; rotulo: string }[] = [
+  { id: "qualquer", rotulo: "De qualquer remetente" },
+  { id: "cliente", rotulo: "Somente se o remetente estiver cadastrado em Pessoas" },
+  { id: "cliente_ou_dominio", rotulo: "Somente se o remetente estiver em Pessoas ou o domínio for de uma empresa cadastrada" },
+  { id: "nao", rotulo: "Não habilitar" },
+];
 
 /** Gestão de Atendimento › Contas de e-mail (estrutura da Movidesk). */
 export function ContasEmail() {
@@ -56,7 +76,7 @@ export function ContasEmail() {
 function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail[]; supervisor: boolean; semSetores: boolean; onAbrir: (c: ContaEmail | "nova") => void }) {
   const ids = useId();
   const [busca, setBusca] = useState("");
-  const [status, setStatus] = useState<Status | "">("");
+  const [status, setStatus] = useState<StatusLista | "">("");
   const [marcadas, setMarcadas] = useState<Set<number>>(new Set());
   const habilitar = useHabilitarContasEmail();
   const testar = useTestarContaEmail();
@@ -142,9 +162,9 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
         </div>
         <div>
           <label className="visually-hidden" htmlFor={`${ids}-st`}>Status</label>
-          <select id={`${ids}-st`} className="input" value={status} onChange={(e) => setStatus(e.target.value as Status | "")}>
+          <select id={`${ids}-st`} className="input" value={status} onChange={(e) => setStatus(e.target.value as StatusLista | "")}>
             <option value="">Todos os status</option>
-            {(Object.keys(STATUS) as Status[]).map((s) => (
+            {(Object.keys(STATUS) as StatusLista[]).map((s) => (
               <option key={s} value={s}>{STATUS[s].rotulo}</option>
             ))}
           </select>
@@ -188,7 +208,7 @@ function Lista({ contas, supervisor, semSetores, onAbrir }: { contas: ContaEmail
                     <td>{c.nome}</td>
                     <td>{c.email}</td>
                     <td><span className="at-tag">{c.setorNome}</span></td>
-                    <td>{c.modo === "api_google" ? "Google (API)" : (PROVEDORES.find((p) => p.id === c.provedor)?.rotulo ?? c.provedor)}</td>
+                    <td>{c.modo === "oauth_google" ? "Gmail (OAuth)" : c.modo === "api_google" ? "Google (delegação)" : (PROVEDORES.find((p) => p.id === c.provedor)?.rotulo ?? c.provedor)}</td>
                     <td><span className={`em-st ${STATUS[st].classe}`} title={c.ultimoErro ?? undefined}>{STATUS[st].rotulo}</span></td>
                     <td className="n">{c.naFila}</td>
                     <td>{c.ultimaLeituraEm ? hora(c.ultimaLeituraEm) : "—"}</td>
@@ -237,6 +257,8 @@ function FormConta({
   const salvarSenha = useSenhaContaEmail();
   const testar = useTestarContaEmail();
   const excluir = useExcluirContaEmail();
+  const autorizar = useAutorizarGoogle();
+  const queryClient = useQueryClient();
   const [aba, setAba] = useState<Aba>("principal");
   const [d, setD] = useState<ContaEmailDados>(() => (conta ? { ...conta } : contaNova(setores[0]?.id ?? null)));
   const [senha, setSenha] = useState("");
@@ -250,13 +272,28 @@ function FormConta({
 
   useEffect(() => setResultado(conta?.verificacao ?? null), [conta?.verificacao]);
 
+  // Resposta da janela do Google (rota /oauth/google): atualiza a lista e mostra o resultado.
+  useEffect(() => {
+    const ouvir = (ev: MessageEvent<MensagemOAuth>) => {
+      if (ev.origin !== window.location.origin || ev.data?.tipo !== "google-oauth") return;
+      void queryClient.invalidateQueries({ queryKey: ["atendimento", "emails"] });
+      if (ev.data.status === "ok") toast.success(`Conta autorizada como ${ev.data.email ?? ""}`);
+      else toast.error(ev.data.msg ?? "O Google não concluiu a autorização.");
+    };
+    window.addEventListener("message", ouvir);
+    return () => window.removeEventListener("message", ouvir);
+  }, [queryClient]);
+
   const muda = <K extends keyof ContaEmailDados>(k: K, v: ContaEmailDados[K]) => setD((x) => ({ ...x, [k]: v }));
   const provedor = PROVEDORES.find((p) => p.id === d.provedor)!;
   const google = d.provedor === "google";
+  const oauth = google && d.modo === "oauth_google";
   const api = google && d.modo === "api_google";
+  /** Lê e envia pelo Google (OAuth ou delegação): sem servidor nem senha. */
+  const viaGoogle = oauth || api;
   const trocarProvedor = (p: ProvedorEmail) => {
     const pr = PROVEDORES.find((x) => x.id === p)!;
-    setD((x) => ({ ...x, provedor: p, modo: p === "google" ? x.modo : "imap_smtp", imapHost: pr.imap, smtpHost: pr.smtp, imapPorta: 993, smtpPorta: 465, imapSeguranca: "ssl" }));
+    setD((x) => ({ ...x, provedor: p, modo: p === "google" ? (x.modo === "imap_smtp" ? "oauth_google" : x.modo) : "imap_smtp", imapHost: pr.imap, smtpHost: pr.smtp, imapPorta: 993, smtpPorta: 465, imapSeguranca: "ssl" }));
   };
   const erroDe = (campo: string) => (erro?.campo === campo ? <span className="field__error" role="alert">{erro.mensagem}</span> : null);
 
@@ -270,7 +307,7 @@ function FormConta({
         usuario: d.usuario || d.email,
         ignorarRemetentes: ignorar.split(/\n|,|;/).map((x) => x.trim()).filter(Boolean),
       });
-      if (senha && !api) await salvarSenha.mutateAsync({ id, senha });
+      if (senha && !viaGoogle) await salvarSenha.mutateAsync({ id, senha });
       setSenha("");
       return id;
     } catch (e) {
@@ -280,6 +317,26 @@ function FormConta({
         else if (e.field) setAba("principal");
       } else toast.error("Não foi possível salvar a conta.");
       return null;
+    }
+  };
+
+  /** Salva, pede a URL ao servidor e abre o Google numa janela (como a Movidesk). */
+  const autorizarAgora = async () => {
+    // A janela é aberta já no clique: aberta depois de um await, o navegador a bloquearia como pop-up.
+    const janela = window.open("about:blank", "google-oauth", "width=520,height=700");
+    const id = await gravar();
+    if (!id) {
+      janela?.close();
+      return;
+    }
+    try {
+      const url = await autorizar.mutateAsync(id);
+      if (janela && !janela.closed) janela.location.href = url;
+      else window.location.href = url;
+      if (!conta) onAbrir({ ...(d as ContaEmail), id });
+    } catch (e) {
+      janela?.close();
+      toast.error(msgErro(e, "Não foi possível abrir a autorização do Google."));
     }
   };
 
@@ -379,13 +436,18 @@ function FormConta({
 
         {aba === "receb" && (
           <div className="em-pane">
+            <Chk id={`${ids}-rh`} rotulo="Habilitar recebimento de e-mails" ajuda="Desmarcado, a conta continua podendo enviar respostas, mas o portal não lê a caixa." checked={d.receberHabilitado} onChange={(v) => muda("receberHabilitado", v)} />
             {google && (
               <div className="field">
                 <span className="field__label">Como o sistema acessa a caixa</span>
                 <div className="em-modo" role="radiogroup" aria-label="Modo de acesso">
+                  <button type="button" role="radio" aria-checked={d.modo === "oauth_google"} className={d.modo === "oauth_google" ? "em-modo--on" : undefined} onClick={() => muda("modo", "oauth_google")}>
+                    <b>Autorizar com Gmail (recomendado)</b>
+                    <span>Quem tem a senha da caixa entra no Google e autoriza o portal, como na Movidesk.</span>
+                  </button>
                   <button type="button" role="radio" aria-checked={d.modo === "api_google"} className={d.modo === "api_google" ? "em-modo--on" : undefined} onClick={() => muda("modo", "api_google")}>
-                    <b>Conexão Google (recomendado)</b>
-                    <span>Sem senha: a TI autoriza o portal uma vez no Google Workspace e ele lê e envia por API.</span>
+                    <b>Delegação no domínio</b>
+                    <span>A TI autoriza uma conta de serviço para todas as caixas (Integrações › Google Workspace).</span>
                   </button>
                   <button type="button" role="radio" aria-checked={d.modo === "imap_smtp"} className={d.modo === "imap_smtp" ? "em-modo--on" : undefined} onClick={() => muda("modo", "imap_smtp")}>
                     <b>IMAP/SMTP com senha de app</b>
@@ -395,7 +457,23 @@ function FormConta({
                 {erroDe("modo")}
               </div>
             )}
-            {api ? (
+            {oauth ? (
+              <div className="em-oauth">
+                <button type="button" className="em-gbtn" disabled={somenteLeitura || ocupado || autorizar.isPending} onClick={() => void autorizarAgora()}>
+                  <span className="em-gbtn__g" aria-hidden="true">G</span>
+                  <span>{autorizar.isPending ? "Abrindo o Google…" : conta?.oauthEmail ? "Reautorizar com Gmail" : "Autorizar com Gmail"}</span>
+                </button>
+                <p className="em-info">
+                  Este provedor usa autenticação segura via OAuth2. Por isso, é preciso conceder ao Portal Atendimento autorização para ler e enviar e-mails em nome desta caixa. A autorização pode ser revogada a qualquer momento na conta Google.
+                </p>
+                {conta?.oauthEmail ? (
+                  <span className="em-st em-st--ok">Autorizado como {conta.oauthEmail}{conta.oauthAutorizadoEm ? ` · ${formatDateTime(conta.oauthAutorizadoEm)}` : ""}{conta.oauthAutorizadoPor ? ` · por ${conta.oauthAutorizadoPor}` : ""}</span>
+                ) : (
+                  <span className="em-st em-st--aguardando">Ainda não autorizada</span>
+                )}
+                <span className="field__help">Entre no Google com <b>{d.email || "o endereço da conta"}</b> (não com o seu e-mail pessoal). O navegador precisa permitir a janela do Google.</span>
+              </div>
+            ) : api ? (
               <p className="em-info">A conta usa a chave da conta de serviço salva em <b>Configurações › Integrações › Google Workspace</b>. Não há servidor nem senha para preencher aqui.</p>
             ) : (
               <>
@@ -410,7 +488,7 @@ function FormConta({
                     <input id={`${ids}-ip`} className="input" type="number" value={d.imapPorta} onChange={(e) => muda("imapPorta", Number(e.target.value))} />
                   </div>
                   <div className="field">
-                    <label className="field__label" htmlFor={`${ids}-is`}>Segurança</label>
+                    <label className="field__label" htmlFor={`${ids}-is`}>Mecanismo de segurança</label>
                     <select id={`${ids}-is`} className="input" value={d.imapSeguranca} onChange={(e) => muda("imapSeguranca", e.target.value as "ssl" | "starttls")}>
                       <option value="ssl">SSL/TLS</option>
                       <option value="starttls">STARTTLS</option>
@@ -432,10 +510,14 @@ function FormConta({
               </>
             )}
             <hr className="em-sep" />
+            <div className="field">
+              <label className="field__label" htmlFor={`${ids}-pa`}>Caixa para recebimento de e-mails</label>
+              <input id={`${ids}-pa`} className="input" value={d.pasta} onChange={(e) => muda("pasta", e.target.value)} />
+            </div>
             <div className="em-l3">
               <div className="field">
-                <label className="field__label" htmlFor={`${ids}-pa`}>Pasta a ler</label>
-                <input id={`${ids}-pa`} className="input" value={d.pasta} onChange={(e) => muda("pasta", e.target.value)} />
+                <label className="field__label" htmlFor={`${ids}-ld`}>Importar somente mensagens recebidas a partir de</label>
+                <input id={`${ids}-ld`} className="input" type="date" value={d.lerDesde} onChange={(e) => muda("lerDesde", e.target.value)} />
               </div>
               <div className="field">
                 <label className="field__label" htmlFor={`${ids}-in`}>Ler a cada</label>
@@ -446,28 +528,54 @@ function FormConta({
                 </select>
               </div>
               <div className="field">
-                <label className="field__label" htmlFor={`${ids}-ld`}>Ler a partir de</label>
-                <input id={`${ids}-ld`} className="input" type="date" value={d.lerDesde} onChange={(e) => muda("lerDesde", e.target.value)} />
+                <label className="field__label" htmlFor={`${ids}-ic`}>Importar e-mails como</label>
+                <select id={`${ids}-ic`} className="input" value="ticket" disabled>
+                  <option value="ticket">Ticket</option>
+                </select>
               </div>
             </div>
-            <Chk id={`${ids}-r1`} rotulo="Marcar como lido na caixa depois de importar" checked={d.marcarLido} onChange={(v) => muda("marcarLido", v)} />
+            <div className="em-chk">
+              <input id={`${ids}-ap`} type="checkbox" checked={d.apagarAposDias !== null} onChange={(e) => muda("apagarAposDias", e.target.checked ? 30 : null)} />
+              <div>
+                <label htmlFor={`${ids}-ap`} className="em-inl">
+                  Apagar as mensagens já processadas depois de
+                  <input className="input input--sm" type="number" min={1} max={3650} value={d.apagarAposDias ?? 30} disabled={d.apagarAposDias === null} aria-label="Dias para apagar" onChange={(e) => muda("apagarAposDias", Number(e.target.value))} />
+                  dias
+                </label>
+                {erroDe("apagarAposDias")}
+                <span className="field__help">Apaga da caixa do Google (vai para a lixeira); o chamado e a cópia no portal continuam.</span>
+              </div>
+            </div>
+            <Chk id={`${ids}-r1`} rotulo="Marcar e-mail como lido ao importá-lo" ajuda="Marcado, o portal marca a mensagem como lida na caixa ao importá-la." checked={d.marcarLido} onChange={(v) => muda("marcarLido", v)} />
             <div className="field">
               <label className="field__label" htmlFor={`${ids}-mv`}>Mover para a pasta depois de importar (opcional)</label>
               <input id={`${ids}-mv`} className="input" value={d.moverPara} onChange={(e) => muda("moverPara", e.target.value)} placeholder="ex.: Importados pelo portal" />
             </div>
-            <Chk id={`${ids}-r2`} rotulo="Juntar respostas ao mesmo chamado" ajuda='Pelo número no assunto ("[#10241] …") e pelo histórico do e-mail: a resposta do cliente entra no chamado em vez de abrir outro.' checked={d.juntarRespostas} onChange={(v) => muda("juntarRespostas", v)} />
+            <div className="field">
+              <span className="field__label" id={`${ids}-ab`}>Habilitar a importação de e-mails para a abertura de novos tickets</span>
+              <div className="em-radios em-radios--col" role="radiogroup" aria-labelledby={`${ids}-ab`}>
+                {ABRIR.map((o) => (
+                  <label key={o.id}>
+                    <input type="radio" name={`${ids}-ab`} checked={d.abrirTickets === o.id} onChange={() => muda("abrirTickets", o.id)} />
+                    {o.rotulo}
+                  </label>
+                ))}
+              </div>
+              <span className="field__help">Define se o e-mail vira ticket ou é ignorado: de qualquer remetente, só de quem está em Pessoas, de quem está em Pessoas ou é de um domínio de empresa cadastrada, ou nenhum.</span>
+            </div>
+            <Chk id={`${ids}-r2`} rotulo="Habilitar a inclusão de ações em tickets já existentes através da importação de e-mails" ajuda='Marcado, a resposta do cliente vira uma nova ação no ticket (pelo "[#10241]" no assunto e pelo histórico do e-mail). Desmarcado, essas respostas são ignoradas.' checked={d.juntarRespostas} onChange={(v) => muda("juntarRespostas", v)} />
             <div className="field">
               <label className="field__label" htmlFor={`${ids}-ig`}>Ignorar e-mails destes remetentes ou domínios (um por linha)</label>
               <textarea id={`${ids}-ig`} className="input" rows={4} value={ignorar} onChange={(e) => setIgnorar(e.target.value)} />
-              <span className="field__help">Evita chamado de resposta automática, aviso de entrega e marketing. Vale o começo do endereço (noreply@) ou o domínio (@rdstation.com.br).</span>
+              <span className="field__help">Evita ticket de resposta automática, aviso de entrega e marketing. Vale o começo do endereço (noreply@) ou o domínio (@rdstation.com.br).</span>
             </div>
           </div>
         )}
 
         {aba === "envio" && (
           <div className="em-pane">
-            {api ? (
-              <p className="em-info">Com a <b>Conexão Google</b>, o envio sai pela própria conta e fica em "Enviados" do Gmail. Não há servidor nem senha para configurar.</p>
+            {viaGoogle ? (
+              <p className="em-info">Pelo Google, o envio sai pela própria conta e fica em "Enviados" do Gmail. Não há servidor nem senha para configurar.</p>
             ) : (
               <>
                 <div className="em-l3">

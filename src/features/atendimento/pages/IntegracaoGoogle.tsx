@@ -6,7 +6,8 @@ import { formatDateTime } from "../../../utils/dates";
 import { useAccess } from "../../configuracoes/access/useAccess";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
-import { useGoogleWorkspace, useSalvarChaveGoogle, useSalvarEscoposGoogle, useTestarGoogle } from "../hooks/useAtendimento";
+import { edgeFunction } from "../../../config/app";
+import { useGoogleWorkspace, useSalvarChaveGoogle, useSalvarEscoposGoogle, useSalvarOAuthGoogle, useTestarGoogle } from "../hooks/useAtendimento";
 import { ESCOPOS_GOOGLE } from "../services/email";
 import "./Atendimento.css";
 
@@ -14,11 +15,110 @@ const msgErro = (e: unknown, padrao: string) => (e instanceof ServiceError ? e.m
 const igual = (a: readonly string[], b: readonly string[]) => [...a].sort().join(",") === [...b].sort().join(",");
 
 /**
- * Configurações › Integrações › Google Workspace (super admin). A Calper usa a Delegação em todo o domínio
- * (Admin › Segurança › Controles de API › Clientes da API): o portal entra como mais um cliente da lista, com
- * o Client ID da conta de serviço e os MESMOS escopos que pede ao Google.
+ * Configurações › Integrações › Google Workspace (super admin).
+ * 1) Aplicativo OAuth do "Autorizar com Gmail" (recomendado, como a Movidesk): cada conta é autorizada por quem
+ *    tem a senha da caixa, na própria tela da conta.
+ * 2) Alternativa: Delegação em todo o domínio (conta de serviço + Clientes da API no Admin).
  */
 export function IntegracaoGoogle() {
+  return (
+    <>
+      <OAuthGoogle />
+      <details className="em-alt">
+        <summary>Alternativa: delegação em todo o domínio (conta de serviço, sem autorizar caixa por caixa)</summary>
+        <DelegacaoGoogle />
+      </details>
+    </>
+  );
+}
+
+function OAuthGoogle() {
+  const ids = useId();
+  const g = useGoogleWorkspace();
+  const salvar = useSalvarOAuthGoogle();
+  const [clientId, setClientId] = useState("");
+  const [segredo, setSegredo] = useState("");
+  const [erro, setErro] = useState<{ campo?: string; mensagem: string } | null>(null);
+  const base = String(import.meta.env.VITE_SUPABASE_URL ?? "").replace(/\/+$/, "");
+  const redirect = `${base || "https://<projeto>.supabase.co"}/functions/v1/${edgeFunction("google-oauth")}`;
+  const copiar = (t: string) => void navigator.clipboard.writeText(t).then(() => toast.success("Copiado"));
+  if (g.isPending) return <PageSkeleton />;
+  if (g.isError) return <ErrorState message={msgErro(g.error, "Não foi possível carregar a conexão do Google.")} onRetry={() => void g.refetch()} />;
+  const configurado = !!g.data.oauthClientId;
+
+  return (
+    <div className="at-grade2">
+      <section className="card at-sec" aria-labelledby={`${ids}-t`}>
+        <h2 id={`${ids}-t`}>Autorizar com Gmail (OAuth)</h2>
+        <p>Com o aplicativo OAuth do portal configurado, cada conta de e-mail ganha o botão <b>Autorizar com Gmail</b>: quem tem a senha da caixa entra no Google e autoriza, como na Movidesk. O token de cada caixa fica no cofre do Supabase.</p>
+        <div className="zv-passo">
+          <span className={`zv-passo__ic zv-passo__ic--${configurado ? "ok" : "pend"}`} aria-hidden="true">{configurado ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}</span>
+          <div className="zv-passo__txt">
+            <b>Aplicativo OAuth do portal</b>
+            <span>{configurado ? <>ID do cliente: {g.data.oauthClientId}{g.data.oauthDefinidoEm ? ` · ${formatDateTime(g.data.oauthDefinidoEm)}` : ""}. A chave secreta fica no cofre.</> : "Ainda não configurado."}</span>
+          </div>
+        </div>
+        <form
+          className="em-pane"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setErro(null);
+            salvar.mutate(
+              { clientId: clientId || g.data.oauthClientId || "", clientSecret: segredo },
+              {
+                onSuccess: () => {
+                  setSegredo("");
+                  setClientId("");
+                  toast.success("Aplicativo OAuth salvo");
+                },
+                onError: (er) => setErro(er instanceof ServiceError ? { campo: er.field, mensagem: er.message } : { mensagem: "Não foi possível salvar." }),
+              },
+            );
+          }}
+        >
+          <div className="field">
+            <label className="field__label" htmlFor={`${ids}-cid`}>ID do cliente</label>
+            <input id={`${ids}-cid`} className="input" value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={g.data.oauthClientId ?? "000000000000-xxxxxxxx.apps.googleusercontent.com"} />
+            {erro?.campo === "clientId" && <span className="field__error" role="alert">{erro.mensagem}</span>}
+          </div>
+          <div className="field">
+            <label className="field__label" htmlFor={`${ids}-sec`}>Chave secreta do cliente</label>
+            <input id={`${ids}-sec`} className="input" type="password" autoComplete="off" value={segredo} onChange={(e) => setSegredo(e.target.value)} placeholder={configurado ? "Guardada no cofre. Digite para trocar." : "GOCSPX-…"} />
+            {erro?.campo === "clientSecret" && <span className="field__error" role="alert">{erro.mensagem}</span>}
+          </div>
+          {erro && !erro.campo && <p className="field__error" role="alert">{erro.mensagem}</p>}
+          <div className="at-rodape">
+            <button type="submit" className="btn btn--primary" disabled={salvar.isPending || (!clientId && !segredo)}>
+              <KeyRound size={15} aria-hidden="true" />
+              {salvar.isPending ? "Salvando…" : configurado ? "Salvar alterações" : "Salvar aplicativo"}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="card at-sec" aria-labelledby={`${ids}-ti`}>
+        <h2 id={`${ids}-ti`}>Passo a passo para a TI (uma vez)</h2>
+        <ol className="em-passos-ti">
+          <li><b>Google Cloud Console</b> (projeto da Calper) › APIs e serviços › ative a <b>Gmail API</b>.</li>
+          <li>APIs e serviços › <b>Tela de consentimento OAuth</b> › Tipo de usuário <b>Interno</b> (só contas da Calper autorizam; não precisa de revisão do Google). Nome do app: "Portal Atendimento".</li>
+          <li>
+            APIs e serviços › Credenciais › <b>Criar credenciais › ID do cliente OAuth</b> › Tipo <b>Aplicativo da Web</b>. Em <b>URIs de redirecionamento autorizados</b>, cole:
+            <span className="em-copiar">
+              <code>{redirect}</code>
+              <button type="button" className="icon-btn" aria-label="Copiar URI de redirecionamento" onClick={() => copiar(redirect)}><Copy size={14} aria-hidden="true" /></button>
+            </span>
+          </li>
+          <li>Copie o <b>ID do cliente</b> e a <b>Chave secreta do cliente</b> que o Google mostrar e salve ao lado.</li>
+          <li>Em <b>Gestão de Atendimento › Contas de e-mail</b>, abra a conta › Configurações de recebimento › <b>Autorizar com Gmail</b>, entrando no Google com a própria caixa (ex.: cftv@calper.com.br).</li>
+        </ol>
+        <p className="at-sec__ajuda">Escopo pedido: <code>https://mail.google.com/</code> (ler, marcar e enviar), o mesmo da Movidesk. A autorização de cada caixa pode ser revogada na conta Google (Segurança › Apps de terceiros) ou pelo Admin.</p>
+      </section>
+    </div>
+  );
+}
+
+function DelegacaoGoogle() {
+
   const ids = useId();
   const g = useGoogleWorkspace();
   const salvar = useSalvarChaveGoogle();

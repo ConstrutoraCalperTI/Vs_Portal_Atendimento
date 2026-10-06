@@ -153,6 +153,47 @@ O Google só emite o token se os escopos pedidos forem **exatamente** os cadastr
 
 O cliente que já existe na lista só serve se for uma conta de serviço do projeto da Calper e se a TI tiver o JSON dela. Caso contrário, cria-se um cliente novo para o portal.
 
+## 4c. "Autorizar com Gmail" por conta (OAuth2, como a Movidesk), 06/10/2026
+
+Pedido do Wagner: conectar as contas do Google como a Movidesk, com o botão "Reautorizar com Gmail".
+
+- **Modo novo da conta: `oauth_google` (padrão para o Google).** Quem tem a senha da caixa entra no Google e autoriza; o refresh token da caixa fica no Vault. Os modos delegação (`api_google`) e IMAP/SMTP continuam como alternativa.
+- **Fluxo:**
+  1. botão na aba de recebimento;
+  2. ação `oauth_iniciar` (Edge `portal_atendimento-email`) cria um `state` de uso único (10 min) e devolve a URL do Google (`access_type=offline`, `prompt=consent`, `login_hint` = caixa);
+  3. o Google volta em `portal_atendimento-google-oauth` (sem JWT), que troca o código, confere se a conta autorizada é a da caixa, grava o token, testa a caixa e redireciona para a rota `/oauth/google` do portal;
+  4. a janela avisa a tela (`postMessage`) e se fecha.
+- **Integrações › Google Workspace:**
+  - aplicativo OAuth (ID do cliente + chave secreta no Vault) com o passo a passo para a TI: Gmail API, tela de consentimento **Interna** e ID do cliente "Aplicativo da Web" com a URI de redirecionamento para copiar;
+  - a delegação no domínio ficou recolhida como alternativa.
+- **Campos da tela da Movidesk:**
+  - habilitar recebimento;
+  - caixa para recebimento;
+  - importar a partir de;
+  - apagar processadas depois de N dias;
+  - marcar como lido;
+  - importar como Ticket;
+  - regra de abertura de novos tickets (qualquer remetente, só cliente em Pessoas, cliente ou domínio, não habilitar);
+  - inclusão de ações em tickets existentes.
+- Migration `20261006210000_portal_atendimento_email_oauth.sql`, aplicada depois do ensaio.
+
+Checklist:
+- [x] mockup `docs/mockups/email-oauth-google.html` aprovado pelo Wagner (06/10/2026); status da lista alinhados ("Aguardando autorização", "Reautorizar")
+- [x] ensaio:
+  - `state` de uso único;
+  - retorno fora de https recusado;
+  - token só no Vault e apagado ao trocar o endereço;
+  - modo OAuth recusado fora do Google;
+  - regra e dias fora da faixa recusados.
+- [x] Edge publicada:
+  - retorno sem `state` → 400;
+  - `state` desconhecido → 400;
+  - `state` válido com "acesso negado" → 302 para `/oauth/google` com a mensagem;
+  - reuso → 400 (dados de teste apagados).
+- [x] 23 testes Vitest (URL de autorização, troca de código, id_token, token revogado)
+- [x] Playwright no modo simulado: botão, janela, retorno, aviso único, status "Autorizado como…", Testar ok; 390 px sem rolagem lateral
+- [ ] TI criar o ID do cliente OAuth e o portal receber; autorizar uma caixa real (ex.: cftv@) e testar
+
 ## 5. Decisões para o Wagner (na aprovação do mockup)
 
 1. **Como acessar as caixas Google:** (A) conexão por API com conta de serviço, recomendado, que exige a TI do Workspace autorizar uma vez; ou (B) senha de app por conta, como na Movidesk.

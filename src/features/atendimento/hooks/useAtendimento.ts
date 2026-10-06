@@ -152,6 +152,7 @@ export const useSalvarContaEmail = () => useMudaEmail((p: ContaEmailDados & { id
 export const useSenhaContaEmail = () => useMudaEmail((p: { id: number; senha: string }) => emailService.senha(p.id, p.senha));
 export const useHabilitarContasEmail = () => useMudaEmail((p: { ids: number[]; habilitada: boolean }) => emailService.habilitar(p.ids, p.habilitada));
 export const useExcluirContaEmail = () => useMudaEmail((id: number) => emailService.excluir(id));
+export const useAutorizarGoogle = () => useMutation({ mutationFn: (id: number) => emailService.autorizarGoogle(id) });
 export const useTestarContaEmail = () => useMudaEmail((p: { id: number; enviarPara?: string }) => emailService.testar(p.id, p.enviarPara));
 
 export function useGoogleWorkspace() {
@@ -164,5 +165,6 @@ function useMudaGoogle<T, R>(fn: (dados: T) => Promise<R>) {
 }
 
 export const useSalvarChaveGoogle = () => useMudaGoogle((json: string) => emailService.salvarChaveGoogle(json));
+export const useSalvarOAuthGoogle = () => useMudaGoogle((p: { clientId: string; clientSecret: string }) => emailService.salvarOAuthGoogle(p.clientId, p.clientSecret));
 export const useSalvarEscoposGoogle = () => useMudaGoogle((escopos: string[]) => emailService.salvarEscoposGoogle(escopos));
 export const useTestarGoogle = () => useMudaGoogle((email: string) => emailService.testarGoogle(email));

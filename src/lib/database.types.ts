@@ -195,6 +195,9 @@ export type Database = {
           atualizado_em: string
           atualizado_por: string | null
           google_escopos: string[]
+          google_oauth_client_id: string | null
+          google_oauth_definido_em: string | null
+          google_oauth_segredo_id: string | null
           google_sa_client_id: string | null
           google_sa_definido_em: string | null
           google_sa_email: string | null
@@ -213,6 +216,9 @@ export type Database = {
           atualizado_em?: string
           atualizado_por?: string | null
           google_escopos?: string[]
+          google_oauth_client_id?: string | null
+          google_oauth_definido_em?: string | null
+          google_oauth_segredo_id?: string | null
           google_sa_client_id?: string | null
           google_sa_definido_em?: string | null
           google_sa_email?: string | null
@@ -231,6 +237,9 @@ export type Database = {
           atualizado_em?: string
           atualizado_por?: string | null
           google_escopos?: string[]
+          google_oauth_client_id?: string | null
+          google_oauth_definido_em?: string | null
+          google_oauth_segredo_id?: string | null
           google_sa_client_id?: string | null
           google_sa_definido_em?: string | null
           google_sa_email?: string | null
@@ -361,6 +370,8 @@ export type Database = {
       }
       at_email_contas: {
         Row: {
+          abrir_tickets: string
+          apagar_apos_dias: number | null
           assinatura: string | null
           atualizado_em: string
           atualizado_por: string | null
@@ -384,9 +395,14 @@ export type Database = {
           mover_para: string | null
           nome: string
           nome_remetente: string | null
+          oauth_autorizado_em: string | null
+          oauth_autorizado_por: string | null
+          oauth_email: string | null
+          oauth_segredo_id: string | null
           padrao_do_setor: boolean
           pasta: string
           provedor: string
+          receber_habilitado: boolean
           responder_para: string | null
           senha_mascara: string | null
           senha_segredo_id: string | null
@@ -401,6 +417,8 @@ export type Database = {
           verificacao: Json | null
         }
         Insert: {
+          abrir_tickets?: string
+          apagar_apos_dias?: number | null
           assinatura?: string | null
           atualizado_em?: string
           atualizado_por?: string | null
@@ -424,9 +442,14 @@ export type Database = {
           mover_para?: string | null
           nome: string
           nome_remetente?: string | null
+          oauth_autorizado_em?: string | null
+          oauth_autorizado_por?: string | null
+          oauth_email?: string | null
+          oauth_segredo_id?: string | null
           padrao_do_setor?: boolean
           pasta?: string
           provedor?: string
+          receber_habilitado?: boolean
           responder_para?: string | null
           senha_mascara?: string | null
           senha_segredo_id?: string | null
@@ -441,6 +464,8 @@ export type Database = {
           verificacao?: Json | null
         }
         Update: {
+          abrir_tickets?: string
+          apagar_apos_dias?: number | null
           assinatura?: string | null
           atualizado_em?: string
           atualizado_por?: string | null
@@ -464,9 +489,14 @@ export type Database = {
           mover_para?: string | null
           nome?: string
           nome_remetente?: string | null
+          oauth_autorizado_em?: string | null
+          oauth_autorizado_por?: string | null
+          oauth_email?: string | null
+          oauth_segredo_id?: string | null
           padrao_do_setor?: boolean
           pasta?: string
           provedor?: string
+          receber_habilitado?: boolean
           responder_para?: string | null
           senha_mascara?: string | null
           senha_segredo_id?: string | null
@@ -482,10 +512,52 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "at_email_contas_oauth_autorizado_por_fkey"
+            columns: ["oauth_autorizado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "at_email_contas_setor_id_fkey"
             columns: ["setor_id"]
             isOneToOne: false
             referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      at_email_oauth_estados: {
+        Row: {
+          conta_id: number
+          criado_em: string
+          expira_em: string
+          retorno: string
+          state: string
+          usuario_id: string
+        }
+        Insert: {
+          conta_id: number
+          criado_em?: string
+          expira_em?: string
+          retorno: string
+          state: string
+          usuario_id: string
+        }
+        Update: {
+          conta_id?: number
+          criado_em?: string
+          expira_em?: string
+          retorno?: string
+          state?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_email_oauth_estados_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "at_email_contas"
             referencedColumns: ["id"]
           },
         ]
@@ -1515,6 +1587,29 @@ export type Database = {
           senha: string
         }[]
       }
+      at_email_oauth_estado_consumir: {
+        Args: { p_state: string }
+        Returns: {
+          conta_id: number
+          email: string
+          retorno: string
+          usuario_id: string
+        }[]
+      }
+      at_email_oauth_estado_criar: {
+        Args: { p_conta: number; p_retorno: string; p_usuario: string }
+        Returns: string
+      }
+      at_email_oauth_gravar: {
+        Args: {
+          p_conta: number
+          p_email: string
+          p_refresh: string
+          p_usuario: string
+        }
+        Returns: undefined
+      }
+      at_email_oauth_token: { Args: { p_conta: number }; Returns: string }
       at_equipe_excluir: { Args: { p_id: number }; Returns: undefined }
       at_equipe_salvar: { Args: { p: Json }; Returns: number }
       at_equipes_candidatos: {
@@ -1538,6 +1633,17 @@ export type Database = {
       at_gestor_de: { Args: { p_setor: number }; Returns: boolean }
       at_google_escopos_salvar: {
         Args: { p_escopos: string[] }
+        Returns: undefined
+      }
+      at_google_oauth_ler: {
+        Args: never
+        Returns: {
+          client_id: string
+          client_secret: string
+        }[]
+      }
+      at_google_oauth_salvar: {
+        Args: { p_client_id: string; p_client_secret: string }
         Returns: undefined
       }
       at_google_sa_salvar: { Args: { p_json: string }; Returns: undefined }

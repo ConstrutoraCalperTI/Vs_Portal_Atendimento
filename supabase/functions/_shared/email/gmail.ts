@@ -101,6 +101,102 @@ export async function enviarGmail(f: Fetch, token: string, mensagemRfc822: strin
   return (JSON.parse(texto) as { id: string }).id;
 }
 
+// ---------------------------------------------------------------- OAuth2 por conta ("Autorizar com Gmail")
+// A TI cria um "ID do cliente OAuth" (Aplicativo da Web, tela de consentimento Interna). Alguém entra no Google
+// com a própria caixa e autoriza; o refresh token fica no Vault. Mesmo modelo da Movidesk.
+
+export const ESCOPOS_OAUTH = ["https://mail.google.com/", "openid", "email"];
+
+export function urlAutorizacao(p: { clientId: string; redirectUri: string; state: string; caixa: string }): string {
+  const q = new URLSearchParams({
+    client_id: p.clientId,
+    redirect_uri: p.redirectUri,
+    response_type: "code",
+    scope: ESCOPOS_OAUTH.join(" "),
+    access_type: "offline",
+    // Sempre pede o consentimento: é o que garante o refresh_token também na reautorização.
+    prompt: "consent",
+    include_granted_scopes: "true",
+    login_hint: p.caixa,
+    state: p.state,
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${q.toString()}`;
+}
+
+/** E-mail da conta que autorizou, lido do id_token (vem direto do Google pelo canal TLS do token). */
+export function emailDoIdToken(idToken: string | undefined): string | null {
+  if (!idToken) return null;
+  try {
+    const corpo = idToken.split(".")[1] ?? "";
+    const json = JSON.parse(atob(corpo.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(corpo.length / 4) * 4, "="))) as { email?: string };
+    return json.email?.toLowerCase() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function trocarCodigo(f: Fetch, p: { clientId: string; clientSecret: string; code: string; redirectUri: string }): Promise<{ refreshToken: string | null; accessToken: string; email: string | null }> {
+  const r = await f("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "authorization_code", code: p.code, client_id: p.clientId, client_secret: p.clientSecret, redirect_uri: p.redirectUri }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const texto = await r.text();
+  if (!r.ok) throw new Error(erroGoogle(r.status, texto));
+  const j = JSON.parse(texto) as { access_token: string; refresh_token?: string; id_token?: string };
+  return { refreshToken: j.refresh_token ?? null, accessToken: j.access_token, email: emailDoIdToken(j.id_token) };
+}
+
+export async function tokenPorRefresh(f: Fetch, p: { clientId: string; clientSecret: string; refreshToken: string }): Promise<string> {
+  const r = await f("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: p.refreshToken, client_id: p.clientId, client_secret: p.clientSecret }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const texto = await r.text();
+  if (!r.ok) {
+    if (/invalid_grant/i.test(texto)) throw new Error("A autorização do Google expirou ou foi revogada: clique em Reautorizar com Gmail.");
+    throw new Error(erroGoogle(r.status, texto));
+  }
+  return (JSON.parse(texto) as { access_token: string }).access_token;
+}
+
+/** Leitura da pasta e (opcional) envio de teste com um token já obtido (OAuth ou conta de serviço). */
+export async function testarGmailComToken(
+  f: Fetch,
+  obterToken: () => Promise<string>,
+  conexao: { passo: string; detalhe: string },
+  pasta: string,
+  teste?: { mensagem: string; para: string },
+): Promise<Passo[]> {
+  const passos: Passo[] = [];
+  let token: string;
+  try {
+    token = await obterToken();
+    passos.push({ passo: conexao.passo, ok: true, detalhe: conexao.detalhe });
+  } catch (e) {
+    passos.push({ passo: conexao.passo, ok: false, detalhe: String(e instanceof Error ? e.message : e) });
+    return passos;
+  }
+  try {
+    const st = await rotulo(f, token, pasta);
+    passos.push({ passo: `Leitura da pasta ${pasta}`, ok: true, detalhe: `${st.total} e-mails, ${st.naoLidas} não lidos` });
+  } catch (e) {
+    passos.push({ passo: `Leitura da pasta ${pasta}`, ok: false, detalhe: String(e instanceof Error ? e.message : e) });
+  }
+  if (teste) {
+    try {
+      await enviarGmail(f, token, teste.mensagem);
+      passos.push({ passo: `E-mail de teste para ${teste.para}`, ok: true, detalhe: "enviado (fica em Enviados da caixa)" });
+    } catch (e) {
+      passos.push({ passo: `E-mail de teste para ${teste.para}`, ok: false, detalhe: String(e instanceof Error ? e.message : e) });
+    }
+  }
+  return passos;
+}
+
 /** Teste pela API: autorização da caixa, leitura da pasta e (opcional) envio de teste. */
 export async function testarGmail(f: Fetch, chave: ChaveServico | null, caixa: string, pasta: string, teste?: { mensagem: string; para: string }, escopos: string[] = ESCOPOS_PADRAO): Promise<Passo[]> {
   const passos: Passo[] = [];

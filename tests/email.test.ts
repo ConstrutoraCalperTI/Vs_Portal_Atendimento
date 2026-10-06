@@ -2,7 +2,7 @@
 // serviço do Google (assinatura conferida com a chave pública).
 import { describe, expect, it } from "vitest";
 import type { Socket } from "../supabase/functions/_shared/email/conexao.ts";
-import { assertion, erroGoogle } from "../supabase/functions/_shared/email/gmail.ts";
+import { assertion, emailDoIdToken, erroGoogle, tokenPorRefresh, trocarCodigo, urlAutorizacao } from "../supabase/functions/_shared/email/gmail.ts";
 import { aspas, lerStatus, testarImap, type Rede } from "../supabase/functions/_shared/email/imap.ts";
 import { cabecalho, montarMensagem, pontoDuplo } from "../supabase/functions/_shared/email/mime.ts";
 import { testarSmtp } from "../supabase/functions/_shared/email/smtp.ts";
@@ -129,5 +129,29 @@ describe("Google (conta de serviço)", () => {
   it("erros comuns do Google viram mensagem com a causa", () => {
     expect(erroGoogle(401, '{"error":"unauthorized_client","error_description":"Client is unauthorized"}')).toMatch(/Clientes da API/);
     expect(erroGoogle(400, '{"error":"invalid_grant","error_description":"Invalid email"}')).toMatch(/endereço existe/);
+  });
+});
+
+describe("Autorizar com Gmail (OAuth2 por conta)", () => {
+  it("URL pede acesso contínuo, consentimento e a caixa certa", () => {
+    const u = new URL(urlAutorizacao({ clientId: "1-a.apps.googleusercontent.com", redirectUri: "https://x.supabase.co/functions/v1/cb", state: "s1", caixa: "cftv@calper.com.br" }));
+    expect(u.origin + u.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
+    expect(u.searchParams.get("scope")).toBe("https://mail.google.com/ openid email");
+    expect(u.searchParams.get("access_type")).toBe("offline");
+    expect(u.searchParams.get("prompt")).toBe("consent");
+    expect(u.searchParams.get("login_hint")).toBe("cftv@calper.com.br");
+    expect(u.searchParams.get("state")).toBe("s1");
+  });
+
+  it("troca o código e lê o e-mail do id_token", async () => {
+    const corpo = btoa(JSON.stringify({ email: "CFTV@calper.com.br" })).replace(/=+$/, "");
+    const f = (async () => new Response(JSON.stringify({ access_token: "at", refresh_token: "rt", id_token: `h.${corpo}.s` }))) as typeof fetch;
+    expect(await trocarCodigo(f, { clientId: "c", clientSecret: "s", code: "x", redirectUri: "r" })).toEqual({ refreshToken: "rt", accessToken: "at", email: "cftv@calper.com.br" });
+    expect(emailDoIdToken("lixo")).toBeNull();
+  });
+
+  it("token revogado pede para reautorizar", async () => {
+    const f = (async () => new Response('{"error":"invalid_grant","error_description":"Token has been expired or revoked."}', { status: 400 })) as typeof fetch;
+    await expect(tokenPorRefresh(f, { clientId: "c", clientSecret: "s", refreshToken: "r" })).rejects.toThrow(/Reautorizar com Gmail/);
   });
 });

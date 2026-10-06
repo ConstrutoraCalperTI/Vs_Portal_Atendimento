@@ -1393,3 +1393,71 @@
     margin-left: 0;
   }
 }
+
+/* ---------- "Autorizar com Gmail" (OAuth2 por conta, como a Movidesk) ---------- */
+
+.em-oauth {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.em-gbtn {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: #4285f4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.em-gbtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.em-gbtn__g {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  background: #fff;
+  color: #4285f4;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.em-gbtn > span:last-child {
+  padding: 13px 22px;
+}
+
+.em-radios--col {
+  grid-template-columns: 1fr;
+}
+
+.em-inl {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.em-inl .input {
+  width: 90px;
+}
+
+.em-alt {
+  margin-top: 16px;
+}
+
+.em-alt > summary {
+  padding: 12px 0;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}

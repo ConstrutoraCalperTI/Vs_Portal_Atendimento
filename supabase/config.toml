@@ -25,3 +25,7 @@ verify_jwt = false
 
 [functions.portal_atendimento-email]
 verify_jwt = true
+
+# Retorno do "Autorizar com Gmail": quem chama é o Google (sem JWT); a segurança é o state de uso único.
+[functions.portal_atendimento-google-oauth]
+verify_jwt = false
