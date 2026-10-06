@@ -1,12 +1,14 @@
 // API do Gmail com conta de serviço do Google Workspace (delegação no domínio): o portal pede um token
 // "em nome de" cada caixa @calper.com.br, sem senha por conta. Só HTTPS: roda em Edge Function.
 // Configuração da TI (uma vez): Google Cloud › conta de serviço › chave JSON; Admin do Workspace ›
-// Segurança › Controles de API › Delegação em todo o domínio › client_id da conta com os ESCOPOS abaixo.
+// Segurança › Controles de API › Delegação em todo o domínio › Clientes da API › Adicionar novo: o client_id
+// da conta e os escopos. O Google só emite o token se os escopos pedidos estiverem EXATAMENTE nessa lista;
+// por isso os escopos são configuráveis (padrão: https://mail.google.com/, o mesmo já usado na Calper).
 
 import type { Passo } from "./conexao.ts";
 import { base64url } from "./mime.ts";
 
-export const ESCOPOS = ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"];
+export const ESCOPOS_PADRAO = ["https://mail.google.com/"];
 const GMAIL = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 type Fetch = typeof fetch;
@@ -32,10 +34,10 @@ const b64urlBytes = (bytes: Uint8Array) => {
 };
 
 /** Monta o JWT (assertion) da conta de serviço para a caixa `caixa`. */
-export async function assertion(chave: ChaveServico, caixa: string, agora = Math.floor(Date.now() / 1000)): Promise<string> {
+export async function assertion(chave: ChaveServico, caixa: string, agora = Math.floor(Date.now() / 1000), escopos: string[] = ESCOPOS_PADRAO): Promise<string> {
   const cab = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const corpo = base64url(
-    JSON.stringify({ iss: chave.client_email, sub: caixa, scope: ESCOPOS.join(" "), aud: chave.token_uri ?? "https://oauth2.googleapis.com/token", iat: agora, exp: agora + 3600 }),
+    JSON.stringify({ iss: chave.client_email, sub: caixa, scope: escopos.join(" "), aud: chave.token_uri ?? "https://oauth2.googleapis.com/token", iat: agora, exp: agora + 3600 }),
   );
   const k = await crypto.subtle.importKey("pkcs8", pemParaDer(chave.private_key), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
   const assinatura = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", k, new TextEncoder().encode(`${cab}.${corpo}`)));
@@ -51,16 +53,18 @@ export function erroGoogle(status: number, corpo: string): string {
   } catch {
     /* não-JSON */
   }
-  if (/unauthorized_client/i.test(msg)) return "A conta de serviço não tem delegação no domínio para estes escopos (Admin do Workspace › Delegação em todo o domínio).";
+  if (/unauthorized_client/i.test(msg)) {
+    return "O Google recusou a delegação: o Client ID da conta de serviço não está em Clientes da API ou os escopos cadastrados lá não são os mesmos que o portal pede (Admin › Segurança › Controles de API › Delegação em todo o domínio).";
+  }
   if (/invalid_grant/i.test(msg)) return `O Google recusou a caixa: confira se o endereço existe no Workspace (${msg}).`;
   return `Google respondeu ${status}: ${msg}`;
 }
 
-export async function tokenDaCaixa(f: Fetch, chave: ChaveServico, caixa: string): Promise<string> {
+export async function tokenDaCaixa(f: Fetch, chave: ChaveServico, caixa: string, escopos: string[] = ESCOPOS_PADRAO): Promise<string> {
   const r = await f(chave.token_uri ?? "https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: await assertion(chave, caixa) }),
+    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: await assertion(chave, caixa, undefined, escopos) }),
     signal: AbortSignal.timeout(15_000),
   });
   const texto = await r.text();
@@ -98,13 +102,13 @@ export async function enviarGmail(f: Fetch, token: string, mensagemRfc822: strin
 }
 
 /** Teste pela API: autorização da caixa, leitura da pasta e (opcional) envio de teste. */
-export async function testarGmail(f: Fetch, chave: ChaveServico | null, caixa: string, pasta: string, teste?: { mensagem: string; para: string }): Promise<Passo[]> {
+export async function testarGmail(f: Fetch, chave: ChaveServico | null, caixa: string, pasta: string, teste?: { mensagem: string; para: string }, escopos: string[] = ESCOPOS_PADRAO): Promise<Passo[]> {
   const passos: Passo[] = [];
   if (!chave) return [{ passo: "Conexão com o Google Workspace", ok: false, detalhe: "A chave da conta de serviço ainda não foi salva (Configurações › Integrações › Google Workspace)." }];
   let token: string;
   try {
-    token = await tokenDaCaixa(f, chave, caixa);
-    passos.push({ passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${caixa}` });
+    token = await tokenDaCaixa(f, chave, caixa, escopos);
+    passos.push({ passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${caixa} (${escopos.join(", ")})` });
   } catch (e) {
     passos.push({ passo: "Conexão com o Google Workspace", ok: false, detalhe: String(e instanceof Error ? e.message : e) });
     return passos;

@@ -164,4 +164,5 @@ function useMudaGoogle<T, R>(fn: (dados: T) => Promise<R>) {
 }
 
 export const useSalvarChaveGoogle = () => useMudaGoogle((json: string) => emailService.salvarChaveGoogle(json));
+export const useSalvarEscoposGoogle = () => useMudaGoogle((escopos: string[]) => emailService.salvarEscoposGoogle(escopos));
 export const useTestarGoogle = () => useMudaGoogle((email: string) => emailService.testarGoogle(email));

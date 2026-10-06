@@ -29,6 +29,13 @@ async function papel(req: Request): Promise<{ db: AdminClient; callerId: string;
   return { db: admin, callerId: caller.id, email: caller.email ?? "", superAdmin, supervisor: superAdmin || sup.data === true };
 }
 
+/** Escopos que o portal pede ao Google: os mesmos cadastrados em Clientes da API (at_config.google_escopos). */
+async function escopos(db: AdminClient): Promise<string[]> {
+  const { data } = await db.from("at_config").select("google_escopos").eq("id", true).maybeSingle();
+  const lista = (data?.google_escopos as string[] | null) ?? [];
+  return lista.length ? lista : ["https://mail.google.com/"];
+}
+
 async function credenciais(db: AdminClient, contaId: number): Promise<{ senha: string | null; chave: ChaveServico | null }> {
   const { data, error } = await db.rpc("at_email_credenciais", { p_conta: contaId });
   if (error) throw fromRpcError(error);
@@ -78,7 +85,7 @@ Deno.serve(async (req) => {
       const caixa = String(corpo.email ?? "").trim().toLowerCase();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(caixa)) throw new PortalError("INVALID_INPUT", "Informe o e-mail de uma caixa do Workspace para testar.");
       const { chave } = await credenciais(eu.db, 0);
-      const passos = await testarGmail(fetch, chave, caixa, "INBOX");
+      const passos = await testarGmail(fetch, chave, caixa, "INBOX", undefined, await escopos(eu.db));
       const verificacao = { em: new Date().toISOString(), caixa, ok: passos.every((p) => p.ok), passos };
       const r = await eu.db.from("at_config").update({ google_verificacao: verificacao }).eq("id", true);
       if (r.error) throw fromRpcError(r.error);
@@ -109,7 +116,7 @@ Deno.serve(async (req) => {
 
       let passos: Passo[];
       if (c.modo === "api_google") {
-        passos = await testarGmail(fetch, chave, c.email, c.pasta, teste);
+        passos = await testarGmail(fetch, chave, c.email, c.pasta, teste, await escopos(eu.db));
       } else {
         const usuario = c.usuario ?? c.email;
         passos = [

@@ -194,6 +194,8 @@ export type Database = {
         Row: {
           atualizado_em: string
           atualizado_por: string | null
+          google_escopos: string[]
+          google_sa_client_id: string | null
           google_sa_definido_em: string | null
           google_sa_email: string | null
           google_sa_segredo_id: string | null
@@ -210,6 +212,8 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           atualizado_por?: string | null
+          google_escopos?: string[]
+          google_sa_client_id?: string | null
           google_sa_definido_em?: string | null
           google_sa_email?: string | null
           google_sa_segredo_id?: string | null
@@ -226,6 +230,8 @@ export type Database = {
         Update: {
           atualizado_em?: string
           atualizado_por?: string | null
+          google_escopos?: string[]
+          google_sa_client_id?: string | null
           google_sa_definido_em?: string | null
           google_sa_email?: string | null
           google_sa_segredo_id?: string | null
@@ -1520,9 +1526,20 @@ export type Database = {
         }[]
       }
       at_equipes_lista: { Args: never; Returns: Json }
+      at_equipes_setores: {
+        Args: never
+        Returns: {
+          id: number
+          nome: string
+        }[]
+      }
       at_exigir_equipes: { Args: never; Returns: string }
       at_exigir_pessoas: { Args: never; Returns: string }
       at_gestor_de: { Args: { p_setor: number }; Returns: boolean }
+      at_google_escopos_salvar: {
+        Args: { p_escopos: string[] }
+        Returns: undefined
+      }
       at_google_sa_salvar: { Args: { p_json: string }; Returns: undefined }
       at_indicadores_janela: {
         Args: { p_fim: string; p_ini: string; p_setores: number[] }

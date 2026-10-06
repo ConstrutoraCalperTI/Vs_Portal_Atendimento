@@ -141,6 +141,18 @@ Checklist:
 `at_email_recebidos` → ticket no setor da conta (aproveita `at_atendimentos` e a fila do setor), juntando as
 respostas pelo `[#ticket]` e pelo `In-Reply-To`.
 
+## 4b. Ajuste de 06/10/2026: escopos iguais aos da Calper
+
+O Wagner mostrou a tela **Admin › Segurança › Controles de API › Delegação em todo o domínio › Clientes da API**. A Calper já tem ali um cliente com `https://mail.google.com/` (+ `email.migration` e mais 2).
+
+O Google só emite o token se os escopos pedidos forem **exatamente** os cadastrados para o Client ID. Por isso:
+- os escopos ficam configuráveis (`at_config.google_escopos`), com padrão `https://mail.google.com/` e a opção mínima `gmail.modify` + `gmail.send`;
+- o Client ID da chave fica guardado (`google_sa_client_id`);
+- a aba Google Workspace mostra o passo a passo nos termos dessa tela ("Adicionar novo" › ID do cliente + Escopos OAuth) com os valores para copiar;
+- migration `20261006200000_portal_atendimento_google_escopos.sql` aplicada; Edge `portal_atendimento-email` republicada.
+
+O cliente que já existe na lista só serve se for uma conta de serviço do projeto da Calper e se a TI tiver o JSON dela. Caso contrário, cria-se um cliente novo para o portal.
+
 ## 5. Decisões para o Wagner (na aprovação do mockup)
 
 1. **Como acessar as caixas Google:** (A) conexão por API com conta de serviço, recomendado, que exige a TI do Workspace autorizar uma vez; ou (B) senha de app por conta, como na Movidesk.

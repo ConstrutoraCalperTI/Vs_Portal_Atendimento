@@ -118,14 +118,16 @@ describe("Google (conta de serviço)", () => {
     const dec = (s: string) => JSON.parse(atob(s.replace(/-/g, "+").replace(/_/g, "/")));
     expect(dec(cab!)).toEqual({ alg: "RS256", typ: "JWT" });
     expect(dec(corpo!)).toMatchObject({ iss: "portal@projeto.iam.gserviceaccount.com", sub: "cftv@calper.com.br", iat: 1000, exp: 4600 });
-    expect(dec(corpo!).scope).toContain("gmail.send");
+    expect(dec(corpo!).scope).toBe("https://mail.google.com/");
+    const outro = await assertion({ client_email: "p@x", private_key: pem }, "a@b.com", 1000, ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"]);
+    expect(dec(outro.split(".")[1]!).scope).toBe("https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send");
     const assinatura = Uint8Array.from(atob(sig!.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(sig!.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
     const ok = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", par.publicKey, assinatura, new TextEncoder().encode(`${cab}.${corpo}`));
     expect(ok).toBe(true);
   });
 
   it("erros comuns do Google viram mensagem com a causa", () => {
-    expect(erroGoogle(401, '{"error":"unauthorized_client","error_description":"Client is unauthorized"}')).toMatch(/Delegação em todo o domínio/);
+    expect(erroGoogle(401, '{"error":"unauthorized_client","error_description":"Client is unauthorized"}')).toMatch(/Clientes da API/);
     expect(erroGoogle(400, '{"error":"invalid_grant","error_description":"Invalid email"}')).toMatch(/endereço existe/);
   });
 });

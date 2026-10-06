@@ -65,8 +65,16 @@ export interface ContaEmail extends ContaEmailDados {
   naFila: number;
 }
 
+/** Conjuntos de escopos aceitos (precisam ser IGUAIS aos cadastrados em Clientes da API do Admin do Google). */
+export const ESCOPOS_GOOGLE = {
+  completo: ["https://mail.google.com/"],
+  minimo: ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"],
+} as const;
+
 export interface GoogleWorkspace {
   contaServico: string | null;
+  clientId: string | null;
+  escopos: string[];
   definidoEm: string | null;
   verificacao: (VerificacaoEmail & { caixa: string }) | null;
 }
@@ -103,6 +111,7 @@ export interface EmailService {
   testar(id: number, enviarPara?: string): Promise<VerificacaoEmail>;
   google(): Promise<GoogleWorkspace>;
   salvarChaveGoogle(json: string): Promise<void>;
+  salvarEscoposGoogle(escopos: string[]): Promise<void>;
   testarGoogle(email: string): Promise<VerificacaoEmail & { caixa: string }>;
 }
 
@@ -126,15 +135,18 @@ const supabaseEmail: EmailService = {
   excluir: (id) => rpc<void>("at_email_conta_excluir", { p_id: id }),
   testar: (id, enviarPara) => funcao<VerificacaoEmail>({ acao: "testar", contaId: id, enviarPara: enviarPara ?? null }),
   async google() {
-    const { data, error } = await supabase.from("at_config").select("google_sa_email, google_sa_definido_em, google_verificacao").maybeSingle();
+    const { data, error } = await supabase.from("at_config").select("google_sa_email, google_sa_client_id, google_escopos, google_sa_definido_em, google_verificacao").maybeSingle();
     if (error) throw fromPostgrest(error);
     return {
       contaServico: data?.google_sa_email ?? null,
+      clientId: data?.google_sa_client_id ?? null,
+      escopos: data?.google_escopos ?? [...ESCOPOS_GOOGLE.completo],
       definidoEm: data?.google_sa_definido_em ?? null,
       verificacao: (data?.google_verificacao as unknown as GoogleWorkspace["verificacao"]) ?? null,
     };
   },
   salvarChaveGoogle: (json) => rpc<void>("at_google_sa_salvar", { p_json: json }),
+  salvarEscoposGoogle: (escopos) => rpc<void>("at_google_escopos_salvar", { p_escopos: escopos }),
   testarGoogle: (email) => funcao<VerificacaoEmail & { caixa: string }>({ acao: "google_testar", email }),
 };
 
@@ -159,7 +171,7 @@ const contas: ContaMock[] = [
   base(5, "Jurídico", "juridico@calper.com.br", "Relacionamento com o cliente", { status: "aguardando", ultimaLeituraEm: null, historico: false }),
   base(6, "chamados.sistemas@calper.com.br", "chamados.sistemas@calper.com.br", "Assistência técnica", { habilitada: false, status: "aguardando", ultimaLeituraEm: null }),
 ];
-const google: GoogleWorkspace = { contaServico: null, definidoEm: null, verificacao: null };
+const google: GoogleWorkspace = { contaServico: null, clientId: null, escopos: [...ESCOPOS_GOOGLE.completo], definidoEm: null, verificacao: null };
 
 async function contexto() {
   return mockContexto.contexto();
@@ -250,7 +262,7 @@ const mockEmail: EmailService = {
   },
   async salvarChaveGoogle(json) {
     await esperar();
-    let j: { type?: string; client_email?: string; private_key?: string };
+    let j: { type?: string; client_email?: string; client_id?: string; private_key?: string };
     try {
       j = JSON.parse(json);
     } catch {
@@ -259,12 +271,16 @@ const mockEmail: EmailService = {
     if (j.type !== "service_account" || !j.client_email || !j.private_key?.startsWith("-----BEGIN PRIVATE KEY-----")) {
       throw new ServiceError("INVALID_INPUT", "O JSON precisa ser de uma conta de serviço (type, client_email e private_key).", "chave");
     }
-    Object.assign(google, { contaServico: j.client_email, definidoEm: new Date().toISOString(), verificacao: null });
+    Object.assign(google, { contaServico: j.client_email, clientId: j.client_id ?? null, definidoEm: new Date().toISOString(), verificacao: null });
+  },
+  async salvarEscoposGoogle(escopos) {
+    await esperar();
+    Object.assign(google, { escopos: [...escopos], verificacao: null });
   },
   async testarGoogle(email) {
     await esperar(600);
     const passos: PassoTeste[] = google.contaServico
-      ? [{ passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${email}` }, { passo: "Leitura da pasta INBOX", ok: true, detalhe: "Modo simulado" }]
+      ? [{ passo: "Conexão com o Google Workspace", ok: true, detalhe: `autorizado para ${email} (${google.escopos.join(", ")})` }, { passo: "Leitura da pasta INBOX", ok: true, detalhe: "Modo simulado" }]
       : [{ passo: "Conexão com o Google Workspace", ok: false, detalhe: "A chave da conta de serviço ainda não foi salva." }];
     google.verificacao = { em: new Date().toISOString(), caixa: email, ok: passos.every((p) => p.ok), passos };
     return google.verificacao;
