@@ -2,7 +2,7 @@ import { Lock, Plus, Search, SearchX } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
-import { SUPER_ADMIN_ROLE, type RoleKey } from "../../../config/app";
+import { ADMIN_ROLE, SUPER_ADMIN_ROLE, type RoleKey } from "../../../config/app";
 import {
   getMenuItem,
   getPermission,
@@ -74,6 +74,7 @@ export function PerfisPermissoes() {
   const checkedIn = (state: PermissionRules, item: PermissionEntry): boolean => {
     if (item.alwaysVisible || roleLocked) return true;
     if (item.superAdminOnly) return false;
+    if (item.adminOnly) return selected === ADMIN_ROLE;
     // Ação vale só com o item pai liberado.
     if (item.kind === "action" && item.parent && !checkedIn(state, getPermission(item.parent))) return false;
     return state[item.id] ?? baseline(item.id);
@@ -84,7 +85,7 @@ export function PerfisPermissoes() {
     return checkedIn(state, parent) ? null : parent;
   };
   const lockedIn = (state: PermissionRules, item: PermissionEntry) =>
-    roleLocked || Boolean(item.alwaysVisible) || Boolean(item.superAdminOnly) || blockedByParent(state, item) !== null;
+    roleLocked || Boolean(item.alwaysVisible) || Boolean(item.superAdminOnly) || Boolean(item.adminOnly) || blockedByParent(state, item) !== null;
 
   const checkedOf = (item: PermissionEntry) => checkedIn(draft, item);
   const isItemLocked = (item: PermissionEntry) => lockedIn(draft, item);

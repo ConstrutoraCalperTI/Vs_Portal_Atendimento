@@ -228,7 +228,7 @@
 }
 
 .ds-kpi--info .ds-kpi__value {
-  color: var(--ds-primary);
+  color: var(--ds-ink);
 }
 
 /* ---------- Painel ---------- */

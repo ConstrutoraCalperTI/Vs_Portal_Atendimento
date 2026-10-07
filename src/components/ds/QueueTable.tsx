@@ -11,6 +11,8 @@ export interface QueueTableRow {
   owner: { name: string; initials: string } | null;
   /** Minutos até o prazo de solução; negativo = vencido. */
   dueMinutes: number;
+  /** Ticket resolvido/fechado: substitui o SLA (ex.: "Fechado em 05/10, 14:00"). */
+  closedLabel?: string;
 }
 
 interface QueueTableProps {
@@ -68,7 +70,11 @@ export function QueueTable({ rows, onOpen, emptyMessage = "Nenhum ticket encontr
                   )}
                 </td>
                 <td>
-                  <Pill tone={slaTone(row.dueMinutes)}>{slaLabel(row.dueMinutes)}</Pill>
+                  {row.closedLabel ? (
+                    <Pill tone="green">{row.closedLabel}</Pill>
+                  ) : (
+                    <Pill tone={slaTone(row.dueMinutes)}>{slaLabel(row.dueMinutes)}</Pill>
+                  )}
                 </td>
               </tr>
             ))

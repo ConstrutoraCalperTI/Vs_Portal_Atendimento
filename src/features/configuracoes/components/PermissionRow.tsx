@@ -36,6 +36,7 @@ export function PermissionRow({ item, checked, locked, changed, noRule, depth = 
         {item.kind === "action" && <StatusBadge variant="info">Ação</StatusBadge>}
         {item.alwaysVisible && <StatusBadge variant="success">Sempre visível</StatusBadge>}
         {item.superAdminOnly && <StatusBadge variant="danger">Somente super admin</StatusBadge>}
+        {item.adminOnly && <StatusBadge variant="danger">Somente admin e super admin</StatusBadge>}
         {requires && <StatusBadge variant="neutral">Requer {requires}</StatusBadge>}
         {changed && <StatusBadge variant="warning">Alterado</StatusBadge>}
         {!changed && noRule && !locked && <StatusBadge variant="warning">Negado por padrão</StatusBadge>}

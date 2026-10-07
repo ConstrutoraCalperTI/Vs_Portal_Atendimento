@@ -3,6 +3,7 @@ import { Breadcrumb } from "../components/Breadcrumb";
 import { ModuleCard } from "../components/ModuleCard";
 import { modules, type ModuleCardData } from "../data/modules";
 import { useAccess } from "../features/configuracoes/access/useAccess";
+import { HomeTicketsSummary } from "../features/dashboard/HomeTicketsSummary";
 import { EmptyState } from "../features/configuracoes/components/EmptyState";
 import "./Home.css";
 
@@ -54,7 +55,10 @@ export function Home() {
         </div>
       </header>
 
-      {visible.length === 0 ? (
+      {/* Quem atende chamados vê só o resumo; os cards de módulo ficam para os demais perfis (o menu continua igual). */}
+      {canOpen("gestao_chamados") ? (
+        <HomeTicketsSummary key={user?.id} />
+      ) : visible.length === 0 ? (
         <div className="card">
           <EmptyState icon={LayoutGrid} title="Nenhum módulo liberado" description="Peça ao administrador para liberar os módulos do seu perfil." />
         </div>

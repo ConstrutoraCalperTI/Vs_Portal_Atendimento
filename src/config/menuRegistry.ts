@@ -7,6 +7,8 @@ import {
   FileText,
   Gauge,
   Home,
+  LayoutDashboard,
+  ListChecks,
   Link,
   Mail,
   MessageCircle,
@@ -14,6 +16,7 @@ import {
   Monitor,
   Settings,
   ShieldCheck,
+  SquareKanban,
   Ticket,
   Users,
   UsersRound,
@@ -42,6 +45,8 @@ interface MenuItemDefinition {
   description?: string;
   /** Só o super admin acessa, mesmo que o perfil tenha a permissão. */
   superAdminOnly?: boolean;
+  /** Regra fixa: só o perfil Admin e o super admin acessam (não é marcável em Perfis e permissões). */
+  adminOnly?: boolean;
   /** Só o Super admin da Central de acessos da Calper (super_admin do Gestão Comercial). */
   centralOnly?: boolean;
   /** Sempre visível, sem depender de permissão. */
@@ -64,8 +69,44 @@ interface ActionPermissionDefinition {
 const definitions = [
   { id: "home", label: "Página Inicial", path: "/home", icon: Home, group: "principal", alwaysVisible: true },
   {
+    id: "gestao_chamados",
+    label: "Gestão de Chamados",
+    path: "/gestao-chamados",
+    icon: Ticket,
+    group: "principal",
+    description: "Fila de tickets, prazos de SLA e distribuição por equipe.",
+  },
+  {
+    id: "gestao_chamados_visao_geral",
+    label: "Visão geral",
+    path: "/gestao-chamados/visao-geral",
+    icon: LayoutDashboard,
+    group: "principal",
+    description: "Painel da operação: KPIs, fila do que precisa de ação, triagem e SLA.",
+    parent: "gestao_chamados",
+  },
+  {
+    id: "gestao_chamados_tickets",
+    label: "Tickets",
+    path: "/gestao-chamados/tickets",
+    icon: SquareKanban,
+    group: "principal",
+    description: "Tickets em Kanban ou Lista, conforme as visões da sua equipe.",
+    parent: "gestao_chamados",
+  },
+  {
+    id: "gestao_chamados_status",
+    label: "Status",
+    path: "/gestao-chamados/status",
+    icon: ListChecks,
+    group: "principal",
+    description: "Cadastro dos status de ticket e das justificativas de cada um.",
+    parent: "gestao_chamados",
+    adminOnly: true,
+  },
+  {
     id: "gestao_atendimento",
-    label: "Gestão de Atendimento",
+    label: "Administração",
     path: "/gestao-atendimento",
     icon: MessagesSquare,
     group: "principal",
@@ -106,14 +147,6 @@ const definitions = [
     group: "principal",
     description: "Central Email: contas de e-mail (autorizadas no Google, uma a uma) que recebem os chamados e enviam as respostas de cada setor.",
     parent: "gestao_atendimento",
-  },
-  {
-    id: "gestao_chamados",
-    label: "Gestão de Chamados",
-    path: "/gestao-chamados",
-    icon: Ticket,
-    group: "principal",
-    description: "Fila de tickets, prazos de SLA e distribuição por equipe.",
   },
   {
     id: "manage_users",
@@ -174,7 +207,7 @@ const definitions = [
     path: "/configuracoes/integracoes/zenvia",
     icon: MessageCircle,
     group: "configuracoes",
-    description: "Conta Zenvia (token e webhooks) dos números da Gestão de Atendimento.",
+    description: "Conta Zenvia (token e webhooks) dos números da Administração.",
     superAdminOnly: true,
     parent: "configure_integrations",
   },
@@ -233,6 +266,7 @@ export interface PermissionEntry {
   group: MenuGroup;
   parent?: PermissionId;
   superAdminOnly?: boolean;
+  adminOnly?: boolean;
   alwaysVisible?: boolean;
 }
 

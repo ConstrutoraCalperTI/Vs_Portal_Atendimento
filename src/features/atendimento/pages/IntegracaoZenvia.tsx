@@ -135,7 +135,7 @@ function Tela({ c }: { c: ConexaoZenvia }) {
               </tr>
             </thead>
             <tbody>
-              {c.numeros.length === 0 && <tr><td colSpan={3} className="at-vazio">Nenhum número. Cadastre em Gestão de Atendimento › Setores e números.</td></tr>}
+              {c.numeros.length === 0 && <tr><td colSpan={3} className="at-vazio">Nenhum número. Cadastre em Administração › Setores e números.</td></tr>}
               {c.numeros.map((n) => (
                 <tr key={n.id}>
                   <td>{telefone(n.numero)}</td>

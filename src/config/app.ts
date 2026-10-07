@@ -28,6 +28,8 @@ export type RoleKey = string;
 
 /** Perfil do sistema com acesso total. Não é editável nem pode ser excluído. */
 export const SUPER_ADMIN_ROLE: RoleKey = "super_admin";
+/** Perfil Admin: único (além do super admin) que acessa itens `adminOnly`. */
+export const ADMIN_ROLE: RoleKey = "admin";
 
 /** Perfis que podem criar, editar e excluir outros perfis. */
 export const ROLE_MANAGER_ROLES: readonly RoleKey[] = [SUPER_ADMIN_ROLE, "admin"];

@@ -1,0 +1,94 @@
+/* Layout da Visão geral (Gestão de Chamados). Medidas e breakpoints da referência 02-dashboard.html;
+   cores só por token --ds-*. É uma seção dentro da tela Gestão de Chamados: o padding vem do .app-main
+   (os tokens --ds-* já usam o fundo do portal). */
+
+.ds-page {
+  background: transparent;
+}
+
+.ds-main {
+  max-width: var(--ds-main-max);
+}
+
+.ds-filters {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 25px 0 18px;
+}
+
+.ds-selects {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ds-page .ds-alert {
+  margin-bottom: 22px;
+}
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--ds-rail-w);
+  gap: 20px;
+}
+
+.ds-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ds-bottomgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.ds-page__footnote {
+  margin-top: 20px;
+}
+
+@media (min-width: 1550px) {
+  .ds-grid {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .ds-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-rail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .ds-bottomgrid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 750px) {
+  .ds-filters {
+    margin-top: 20px;
+  }
+
+  .ds-selects {
+    width: 100%;
+  }
+
+  .ds-selects .ds-select {
+    flex: 1;
+  }
+
+  .ds-grid,
+  .ds-bottomgrid,
+  .ds-rail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

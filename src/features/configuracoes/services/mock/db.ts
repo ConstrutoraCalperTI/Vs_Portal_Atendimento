@@ -203,6 +203,8 @@ const rolePermissions: Record<RoleKey, PermissionRules> = {
     gestao_atendimento_monitor: true,
     gestao_atendimento_supervisao: true,
     gestao_chamados: true,
+    gestao_chamados_visao_geral: true,
+    gestao_chamados_tickets: true,
     manage_users: true,
     manage_users_equipes: true,
     manage_pessoas: true,
@@ -217,11 +219,14 @@ const rolePermissions: Record<RoleKey, PermissionRules> = {
     gestao_atendimento_emails: true,
     gestao_atendimento_monitor: true,
     gestao_chamados: true,
+    gestao_chamados_visao_geral: true,
+    gestao_chamados_tickets: true,
     view_audit_logs: true,
     manage_sessions: true,
   },
   financeiro: { ...CONFIG_DENIED, gestao_atendimento_central: true },
-  operador: { ...CONFIG_DENIED, gestao_atendimento_central: true },
+  // Operador = agente (vai ser renomeado): atende chamados, então vê Gestão de Chamados e o resumo na Página Inicial.
+  operador: { ...CONFIG_DENIED, gestao_atendimento_central: true, gestao_chamados: true, gestao_chamados_visao_geral: true, gestao_chamados_tickets: true },
 };
 
 const integrations: Record<IntegrationKey, IntegrationRecord> = {

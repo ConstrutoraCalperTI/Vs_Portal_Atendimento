@@ -430,25 +430,28 @@ html [data-sonner-toaster][data-sonner-theme="light"] {
 }
 
 /* ---------- Design system do dashboard (referência 02-dashboard.html) ----------
-   Paleta do portal_atendimento, isolada com o prefixo --ds- para não mexer no tema atual (vermelho Calper).
-   Só aqui ficam hex; componentes em src/components/ds/ usam apenas var(--ds-*). */
+   Desde 07/10/2026 (docs/PLANO-resumo-chamados-home.md, D1) os tokens --ds-* apontam para o tema do portal
+   (vermelho Calper, Inter), para Gestão de Chamados e Página Inicial parecerem o mesmo produto. O azul ficou só
+   nos gráficos. Os componentes em src/components/ds/ continuam usando apenas var(--ds-*). */
 :root {
   /* Base */
-  --ds-background: #f4f5f7;
-  --ds-surface: #ffffff;
-  --ds-ink: #17202a;
-  --ds-muted: #56606b;
-  --ds-line: #e1e4e8;
-  --ds-table-head: #f8f9fb;
+  --ds-background: var(--page);
+  --ds-surface: var(--surface);
+  --ds-ink: var(--ink);
+  --ds-muted: var(--muted);
+  --ds-line: var(--line);
+  --ds-table-head: var(--table-head);
 
   /* Ação e foco */
-  --ds-primary: #1d5fa8;
-  --ds-primary-hover: #174e8c;
+  /* primary = ação e seleção (CTA, links, foco, KPI selecionado), no vermelho Calper.
+     primary-soft = informação neutra (SLA no prazo, contagem, mini-avatar, dica): cinza, para não parecer "vencido". */
+  --ds-primary: var(--brand);
+  --ds-primary-hover: var(--brand-hover);
   --ds-primary-fg: #ffffff;
-  --ds-primary-soft: #eef4fb;
-  --ds-primary-soft-fg: #123e70;
-  --ds-ring: #5b8fd0;
-  --ds-brand: #b42318;
+  --ds-primary-soft: var(--neutral-bg);
+  --ds-primary-soft-fg: var(--neutral-fg);
+  --ds-ring: var(--brand);
+  --ds-brand: var(--brand);
 
   /* Navegação */
   --ds-nav: #17202a;
@@ -497,7 +500,7 @@ html [data-sonner-toaster][data-sonner-theme="light"] {
   --ds-warning-tint: #fffaf2; /* botão de revisão da triagem */
 
   /* Tipografia */
-  --ds-font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --ds-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --ds-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
   --ds-fs-body: 14px;
   --ds-fs-h1: 29px;

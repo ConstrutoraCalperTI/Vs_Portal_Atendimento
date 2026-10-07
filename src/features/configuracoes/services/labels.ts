@@ -6,7 +6,7 @@ export const AUDIT_MODULE_LABELS: Record<AuditModule, string> = {
   integracoes: "Integrações",
   sessoes: "Sessões",
   autenticacao: "Autenticação",
-  atendimento: "Gestão de Atendimento",
+  atendimento: "Administração",
 };
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {

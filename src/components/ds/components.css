@@ -98,6 +98,27 @@
   background: var(--ds-danger-soft);
 }
 
+/* ---------- Grade de KPIs (6 → 3 → 2 colunas) ---------- */
+.ds-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+  .ds-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 750px) {
+  .ds-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
 /* ---------- Painel com padding (rail) ---------- */
 .ds-panel--padded {
   padding: 20px;
@@ -414,7 +435,7 @@
 }
 
 .ds-chart__delta {
-  color: var(--ds-primary);
+  color: var(--ds-chart-today);
 }
 
 /* ---------- TeamDistribution ---------- */

@@ -61,7 +61,7 @@ export function GestaoAtendimento() {
                 <Navigate to={liberadas[0].item.path} replace />
               ) : (
                 <div className="card">
-                  <EmptyState icon={Headset} title="Nenhuma tela liberada" description="Peça ao administrador acesso às telas de Gestão de Atendimento." />
+                  <EmptyState icon={Headset} title="Nenhuma tela liberada" description="Peça ao administrador acesso às telas de Administração." />
                 </div>
               )
             }

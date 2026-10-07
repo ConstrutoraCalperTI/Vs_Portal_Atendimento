@@ -84,7 +84,15 @@ const equipes: EquipeMock[] = [
   { id: 3, nome: "2ª via e boletos", setorId: 1, descricao: null, ativa: true, liderId: null, membros: ["u-bruno"] },
   { id: 4, nome: "Vistoria", setorId: 3, descricao: "Visitas técnicas nos imóveis.", ativa: true, liderId: "u-helena", membros: ["u-helena"] },
   { id: 5, nome: "Plantão de sábado", setorId: 2, descricao: null, ativa: false, liderId: "u-fernanda", membros: ["u-gustavo", "u-fernanda"] },
+  // Equipes internas da TI (sem setor): as mesmas dos tickets de exemplo da Gestão de Chamados.
+  { id: 6, nome: "Sistemas", setorId: null, descricao: "ERP, portais internos e acessos.", ativa: true, liderId: "u-wagner", membros: ["u-wagner", "u-ana", "u-bruno", "u-carla"] },
+  { id: 7, nome: "Infraestrutura", setorId: null, descricao: "Rede, VPN, impressão e equipamentos.", ativa: true, liderId: "u-marcos", membros: ["u-wagner", "u-ana", "u-bruno", "u-marcos"] },
 ];
+
+/** Modo simulado: equipes ativas e membros, para as visões de Tickets (sem exigir a permissão de Equipes). */
+export function equipesAtivasMock(): { id: number; nome: string; membros: string[] }[] {
+  return equipes.filter((e) => e.ativa).map((e) => ({ id: e.id, nome: e.nome, membros: [...e.membros] }));
+}
 const pessoa = (id: string): PessoaUsuario => {
   const u = dbPortal.users.find((x) => x.id === id);
   return { id, nome: u?.name ?? id, email: u?.email ?? "" };

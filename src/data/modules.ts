@@ -25,7 +25,7 @@ export interface ModuleCardData {
 // Cards da página inicial: um por tela de módulo. Troque pelos módulos do sistema.
 export const modules: ModuleCardData[] = [
   {
-    title: "Gestão de Atendimento",
+    title: "Administração",
     description: "Conversas do WhatsApp atendidas pela equipe de cada setor.",
     icon: MessagesSquare,
     accent: "brand",
