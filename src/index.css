@@ -428,3 +428,117 @@ html [data-sonner-toaster][data-sonner-theme="light"] {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* ---------- Design system do dashboard (referência 02-dashboard.html) ----------
+   Paleta do portal_atendimento, isolada com o prefixo --ds- para não mexer no tema atual (vermelho Calper).
+   Só aqui ficam hex; componentes em src/components/ds/ usam apenas var(--ds-*). */
+:root {
+  /* Base */
+  --ds-background: #f4f5f7;
+  --ds-surface: #ffffff;
+  --ds-ink: #17202a;
+  --ds-muted: #56606b;
+  --ds-line: #e1e4e8;
+  --ds-table-head: #f8f9fb;
+
+  /* Ação e foco */
+  --ds-primary: #1d5fa8;
+  --ds-primary-hover: #174e8c;
+  --ds-primary-fg: #ffffff;
+  --ds-primary-soft: #eef4fb;
+  --ds-primary-soft-fg: #123e70;
+  --ds-ring: #5b8fd0;
+  --ds-brand: #b42318;
+
+  /* Navegação */
+  --ds-nav: #17202a;
+  --ds-nav-fg: #ffffff;
+  --ds-nav-active: #2c3946;
+  --ds-nav-hover: #232f3b;
+  --ds-nav-text: #c7ced6;
+  --ds-nav-caption: #9aa4af;
+  --ds-nav-count: #3a4756;
+  --ds-nav-border: #2c3946;
+  --ds-nav-active-inset: #8fb4e3;
+
+  /* Estados de SLA */
+  --ds-danger: #b42318;
+  --ds-danger-soft: #fdecea;
+  --ds-danger-border: #f1c4c0;
+  --ds-danger-fg: #8f1b13;
+  --ds-warning: #b54708;
+  --ds-warning-soft: #fff4e5;
+  --ds-warning-border: #f3c98b;
+  --ds-warning-fg: #7a2e0b;
+  --ds-success: #1e7a4c;
+  --ds-success-soft: #e8f5ee;
+
+  /* Gráficos */
+  --ds-chart-today: #1d5fa8;
+  --ds-chart-yesterday: #b9c3ce;
+  --ds-chart-grid: #edeff2;
+  --ds-team-sistemas: #1d5fa8;
+  --ds-team-infra: #3a4550;
+  --ds-ai: #6d4fc7;
+  --ds-ai-soft: #eeebff;
+  --ds-triage-rule: #5b8fd0;
+  --ds-triage-ai: #1e7a4c;
+
+  /* Derivados (a referência usa tons intermediários; aqui, equivalentes na paleta do portal) */
+  --ds-subtle: #f1f3f6; /* hover de botão, botão fechar */
+  --ds-seg-track: #e9ecf0; /* fundo do segmented */
+  --ds-neutral-soft: #eef0f3; /* pill neutra, selo "dados demonstrativos" */
+  --ds-neutral-fg: #4a5560;
+  --ds-row-line: #edeff2; /* divisória entre linhas da tabela */
+  --ds-row-hover: #fafbfc;
+  --ds-field-border: #cdd3da;
+  --ds-field-bg: #fbfbfc;
+  --ds-danger-tint: #fef6f5; /* KPI vencido e alerta */
+  --ds-warning-tint: #fffaf2; /* botão de revisão da triagem */
+
+  /* Tipografia */
+  --ds-font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --ds-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+  --ds-fs-body: 14px;
+  --ds-fs-h1: 29px;
+  --ds-fs-h2: 16px;
+  --ds-fs-eyebrow: 10px;
+  --ds-fs-kpi: 29px;
+  --ds-fs-kpi-label: 11px;
+  --ds-fs-subtitle: 11px;
+  --ds-fs-small: 12px;
+  --ds-fs-table: 12px;
+  --ds-fs-th: 10px;
+  --ds-fs-pill: 10px;
+  --ds-fs-foot: 11px;
+  --ds-fs-footnote: 10px;
+
+  /* Raios */
+  --ds-radius-btn: 9px;
+  --ds-radius-kpi: 12px;
+  --ds-radius-panel: 13px;
+  --ds-radius-alert: 10px;
+  --ds-radius-dialog: 16px;
+  --ds-radius-seg: 9px;
+  --ds-radius-seg-inner: 6px;
+  --ds-radius-select: 8px;
+  --ds-radius-field: 7px;
+  --ds-radius-pill: 20px;
+  --ds-radius-track: 8px;
+  --ds-radius-logo: 11px;
+
+  /* Sombras (cor com alfa sobre os tokens, sem hex) */
+  --ds-shadow-cta: 0 4px 10px color-mix(in srgb, var(--ds-primary) 15%, transparent);
+  --ds-shadow-kpi-hover: 0 8px 20px color-mix(in srgb, var(--ds-ink) 5%, transparent);
+  --ds-shadow-seg: 0 2px 6px color-mix(in srgb, var(--ds-ink) 6%, transparent);
+  --ds-shadow-panel: 0 3px 12px color-mix(in srgb, var(--ds-ink) 1%, transparent);
+  --ds-shadow-dialog: 0 30px 100px color-mix(in srgb, var(--ds-ink) 25%, transparent);
+  --ds-shadow-toast: 0 5px 25px color-mix(in srgb, var(--ds-ink) 13%, transparent);
+  --ds-backdrop: color-mix(in srgb, var(--ds-ink) 53%, transparent);
+
+  /* Medidas do layout */
+  --ds-sidebar-w: 226px;
+  --ds-topbar-h: 74px;
+  --ds-rail-w: 302px;
+  --ds-main-max: 1800px;
+}

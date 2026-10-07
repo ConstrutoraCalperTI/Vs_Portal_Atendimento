@@ -14,6 +14,7 @@ import {
   Monitor,
   Settings,
   ShieldCheck,
+  Ticket,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -105,6 +106,14 @@ const definitions = [
     group: "principal",
     description: "Central Email: contas de e-mail (autorizadas no Google, uma a uma) que recebem os chamados e enviam as respostas de cada setor.",
     parent: "gestao_atendimento",
+  },
+  {
+    id: "gestao_chamados",
+    label: "Gestão de Chamados",
+    path: "/gestao-chamados",
+    icon: Ticket,
+    group: "principal",
+    description: "Fila de tickets, prazos de SLA e distribuição por equipe.",
   },
   {
     id: "manage_users",

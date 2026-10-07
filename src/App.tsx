@@ -19,6 +19,7 @@ const Integracoes = lazy(() =>
   import("./features/configuracoes/pages/Integracoes").then((m) => ({ default: m.Integracoes })),
 );
 const GestaoAtendimento = lazy(() => import("./pages/GestaoAtendimento").then((m) => ({ default: m.GestaoAtendimento })));
+const GestaoChamados = lazy(() => import("./pages/GestaoChamados").then((m) => ({ default: m.GestaoChamados })));
 const PermissoesAplicativo = lazy(() =>
   import("./features/configuracoes/pages/PermissoesAplicativo").then((m) => ({ default: m.PermissoesAplicativo })),
 );
@@ -34,12 +35,18 @@ const TrocarSenha = lazy(() =>
   import("./features/configuracoes/pages/TrocarSenha").then((m) => ({ default: m.TrocarSenha })),
 );
 
+// Vitrine do design system: só em desenvolvimento (o Vite remove o import no build de produção).
+const DesignSystem = import.meta.env.DEV
+  ? lazy(() => import("./pages/DesignSystem").then((m) => ({ default: m.DesignSystem })))
+  : null;
+
 // Tela de cada item do menuRegistry. O Record obriga todo item registrado a ter
 // uma página; as rotas em si são geradas a partir do registro. Seções (itens com `parent`)
 // são rotas internas da tela do pai, que recebe o caminho com "/*".
 const pages: Record<TopLevelMenuId, ReactElement> = {
   home: <Home />,
   gestao_atendimento: <GestaoAtendimento />,
+  gestao_chamados: <GestaoChamados />,
   manage_users: <UsuariosSecoes />,
   manage_pessoas: <Pessoas />,
   manage_permissions: <PerfisPermissoes />,
@@ -62,6 +69,8 @@ function App() {
       <Route path="/redefinir-senha" element={<Standalone><RedefinirSenha /></Standalone>} />
       {/* Fim do "Autorizar com Gmail" (janela aberta pela tela da conta de e-mail). */}
       <Route path="/oauth/google" element={<Standalone><OAuthRetorno /></Standalone>} />
+
+      {DesignSystem && <Route path="/design-system" element={<Standalone><DesignSystem /></Standalone>} />}
 
       {/* Autenticado, mas fora do layout: a troca de senha bloqueia o resto do portal. */}
       <Route
