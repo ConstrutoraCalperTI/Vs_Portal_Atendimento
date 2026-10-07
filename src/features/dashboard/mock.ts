@@ -14,12 +14,13 @@ const ANA: DashboardUser = { id: "u-ana", name: "Ana Lima", initials: "AL" };
 const BRUNO: DashboardUser = { id: "u-bruno", name: "Bruno Rocha", initials: "BR" };
 
 const SERVICES: DashboardService[] = [
-  { id: 0, name: "ERP Sienge", team: "Sistemas", sla_hours: 8 },
-  { id: 1, name: "Portais internos", team: "Sistemas", sla_hours: 8 },
-  { id: 2, name: "Rede / VPN", team: "Infraestrutura", sla_hours: 4 },
-  { id: 3, name: "Acessos e usuários", team: "Sistemas", sla_hours: 8 },
-  { id: 4, name: "Impressão", team: "Infraestrutura", sla_hours: 8 },
-  { id: 5, name: "Equipamentos", team: "Infraestrutura", sla_hours: 16 },
+  // Mesmos ids do catálogo de serviços (Administração › Serviços, seed dos cadastros).
+  { id: 3, name: "ERP Sienge", team: "Sistemas", sla_hours: 8 },
+  { id: 4, name: "Portais internos", team: "Sistemas", sla_hours: 8 },
+  { id: 7, name: "Rede / VPN", team: "Infraestrutura", sla_hours: 4 },
+  { id: 5, name: "Acessos e usuários", team: "Sistemas", sla_hours: 8 },
+  { id: 9, name: "Impressão", team: "Infraestrutura", sla_hours: 8 },
+  { id: 10, name: "Equipamentos", team: "Infraestrutura", sla_hours: 16 },
 ];
 
 const SUBJECTS = [
@@ -81,7 +82,7 @@ const OPEN_TICKETS: DashboardTicket[] = Array.from({ length: 76 }, (_, i) => {
     subject: SUBJECTS[cat],
     requester: PEOPLE[i % 6],
     description: "Chamado demonstrativo para validar o fluxo de atendimento e a hierarquia visual.",
-    service_id: cat,
+    service_id: SERVICES[cat].id,
     team: SERVICES[cat].team,
     origin: origin(i),
     owner: owner(i),
@@ -104,7 +105,7 @@ const CLOSED_TICKETS: DashboardTicket[] = Array.from({ length: 30 }, (_, i) => {
     subject: SUBJECTS[cat],
     requester: PEOPLE[(i + 2) % 6],
     description: "Chamado demonstrativo já resolvido.",
-    service_id: cat,
+    service_id: SERVICES[cat].id,
     team: SERVICES[cat].team,
     origin: i % 2 ? "E-mail" : "Intranet",
     owner: [CURRENT_USER, ANA, BRUNO][i % 3],

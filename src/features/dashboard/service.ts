@@ -113,4 +113,9 @@ const mockPainel: PainelService = {
   },
 };
 
+/** Modo simulado: os tickets em memória (a tela do ticket lê e altera os mesmos). */
+export function ticketsMock(): DashboardTicket[] {
+  return tickets;
+}
+
 export const painelService: PainelService = DATA_SOURCE === "mock" ? mockPainel : supabasePainel;
