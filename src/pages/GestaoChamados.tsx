@@ -15,6 +15,7 @@ import "../features/configuracoes/pages/Integracoes.css";
 const Dashboard = lazy(() => import("./Dashboard").then((m) => ({ default: m.Dashboard })));
 const Tickets = lazy(() => import("../features/chamados/pages/Tickets").then((m) => ({ default: m.Tickets })));
 const ConfigurarVisoes = lazy(() => import("../features/chamados/pages/ConfigurarVisoes").then((m) => ({ default: m.ConfigurarVisoes })));
+const TicketTela = lazy(() => import("../features/chamados/ticket/TicketTela").then((m) => ({ default: m.TicketTela })));
 const StatusCadastro = lazy(() => import("../features/chamados/pages/StatusCadastro").then((m) => ({ default: m.StatusCadastro })));
 
 // Gestão de Chamados: item `gestao_chamados` do menuRegistry, com as seções Visão geral, Tickets e Status
@@ -72,6 +73,7 @@ export function GestaoChamados() {
           <Route path="visao-geral" element={pode("gestao_chamados_visao_geral") ? <Dashboard /> : <NotFound />} />
           <Route path="tickets" element={pode("gestao_chamados_tickets") ? <Tickets /> : <NotFound />} />
           <Route path="tickets/visoes" element={pode("gestao_chamados_tickets") && podeConfigurar ? <ConfigurarVisoes /> : <NotFound />} />
+          <Route path="tickets/:numero" element={pode("gestao_chamados_tickets") ? <TicketTela /> : <NotFound />} />
           <Route path="status" element={pode("gestao_chamados_status") ? <StatusCadastro /> : <NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

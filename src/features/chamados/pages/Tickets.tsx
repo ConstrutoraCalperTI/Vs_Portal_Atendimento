@@ -12,9 +12,9 @@ import {
 } from "@dnd-kit/core";
 import { Settings2, SquareKanban } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { PageSkeleton } from "../../../components/PageSkeleton";
-import { DetailBody, DetailDialog, formatDuration, slaTone, Toast, useToast } from "../../../components/ds";
+import { DetailDialog, formatDuration, slaTone, Toast, useToast } from "../../../components/ds";
 import { getMenuItem } from "../../../config/menuRegistry";
 import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
@@ -73,7 +73,8 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
   const [busca, setBusca] = useState("");
   const tickets = data.tickets;
   const atualizar = useAtualizarTicket();
-  const [detalheId, setDetalheId] = useState<number | null>(null);
+  const navigate = useNavigate();
+  const abrir = (id: number) => navigate(`${getMenuItem("gestao_chamados_tickets").path}/${id}`);
   const [escolha, setEscolha] = useState<{ ticketId: number; coluna: ColunaKanban } | null>(null);
   const toast = useToast();
   const now = useMemo(() => new Date(data.generated_at), [data.generated_at]);
@@ -132,7 +133,6 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
   }
 
   const configurarPath = `${getMenuItem("gestao_chamados_tickets").path}/visoes${visao ? `?visao=${visao.id}` : ""}`;
-  const detalhe = tickets.find((t) => t.id === detalheId);
 
   return (
     <section aria-label="Tickets">
@@ -175,59 +175,12 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
           statusCadastro={status.data}
           meuId={me.id}
           podeMover={podeMover}
-          onAbrir={setDetalheId}
+          onAbrir={abrir}
           onSoltar={soltarNaColuna}
         />
       ) : (
-        <Listagem visao={visao} tickets={daVisao} meuId={me.id} servicoNome={ctx.servicoNome} onAbrir={setDetalheId} />
+        <Listagem visao={visao} tickets={daVisao} meuId={me.id} servicoNome={ctx.servicoNome} onAbrir={abrir} />
       )}
-
-      <DetailDialog open={detalhe !== undefined} onOpenChange={(o) => !o && setDetalheId(null)} title={detalhe ? `Ticket #${detalhe.id}` : ""}>
-        {detalhe && (
-          <DetailBody>
-            <h2 className="ds-h2">{detalhe.subject}</h2>
-            <p className="ds-muted">
-              Solicitante: {detalhe.requester} · Origem: {detalhe.origin} · Recebido em: {detalhe.recebido_em}
-            </p>
-            <p>
-              <span className="ch-badge">{detalhe.team}</span> <span className="ch-badge">{rotuloStatus(detalhe.status, detalhe.justificativa)}</span>{" "}
-              <span className="ch-badge">Prioridade {detalhe.prioridade.toLowerCase()}</span>
-              {detalhe.tags.map((tag) => (
-                <span key={tag} className="ch-badge ch-badge--info" style={{ marginLeft: 4 }}>{tag}</span>
-              ))}
-            </p>
-            <p>{detalhe.description}</p>
-            <p>
-              <strong>Responsável:</strong> {detalhe.owner ? (detalhe.owner.id === me.id ? "Você" : detalhe.owner.name) : "Não atribuído"}
-            </p>
-            <p>
-              <strong>SLA de solução:</strong> <SlaBadge t={detalhe} />
-            </p>
-            {podeMover(detalhe) && (
-              <label className="field" style={{ marginTop: 6 }}>
-                <span className="field__label">Mudar status</span>
-                <select
-                  className="input"
-                  value={`${detalhe.status_id}:${detalhe.justificativa_id ?? ""}`}
-                  onChange={(e) => {
-                    const [s, j] = e.target.value.split(":");
-                    aplicarStatus(detalhe.id, { statusId: Number(s), justificativaId: j ? Number(j) : null });
-                  }}
-                >
-                  {status.data
-                    .filter((s) => s.ativo)
-                    .flatMap((s) => [
-                      <option key={`${s.id}:`} value={`${s.id}:`}>{s.nome}</option>,
-                      ...s.justificativas.filter((j) => j.ativa).map((j) => (
-                        <option key={`${s.id}:${j.id}`} value={`${s.id}:${j.id}`}>{rotuloStatus(s.nome, j.nome)}</option>
-                      )),
-                    ])}
-                </select>
-              </label>
-            )}
-          </DetailBody>
-        )}
-      </DetailDialog>
 
       <DetailDialog
         open={escolha !== null}

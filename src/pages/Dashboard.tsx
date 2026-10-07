@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
+import { getMenuItem } from "../config/menuRegistry";
 import {
   AlertBanner,
   DetailBody,
@@ -323,6 +324,11 @@ function DashboardConteudo({ data }: { data: DashboardPayload }) {
                 <strong>SLA de solução:</strong> {slaLabel(openTicket.sla_due_minutes).toLowerCase()}
               </p>
             )}
+            <p>
+              <Link className="ds-btn ds-btn--primary" to={`${getMenuItem("gestao_chamados_tickets").path}/${openTicket.id}`}>
+                Abrir ticket
+              </Link>
+            </p>
             {!openTicket.owner && !isClosed(openTicket) && (
               <button type="button" className="ds-btn ds-btn--primary" onClick={() => assign(openTicket.id)}>
                 Assumir ticket nesta demonstração

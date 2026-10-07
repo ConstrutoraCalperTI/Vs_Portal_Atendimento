@@ -187,7 +187,7 @@ function Resumo({ data }: { data: DashboardPayload }) {
                     <span className="ts-row__id">#{t.id}</span> · {t.requester}
                     {!mine && <> · {ownerText(t)}</>}
                   </div>
-                  <Link className="ts-row__subject" to={link({ ticket: t.id })}>
+                  <Link className="ts-row__subject" to={`${getMenuItem("gestao_chamados_tickets").path}/${t.id}`}>
                     {t.subject}
                   </Link>
                   <div className="ts-row__category">

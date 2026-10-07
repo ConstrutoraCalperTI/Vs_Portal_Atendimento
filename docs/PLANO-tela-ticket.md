@@ -73,31 +73,37 @@ da IA, Usar esta solução, macros, Nota interna, Opções ⋮ (clonar, mesclar,
 ## 5. Fases da tela do ticket (checklist binário)
 
 ### TT-1: estrutura e campos
-- [ ] Rota `/gestao-chamados/tickets/:numero` (abre pela fila, pelo Kanban, pela Lista e pela Página Inicial).
-- [ ] Barra: nº, solicitante, canal, conta/número, **Seguir**, status com justificativa, Opções.
-- [ ] Coluna esquerda (Público e Interno) com os cadastros, as **regras para exibição** aplicadas na hora, "Atribuir para mim" e "Salvar campos". O banco recusa resolver com campo obrigatório vazio.
-- [ ] Linha do tempo numerada, com filtros (públicas, internas, histórico de alterações). A assinatura e a citação de e-mail ficam recolhidas.
+- [x] Rota `/gestao-chamados/tickets/:numero` (abre pela fila, pelo Kanban, pela Lista e pela Página Inicial).
+- [x] Barra: nº, solicitante, canal, conta/número, **Seguir**, status com justificativa, Opções.
+- [x] Coluna esquerda (Público e Interno) com os cadastros, as **regras para exibição** aplicadas na hora, "Atribuir para mim" e "Salvar campos". O banco recusa resolver com campo obrigatório vazio.
+- [x] Linha do tempo numerada, com filtros (públicas, internas, histórico de alterações).
+- [ ] A assinatura e a citação de e-mail ficam recolhidas (depende do e-mail entrar como ticket, Etapa 4).
 
 ### TT-2: responder
-- [ ] **Responder ao solicitante** pelo canal (T3), com anexos e Cc. **Nota interna**. "Depois de enviar: status".
+- [x] **Responder ao solicitante** (fica "pendente de envio"), Cc, **Nota interna** e "Depois de enviar: status".
+- [ ] Envio de fato pelo canal (e-mail/WhatsApp) e anexos (Etapa 4).
 - [ ] WhatsApp: aviso e modelos aprovados fora da janela de 24 h.
 - [ ] Rascunho guardado se a tela fechar.
 
 ### TT-3: IA na tela (depois de IA-2)
 - [ ] Análise (intenção, resumo, classificação + motivo) e **Aplicar classificação**, com o histórico "aplicado por".
-- [ ] **💡 Já existe solução**: a mais parecida, "ver outras", **Usar esta solução** e 👍/👎.
+- [x] **💡 Já existe solução** sem IA: a última do mesmo serviço, "ver outras", **Usar esta solução na resposta** e **Usar como solução aplicada**.
+- [ ] A mais parecida pela IA e 👍/👎 (Etapa 5).
 - [ ] Pergunta à IA com fontes (T10) e **✨ Melhorar texto** (ortografia e clareza, sem mudar o sentido).
 
 ### TT-4: macros
 - [ ] **Administração › Macros**: cadastro com texto, variáveis e ações; pessoais e da equipe.
-- [ ] Aplicar pelo botão, por "/" no editor e pelo menu Opções.
+- [x] Aplicar pelo botão e pelo menu Opções (variáveis, status depois de enviar, campos e tags).
+- [ ] Aplicar por "/" no editor.
 
 ### TT-5: clonar, mesclar, excluir
-- [ ] Clonar (T6), mesclar (T7) com a sugestão de duplicados da IA, excluir lógico (T8) e o bloco de relacionamentos.
+- [x] Clonar (T6), mesclar (T7), excluir lógico (T8, só super admin) e o bloco de relacionamentos.
+- [ ] Sugestão de duplicados da IA ao mesclar (Etapa 5).
 
 ### TT-6: SLA e demais opções
-- [ ] Detalhes do SLA, pausa e alteração com justificativa (T9).
-- [ ] Imprimir, Eventos, Enviar mensagem interna (para um colega, com aviso) e Iniciar chat (abre a Central no WhatsApp do solicitante).
+- [x] Detalhes do SLA, pausa e alteração com justificativa (T9).
+- [x] Imprimir, Eventos e Enviar mensagem interna (abre a nota interna).
+- [ ] Mensagem interna para um colega com aviso e Iniciar chat (abre a Central no WhatsApp do solicitante).
 
 ### TT-7: verificação
 - [ ] E2E por perfil:
@@ -106,4 +112,4 @@ da IA, Usar esta solução, macros, Nota interna, Opções ⋮ (clonar, mesclar,
   - macro preenche e muda o status;
   - clonar e mesclar registram o relacionamento;
   - operador não exclui.
-- [ ] 1440 / 1100 / 390 px sem rolagem lateral; `npm run build`, `npm test` e `oxlint` sem erros.
+- [x] 1440 / 1100 / 390 px sem rolagem lateral; `npm run build`, `npm test` e `oxlint` sem erros.
