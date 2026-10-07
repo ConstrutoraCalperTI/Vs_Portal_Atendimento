@@ -1,13 +1,14 @@
 import type { CategoriaStatus } from "../chamados/status/types";
 
-// Formato que a futura RPC `app_portal_atendimento.rpc_dashboard` vai devolver (jsonb, snake_case).
-// Por enquanto a tela lê o mock (./mock.ts); nada aqui fala com o Supabase.
+// Formato que a RPC `portal_atendimento.ch_painel()` devolve (jsonb, snake_case). No modo simulado, o mock
+// (./mock.ts) devolve o mesmo formato.
 
 export type DashboardScope = "mine" | "team" | "all";
 
-export type TicketOrigin = "E-mail" | "Intranet" | "Agente";
+export type TicketOrigin = "E-mail" | "WhatsApp" | "Intranet" | "Agente";
 
-export type TicketPrioridade = "Baixa" | "Normal" | "Alta" | "Urgente";
+/** Nome da urgência do cadastro (Administração › Urgências): "Urgente", "Alta", "Normal", "Baixa"… */
+export type TicketPrioridade = string;
 
 /**
  * Métrica dos KPIs; "all" = fila de trabalho (tudo que não está fechado).

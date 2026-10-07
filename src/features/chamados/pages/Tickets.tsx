@@ -20,7 +20,9 @@ import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { CLOSED_WINDOW_DAYS, isClosed } from "../../dashboard/queue";
 import type { DashboardTicket } from "../../dashboard/types";
-import { useDashboardData } from "../../dashboard/useDashboardData";
+import { ComPainel, useAtualizarTicket } from "../../dashboard/useDashboardData";
+import type { DashboardPayload } from "../../dashboard/types";
+import { ServiceError } from "../../configuracoes/services/types";
 import { useStatusTickets, useVisoesDisponiveis } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import { atendeCondicoes, colunaDoTicket, ordenarTickets } from "../visoes/avaliar";
@@ -59,14 +61,18 @@ function rotuloRef(ref: StatusRef, status: readonly StatusTicket[]): string {
 }
 
 export function Tickets() {
-  const data = useDashboardData();
+  return <ComPainel>{(data) => <TicketsConteudo data={data} />}</ComPainel>;
+}
+
+function TicketsConteudo({ data }: { data: DashboardPayload }) {
   const me = data.current_user;
   const status = useStatusTickets();
   const visoes = useVisoesDisponiveis(me.id);
   const perm = usePermissoesVisoes();
   const [params, setParams] = useSearchParams();
   const [busca, setBusca] = useState("");
-  const [tickets, setTickets] = useState<DashboardTicket[]>(data.tickets);
+  const tickets = data.tickets;
+  const atualizar = useAtualizarTicket();
   const [detalheId, setDetalheId] = useState<number | null>(null);
   const [escolha, setEscolha] = useState<{ ticketId: number; coluna: ColunaKanban } | null>(null);
   const toast = useToast();
@@ -98,25 +104,17 @@ export function Tickets() {
   const podeMover = (t: DashboardTicket) => perm.veTodas || !t.owner || t.owner.id === me.id;
 
   function aplicarStatus(ticketId: number, ref: StatusRef) {
-    const s = status.data?.find((x) => x.id === ref.statusId);
-    if (!s) return;
-    const j = s.justificativas.find((x) => x.id === ref.justificativaId) ?? null;
-    setTickets((all) =>
-      all.map((t) =>
-        t.id === ticketId
-          ? {
-              ...t,
-              status_id: s.id,
-              status: s.nome,
-              status_categoria: s.categoria,
-              justificativa_id: j?.id ?? null,
-              justificativa: j?.nome ?? null,
-              closed_at: ["resolvido", "fechado", "cancelado"].includes(s.categoria) ? t.closed_at ?? now.toISOString() : null,
-            }
-          : t,
-      ),
+    const st = status.data?.find((x) => x.id === ref.statusId);
+    if (!st) return;
+    const j = st.justificativas.find((x) => x.id === ref.justificativaId) ?? null;
+    atualizar.mutate(
+      { id: ticketId, patch: { statusId: st.id, justificativaId: j?.id ?? null } },
+      {
+        onSuccess: () => toast.show(`Ticket #${ticketId} agora está em "${rotuloStatus(st.nome, j?.nome)}".`),
+        // Resolver pede serviço, campos obrigatórios e a solução aplicada: o banco explica o que falta.
+        onError: (e) => toast.show(e instanceof ServiceError ? e.message : "Não foi possível mudar o status."),
+      },
     );
-    toast.show(`Ticket #${ticketId} agora está em "${rotuloStatus(s.nome, j?.nome)}" (demonstração).`);
   }
 
   function soltarNaColuna(ticketId: number, coluna: ColunaKanban) {

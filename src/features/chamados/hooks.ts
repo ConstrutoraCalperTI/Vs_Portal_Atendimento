@@ -1,4 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  cadastrosService,
+  type SalvarCampo,
+  type SalvarCategoria,
+  type SalvarMacro,
+  type SalvarRegra,
+  type SalvarServico,
+  type SalvarUrgencia,
+  type TabelaOrdenavel,
+} from "./cadastros/service";
 import { statusService } from "./status/service";
 import type { JustificativaSalvar, StatusSalvar } from "./status/types";
 import { visoesService } from "./visoes/service";
@@ -48,3 +58,36 @@ function useMudaVisoes<T>(fn: (p: T) => Promise<unknown>) {
 export const useSalvarVisao = () => useMudaVisoes((p: VisaoSalvar) => visoesService.salvar(p));
 export const useExcluirVisao = () => useMudaVisoes((id: number) => visoesService.excluir(id));
 export const useSalvarKanbanPadrao = () => useMudaVisoes((p: VisaoSalvar["kanban"]["colunas"]) => visoesService.salvarKanbanPadrao(p));
+
+// ---------- Cadastros do ticket (Administração) ----------
+
+const CADASTROS = ["chamados", "cadastros"] as const;
+
+export function useCadastros() {
+  return useQuery({ queryKey: CADASTROS, queryFn: () => cadastrosService.carregar(), staleTime: 60_000 });
+}
+
+function useMudaCadastro<T>(fn: (p: T) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: CADASTROS }) });
+}
+
+export const useSalvarUrgencia = () => useMudaCadastro((p: SalvarUrgencia) => cadastrosService.salvarUrgencia(p));
+export const useSalvarCategoria = () => useMudaCadastro((p: SalvarCategoria) => cadastrosService.salvarCategoria(p));
+export const useSalvarServico = () => useMudaCadastro((p: SalvarServico) => cadastrosService.salvarServico(p));
+export const useSalvarCampo = () => useMudaCadastro((p: SalvarCampo) => cadastrosService.salvarCampo(p));
+export const useSalvarRegra = () => useMudaCadastro((p: SalvarRegra) => cadastrosService.salvarRegra(p));
+export const useOrdenarCadastro = () => useMudaCadastro((p: { tabela: TabelaOrdenavel; ids: number[] }) => cadastrosService.ordenar(p.tabela, p.ids));
+export const useSalvarPadroesSetor = () =>
+  useMudaCadastro((p: { setorId: number; equipeId: number | null; slaHoras: number }) => cadastrosService.salvarPadroesSetor(p.setorId, p.equipeId, p.slaHoras));
+
+const MACROS = ["chamados", "macros"] as const;
+
+export function useMacros() {
+  return useQuery({ queryKey: MACROS, queryFn: () => cadastrosService.macros() });
+}
+
+export function useSalvarMacro() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (p: SalvarMacro) => cadastrosService.salvarMacro(p), onSuccess: () => qc.invalidateQueries({ queryKey: MACROS }) });
+}

@@ -6,7 +6,8 @@ import { getMenuItem } from "../../config/menuRegistry";
 import { dashboardLink, parseScope } from "./metrics";
 import { baseTickets, closedToday, CLOSED_WINDOW_DAYS, metricPredicates, queueTickets } from "./queue";
 import type { DashboardMetric, DashboardScope, DashboardTicket } from "./types";
-import { useDashboardData } from "./useDashboardData";
+import { ComPainel } from "./useDashboardData";
+import type { DashboardPayload } from "./types";
 import "./HomeTicketsSummary.css";
 
 // Resumo de chamados na Página Inicial, no visual do portal (Inter, vermelho Calper, cards dos módulos).
@@ -76,7 +77,10 @@ function SummaryCard({ to, label, aside, value, action, children, wide = false }
 }
 
 export function HomeTicketsSummary() {
-  const data = useDashboardData();
+  return <ComPainel skeleton={false}>{(data) => <Resumo data={data} />}</ComPainel>;
+}
+
+function Resumo({ data }: { data: DashboardPayload }) {
   const { path } = getMenuItem("gestao_chamados_visao_geral");
   const now = useMemo(() => new Date(data.generated_at), [data.generated_at]);
   const P = useMemo(() => metricPredicates(now), [now]);

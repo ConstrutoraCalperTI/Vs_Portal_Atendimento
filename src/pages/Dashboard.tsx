@@ -26,12 +26,14 @@ import {
   type TicketService,
 } from "../components/ds";
 import "./Dashboard.css";
-import { STATUS_ID, statusFields } from "../features/chamados/status/seed";
+import { STATUS_ID } from "../features/chamados/status/seed";
 import { rotuloStatus } from "../features/chamados/status/types";
 import { METRIC_LABELS, METRICS, parseMetric, parseScope, toQueueRow } from "../features/dashboard/metrics";
 import { baseTickets, clampPage, isClosed, metricPredicates, QUEUE_PAGE_SIZE, queueTickets } from "../features/dashboard/queue";
-import type { DashboardMetric, DashboardScope, DashboardTicket } from "../features/dashboard/types";
-import { useDashboardData } from "../features/dashboard/useDashboardData";
+import type { DashboardMetric, DashboardScope } from "../features/dashboard/types";
+import { ComPainel, useAtualizarTicket, useCriarTicket } from "../features/dashboard/useDashboardData";
+import type { DashboardPayload } from "../features/dashboard/types";
+import { ServiceError } from "../features/configuracoes/services/types";
 
 // Gestão de Chamados › Visão geral (seção `gestao_chamados_visao_geral`), recriada da referência 02-dashboard.html
 // dentro do layout do portal. Dados de exemplo em features/dashboard/mock.ts; sem Supabase nesta etapa.
@@ -54,11 +56,16 @@ const ORIGINS = [
 type Detail = { kind: "ticket"; id: number } | { kind: "review" } | null;
 
 export function Dashboard() {
-  const data = useDashboardData();
+  return <ComPainel>{(data) => <DashboardConteudo data={data} />}</ComPainel>;
+}
+
+function DashboardConteudo({ data }: { data: DashboardPayload }) {
   const [params] = useSearchParams();
   const me = data.current_user;
   const services: TicketService[] = data.services.map((s) => ({ id: s.id, name: s.name, team: s.team, slaHours: s.sla_hours }));
-  const [tickets, setTickets] = useState<DashboardTicket[]>(data.tickets);
+  const tickets = data.tickets;
+  const atualizar = useAtualizarTicket();
+  const criar = useCriarTicket();
   const [scope, setScope] = useState<DashboardScope>(() => parseScope(params.get("escopo")) ?? "team");
   const [team, setTeam] = useState("");
   const [origin, setOrigin] = useState("");
@@ -120,40 +127,34 @@ export function Dashboard() {
     setMetric("all");
   }
 
+  const falhou = (e: unknown, padrao: string) => toast.show(e instanceof ServiceError ? e.message : padrao);
+
   function assign(id: number) {
-    setTickets((all) => all.map((t) => (t.id === id ? { ...t, owner: me, ...statusFields(STATUS_ID.emAtendimento) } : t)));
-    setDetail(null);
-    toast.show(`Ticket #${id} atribuído a você nesta sessão.`);
+    atualizar.mutate(
+      { id, patch: { responsavelId: me.id, statusId: STATUS_ID.emAtendimento, justificativaId: null } },
+      {
+        onSuccess: () => {
+          setDetail(null);
+          toast.show(`Ticket #${id} atribuído a você.`);
+        },
+        onError: (e) => falhou(e, "Não foi possível assumir o ticket."),
+      },
+    );
   }
 
   function createTicket(input: NewTicketInput) {
-    const service = data.services.find((s) => s.id === input.serviceId) ?? data.services[0];
-    const id = Math.max(...tickets.map((t) => t.id)) + 1;
-    setTickets((all) => [
-      ...all,
+    criar.mutate(
+      { assunto: input.subject, descricao: input.description, solicitanteNome: input.requester, servicoId: input.serviceId },
       {
-        id,
-        subject: input.subject,
-        requester: input.requester,
-        description: input.description,
-        service_id: service.id,
-        team: service.team,
-        origin: "Agente",
-        owner: null,
-        ...statusFields(STATUS_ID.novo),
-        prioridade: "Normal",
-        tags: [],
-        recebido_em: "Agente",
-        criado_em: data.generated_at,
-        sla_due_minutes: service.sla_hours * 60,
-        opened_today: true,
-        closed_at: null,
+        onSuccess: (id) => {
+          setNewOpen(false);
+          resetAll();
+          setSearch(String(id));
+          toast.show(`Ticket #${id} criado.`);
+        },
+        onError: (e) => falhou(e, "Não foi possível criar o ticket."),
       },
-    ]);
-    setNewOpen(false);
-    resetAll();
-    setSearch(String(id));
-    toast.show(`Ticket de exemplo #${id} criado. Sem envio ao sistema real.`);
+    );
   }
 
   const openTicket = detail?.kind === "ticket" ? tickets.find((t) => t.id === detail.id) : undefined;

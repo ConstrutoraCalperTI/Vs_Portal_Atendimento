@@ -8,7 +8,8 @@ import { getMenuItem } from "../../../config/menuRegistry";
 import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
-import { useDashboardData } from "../../dashboard/useDashboardData";
+import { ComPainel } from "../../dashboard/useDashboardData";
+import type { DashboardPayload } from "../../dashboard/types";
 import { useEquipesVisoes, useExcluirVisao, useKanbanPadrao, useSalvarKanbanPadrao, useSalvarVisao, useStatusTickets, useVisoesConfig } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import { atendeCondicoes } from "../visoes/avaliar";
@@ -309,16 +310,15 @@ function AbaPrincipal({ v, muda }: { v: VisaoSalvar; muda: <K extends keyof Visa
 
 // ---------- Condições ----------
 
-function useOpcoes(status: StatusTicket[]) {
-  const data = useDashboardData();
+function useOpcoes(status: StatusTicket[], data: DashboardPayload) {
   return useMemo(() => {
     const distintos = (xs: string[]) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")).map((x) => ({ value: x, label: x }));
     const usuarios = new Map<string, string>([[data.current_user.id, data.current_user.name]]);
     for (const t of data.tickets) if (t.owner) usuarios.set(t.owner.id, t.owner.name);
     return {
       recebido_em: distintos(data.tickets.map((t) => t.recebido_em)),
-      origem: distintos(["E-mail", "Intranet", "Agente"]),
-      equipe: distintos(data.tickets.map((t) => t.team)),
+      origem: distintos(["E-mail", "WhatsApp", "Intranet", "Agente"]),
+      equipe: distintos([...data.teams.map((t) => t.name), ...data.tickets.map((t) => t.team)]),
       usuario: [...usuarios].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR")),
       servico: distintos(data.services.map((s) => s.name)),
       status: status.map((s) => ({ value: String(s.id), label: s.nome })),
@@ -329,9 +329,19 @@ function useOpcoes(status: StatusTicket[]) {
   }, [data, status]);
 }
 
-function AbaCondicoes({ condicoes, status, onChange }: { condicoes: Condicoes; status: StatusTicket[]; onChange: (c: Condicoes) => void }) {
-  const data = useDashboardData();
-  const opcoes = useOpcoes(status);
+interface AbaCondicoesProps {
+  condicoes: Condicoes;
+  status: StatusTicket[];
+  onChange: (c: Condicoes) => void;
+}
+
+/** As opções de valor e a prévia usam os tickets que a pessoa vê (o painel). */
+function AbaCondicoes(props: AbaCondicoesProps) {
+  return <ComPainel>{(data) => <AbaCondicoesConteudo {...props} data={data} />}</ComPainel>;
+}
+
+function AbaCondicoesConteudo({ condicoes, status, onChange, data }: AbaCondicoesProps & { data: DashboardPayload }) {
+  const opcoes = useOpcoes(status, data);
   const ctx = useMemo(
     () => ({ userId: data.current_user.id, now: new Date(data.generated_at), servicoNome: (id: number) => data.services.find((s) => s.id === id)?.name ?? "" }),
     [data],
