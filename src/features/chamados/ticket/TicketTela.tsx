@@ -1,4 +1,4 @@
-import { ArrowLeft, Bell, BellOff, Copy, GitMerge, History, Lightbulb, Lock, MoreVertical, Printer, Timer, Trash2, Zap } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, CheckCircle2, Copy, GitMerge, History, Lightbulb, Lock, MoreVertical, Printer, RotateCcw, Timer, Trash2, Zap } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
-import { camposPendentes, estadoCampos } from "../cadastros/regras";
+import { estadoCampos } from "../cadastros/regras";
 import { caminhoServico, equipeDoServico, type Cadastros, type Campo, type Macro } from "../cadastros/types";
 import { useCadastros, useMacros, useStatusTickets } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
@@ -90,8 +90,9 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
   const atualizar = useAtualizarDetalhe();
   const seguir = useSeguirTicket();
   const [menu, setMenu] = useState(false);
-  const [dialogo, setDialogo] = useState<"resolver" | "sla" | "clonar" | "mesclar" | "excluir" | "prazo" | null>(null);
-  const [alvoResolver, setAlvoResolver] = useState<{ statusId: number; justificativaId: number | null } | null>(null);
+  const [dialogo, setDialogo] = useState<"sla" | "clonar" | "mesclar" | "excluir" | "prazo" | null>(null);
+  // "Status após enviar" do compositor. Fica aqui para o seletor do topo poder preencher (Resolvido/Fechado).
+  const [depois, setDepois] = useState("");
   const [historico, setHistorico] = useState(false);
   // Compositor (fora do formulário da esquerda, para não perder o texto quando os campos são salvos).
   const [tipo, setTipo] = useState<"publica" | "interna">("publica");
@@ -107,25 +108,43 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
     },
     [],
   );
-  const bloqueado = Boolean(d.mescladoEmId || d.excluidoEm);
   const statusAtual = status.find((s) => s.id === d.statusId);
+  // Encerrado (resolvido, fechado ou cancelado): só leitura até "Reabrir ticket".
+  const encerrado = Boolean(statusAtual && ["resolvido", "fechado", "cancelado"].includes(statusAtual.categoria));
+  const bloqueado = Boolean(d.mescladoEmId || d.excluidoEm || encerrado);
   const justAtual = statusAtual?.justificativas.find((j) => j.id === d.justificativaId);
 
   const mudarStatus = (v: string) => {
     const alvo = lerStatus(v);
     const st = status.find((s) => s.id === alvo.statusId);
+    // Encerrar exige a ação de encerramento: o seletor só prepara o compositor.
     if (st && (st.categoria === "resolvido" || st.categoria === "fechado")) {
-      setAlvoResolver(alvo);
-      setDialogo("resolver");
+      setDepois(v);
+      focarResposta("publica");
+      toast.info(`Escreva a ação de encerramento e clique em "Adicionar ação" para deixar o ticket ${st.nome.toLowerCase()}.`);
       return;
     }
     atualizar.mutate({ id: d.id, patch: alvo }, { onSuccess: () => toast.success(`Status: ${rotuloStatus(st?.nome ?? "", st?.justificativas.find((j) => j.id === alvo.justificativaId)?.nome)}`), onError: (e) => toast.error(erroMsg(e, "Não foi possível mudar o status.")) });
   };
 
-  const focarResposta = (t: "publica" | "interna") => {
+  const reabrir = () => {
+    const alvo =
+      status.find((s) => s.ativo && s.categoria === "andamento" && s.nome.trim().toLowerCase() === "reaberto") ??
+      [...status].filter((s) => s.ativo && s.categoria === "andamento").sort((a, b) => a.ordem - b.ordem)[0];
+    if (!alvo) {
+      toast.error("Cadastre um status de atendimento para poder reabrir.");
+      return;
+    }
+    atualizar.mutate(
+      { id: d.id, patch: { statusId: alvo.id, justificativaId: null } },
+      { onSuccess: () => toast.success(`Ticket #${d.id} reaberto (${alvo.nome}).`), onError: (e) => toast.error(erroMsg(e, "Não foi possível reabrir o ticket.")) },
+    );
+  };
+
+  function focarResposta(t: "publica" | "interna") {
     setTipo(t);
     setTimeout(() => textoRef.current?.focus(), 0);
-  };
+  }
 
   useEffect(() => {
     if (!menu) return;
@@ -164,6 +183,21 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
           {d.seguindo ? <BellOff size={15} aria-hidden="true" /> : <Bell size={15} aria-hidden="true" />}
           {d.seguindo ? "Seguindo" : "Seguir"}
         </button>
+        {encerrado ? (
+          <>
+            <span className="tk-encerrado" role="status">
+              <CheckCircle2 size={16} aria-hidden="true" />
+              {rotuloStatus(statusAtual?.nome ?? "", justAtual?.nome)}
+              {d.encerradoEm ? ` em ${fmt(d.encerradoEm)}` : ""}
+            </span>
+            {!d.mescladoEmId && !d.excluidoEm && (
+              <button type="button" className="btn btn--outline" disabled={atualizar.isPending} onClick={reabrir}>
+                <RotateCcw size={15} aria-hidden="true" />
+                {atualizar.isPending ? "Reabrindo…" : "Reabrir ticket"}
+              </button>
+            )}
+          </>
+        ) : (
         <select className="input tk-status" aria-label="Status do ticket" value={chaveStatus(d.statusId, d.justificativaId)} disabled={bloqueado || atualizar.isPending} onChange={(e) => mudarStatus(e.target.value)}>
           {status
             .filter((s) => s.ativo || s.id === d.statusId)
@@ -180,6 +214,7 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
                 )),
             ])}
         </select>
+        )}
         <div className="tk-menu">
           <button type="button" className="btn btn--outline" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
             Opções
@@ -249,6 +284,13 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
             </div>
           )}
           {d.excluidoEm && <div className="tk-aviso">Este ticket foi excluído em {fmt(d.excluidoEm)}.</div>}
+          {encerrado && !d.mescladoEmId && !d.excluidoEm && (
+            <div className="tk-aviso tk-aviso--ok">
+              Ticket <b>{(statusAtual?.nome ?? "encerrado").toLowerCase()}</b>
+              {d.encerradoEm ? ` em ${fmt(d.encerradoEm)}` : ""}. Para responder ou mudar a classificação, clique em <b>Reabrir ticket</b>. Se o solicitante responder ao
+              e-mail, ele reabre sozinho.
+            </div>
+          )}
 
           {!bloqueado && (
             <Compositor
@@ -264,10 +306,8 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
               setMacroAberta={setMacroAberta}
               nomeAgente={user?.name ?? "Equipe"}
               obterRascunho={() => rascunho.current}
-              onPedirResolver={(alvo) => {
-                setAlvoResolver(alvo);
-                setDialogo("resolver");
-              }}
+              depois={depois}
+              setDepois={setDepois}
             />
           )}
 
@@ -311,9 +351,6 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
       </div>
 
       {/* ---------- Diálogos ---------- */}
-      {dialogo === "resolver" && alvoResolver && (
-        <DialogoResolver d={d} cad={cad} status={status} alvo={alvoResolver} onFechar={() => setDialogo(null)} />
-      )}
       {dialogo === "prazo" && <DialogoPrazo d={d} onFechar={() => setDialogo(null)} />}
       {dialogo === "sla" && <DialogoSla d={d} cad={cad} onFechar={() => setDialogo(null)} />}
       {dialogo === "clonar" && <DialogoClonar d={d} onFechar={() => setDialogo(null)} onClonado={(novo) => navigate(`${ticketsPath}/${novo}`)} />}
@@ -648,12 +685,12 @@ interface CompositorProps {
   setMacroAberta: (v: boolean) => void;
   nomeAgente: string;
   obterRascunho: () => Rascunho;
-  onPedirResolver: (alvo: { statusId: number; justificativaId: number | null }) => void;
+  depois: string;
+  setDepois: (v: string) => void;
 }
 
-function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRef, macroAberta, setMacroAberta, nomeAgente, obterRascunho, onPedirResolver }: CompositorProps) {
+function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRef, macroAberta, setMacroAberta, nomeAgente, obterRascunho, depois, setDepois }: CompositorProps) {
   const adicionar = useAdicionarAcao();
-  const [depois, setDepois] = useState("");
   const [camposMacro, setCamposMacro] = useState<PatchTicket>({});
   const [busca, setBusca] = useState("");
   const interna = tipo === "interna";
@@ -688,29 +725,23 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
       if (!texto.trim()) textoRef.current?.focus();
       return;
     }
-    const campos = { ...r.patch, ...camposMacro };
-    const temCampos = Object.keys(campos).length > 0;
+    const campos: PatchTicket = { ...r.patch, ...camposMacro };
     const statusDepois = lerStatus(depois);
     const st = status.find((s) => s.id === statusDepois.statusId);
-    // Resolver pede a solução aplicada e os obrigatórios: abre o diálogo de resolver antes.
-    if (st && (st.categoria === "resolvido" || st.categoria === "fechado") && !d.solucaoAplicada && !campos.solucaoAplicada) {
-      adicionar.mutate(
-        { id: d.id, acao: { tipo, texto, campos: temCampos ? campos : undefined } },
-        {
-          onSuccess: () => {
-            limpar();
-            onPedirResolver(statusDepois);
-          },
-          onError: (e) => toast.error(erroMsg(e, "Não foi possível adicionar a ação.")),
-        },
-      );
-      return;
-    }
+    const encerra = Boolean(st && (st.categoria === "resolvido" || st.categoria === "fechado"));
+    // Encerrar sem janela (Wagner, 08/10/2026): sem "Solução aplicada" preenchida, o texto da ação de encerramento
+    // vira a solução (é o que a IA sugere nos próximos tickets). Obrigatórios faltando: o banco recusa tudo e avisa.
+    if (encerra && !d.solucaoAplicada && !campos.solucaoAplicada) campos.solucaoAplicada = texto.trim();
+    const temCampos = Object.keys(campos).length > 0;
     adicionar.mutate(
       { id: d.id, acao: { tipo, texto, statusDepois, campos: temCampos ? campos : undefined } },
       {
         onSuccess: () => {
           limpar();
+          if (encerra) {
+            toast.success(`Ticket #${d.id} ${st?.nome.toLowerCase() ?? "encerrado"}.${!interna && d.origem === "email" ? " A resposta sai por e-mail em até 1 minuto." : ""}`);
+            return;
+          }
           toast.success(
             interna
               ? "Nota interna adicionada."
@@ -922,58 +953,6 @@ function LinhaDoTempo({ d, historico, setHistorico }: { d: TicketDetalhe; histor
 }
 
 // ---------- Diálogos ----------
-
-function DialogoResolver({ d, cad, status, alvo, onFechar }: { d: TicketDetalhe; cad: Cadastros; status: StatusTicket[]; alvo: { statusId: number; justificativaId: number | null }; onFechar: () => void }) {
-  const atualizar = useAtualizarDetalhe();
-  const [solucao, setSolucao] = useState(d.solucaoAplicada ?? "");
-  const [erro, setErro] = useState<string | null>(null);
-  const st = status.find((s) => s.id === alvo.statusId);
-  const estado = estadoCampos(cad.campos, cad.regras, { servicoId: d.servicoId, categoriaId: d.categoriaId, urgenciaId: d.urgenciaId, setorId: d.setorId, origem: d.origem, campos: d.campos }, cad.servicos);
-  const pendentes = camposPendentes(cad.campos, estado, d.campos);
-  const enviar = (e: FormEvent) => {
-    e.preventDefault();
-    setErro(null);
-    atualizar.mutate(
-      { id: d.id, patch: { ...alvo, solucaoAplicada: solucao } },
-      {
-        onSuccess: () => {
-          toast.success(`Ticket #${d.id}: ${st?.nome ?? "resolvido"}`);
-          onFechar();
-        },
-        onError: (er) => setErro(erroMsg(er, "Não foi possível resolver.")),
-      },
-    );
-  };
-  return (
-    <DetailDialog open onOpenChange={(o) => !o && onFechar()} title={`${st?.nome ?? "Resolver"} o ticket #${d.id}`} description="Registre o que resolveu: vira sugestão nos próximos tickets do mesmo serviço.">
-      <form className="tk-dlg-campos" onSubmit={enviar}>
-        {!d.servicoId && <div className="tk-aviso">Escolha o <b>serviço</b> na coluna da esquerda antes de resolver.</div>}
-        {pendentes.length > 0 && (
-          <div className="tk-aviso">
-            Preencha antes de resolver: <b>{pendentes.join(", ")}</b>.
-          </div>
-        )}
-        <label className="field">
-          <span className="field__label tk-req">Solução aplicada</span>
-          <textarea className="input" rows={5} value={solucao} onChange={(e) => setSolucao(e.target.value)} autoFocus />
-        </label>
-        {erro && (
-          <p className="cad-erro" role="alert">
-            {erro}
-          </p>
-        )}
-        <div className="tk-dlg-acoes">
-          <button type="button" className="btn btn--outline" onClick={onFechar}>
-            Cancelar
-          </button>
-          <button type="submit" className="btn btn--primary" disabled={atualizar.isPending || !solucao.trim()}>
-            {st?.nome ?? "Resolver"}
-          </button>
-        </div>
-      </form>
-    </DetailDialog>
-  );
-}
 
 function DialogoPrazo({ d, onFechar }: { d: TicketDetalhe; onFechar: () => void }) {
   const atualizar = useAtualizarDetalhe();

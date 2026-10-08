@@ -652,3 +652,23 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* ---------- Ticket encerrado: selo verde e "Reabrir ticket" ---------- */
+.tk-encerrado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--success-fg);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tk-aviso.tk-aviso--ok {
+  background: var(--success-bg);
+  color: var(--success-fg);
+}
