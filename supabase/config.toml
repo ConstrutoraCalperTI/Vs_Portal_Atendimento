@@ -31,6 +31,10 @@ verify_jwt = true
 [functions.portal_atendimento-email-sync]
 verify_jwt = false
 
+# Triagem por IA (pg_cron, 1 min) com x-atendimento-chave; a supervisão geral logada também pode chamar.
+[functions.portal_atendimento-ia]
+verify_jwt = false
+
 # Retorno do "Autorizar com Gmail": quem chama é o Google (sem JWT); a segurança é o state de uso único.
 [functions.portal_atendimento-google-oauth]
 verify_jwt = false
