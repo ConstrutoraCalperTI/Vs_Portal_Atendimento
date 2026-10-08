@@ -1,6 +1,6 @@
 # Plano — Recebimento de e-mail e abertura de ticket (Etapa 4: F4 + F5)
 
-> **Status:** aguardando aprovação do Wagner. Diagnóstico de 08/10/2026.
+> **Status:** Fases A, B e C implementadas e em produção em 08/10/2026 (testando com `noreply@`; depois troca para `chamados.ti@`). Pendentes: anexos na tela do ticket, botão "Ler agora", equipe padrão do setor TI.
 
 ## 1. Diagnóstico da conta `noreply@calper.com.br`
 
