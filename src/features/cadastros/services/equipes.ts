@@ -90,8 +90,8 @@ const equipes: EquipeMock[] = [
 ];
 
 /** Modo simulado: equipes ativas e membros, para as visões de Tickets (sem exigir a permissão de Equipes). */
-export function equipesAtivasMock(): { id: number; nome: string; membros: string[] }[] {
-  return equipes.filter((e) => e.ativa).map((e) => ({ id: e.id, nome: e.nome, membros: [...e.membros] }));
+export function equipesAtivasMock(): { id: number; nome: string; liderId: string | null; membros: string[] }[] {
+  return equipes.filter((e) => e.ativa).map((e) => ({ id: e.id, nome: e.nome, liderId: e.liderId, membros: [...e.membros] }));
 }
 const pessoa = (id: string): PessoaUsuario => {
   const u = dbPortal.users.find((x) => x.id === id);

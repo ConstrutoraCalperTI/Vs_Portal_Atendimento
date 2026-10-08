@@ -19,6 +19,7 @@ const ServicosCadastro = lazy(() => import("../features/chamados/cadastros/Servi
 const UrgenciasCadastro = lazy(() => import("../features/chamados/cadastros/UrgenciasCadastro").then((m) => ({ default: m.UrgenciasCadastro })));
 const CategoriasCadastro = lazy(() => import("../features/chamados/cadastros/CategoriasCadastro").then((m) => ({ default: m.CategoriasCadastro })));
 const CamposCadastro = lazy(() => import("../features/chamados/cadastros/CamposCadastro").then((m) => ({ default: m.CamposCadastro })));
+const GatilhosCadastro = lazy(() => import("../features/chamados/gatilhos/GatilhosCadastro").then((m) => ({ default: m.GatilhosCadastro })));
 const RegrasCadastro = lazy(() => import("../features/chamados/cadastros/RegrasCadastro").then((m) => ({ default: m.RegrasCadastro })));
 
 // Gestão de Atendimento: item `gestao_atendimento` do menuRegistry. Cada tela é uma seção
@@ -36,6 +37,7 @@ const SECOES: { id: MenuItemId; segmento: string }[] = [
   { id: "gestao_atendimento_categorias", segmento: "categorias" },
   { id: "gestao_atendimento_campos", segmento: "campos-adicionais" },
   { id: "gestao_atendimento_regras_exibicao", segmento: "regras-exibicao" },
+  { id: "gestao_atendimento_gatilhos", segmento: "gatilhos" },
 ];
 
 
@@ -86,6 +88,7 @@ export function GestaoAtendimento() {
           <Route path="categorias" element={pode("gestao_atendimento_categorias") ? <CategoriasCadastro /> : <NotFound />} />
           <Route path="campos-adicionais" element={pode("gestao_atendimento_campos") ? <CamposCadastro /> : <NotFound />} />
           <Route path="regras-exibicao" element={pode("gestao_atendimento_regras_exibicao") ? <RegrasCadastro /> : <NotFound />} />
+          <Route path="gatilhos" element={pode("gestao_atendimento_gatilhos") ? <GatilhosCadastro /> : <NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

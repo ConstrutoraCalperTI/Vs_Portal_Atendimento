@@ -1,5 +1,6 @@
-import { Bell, Cloud, HardDrive, LogOut, Menu, UserRound } from "lucide-react";
+import { Cloud, HardDrive, LogOut, Menu, UserRound } from "lucide-react";
 import { APP_NAME, COMPANY_NAME } from "../config/app";
+import { SinoAvisos } from "../features/chamados/gatilhos/SinoAvisos";
 import { DevUserSwitcher } from "../features/configuracoes/access/DevUserSwitcher";
 import { useAccess } from "../features/configuracoes/access/useAccess";
 import { DATA_SOURCE } from "../features/configuracoes/services";
@@ -66,10 +67,7 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
           </button>
         </div>
 
-        <button type="button" className="topbar__icon-button" aria-label="Notificações">
-          <Bell size={18} />
-          <span className="topbar__badge" />
-        </button>
+        <SinoAvisos ativo={Boolean(user)} />
       </div>
     </header>
   );

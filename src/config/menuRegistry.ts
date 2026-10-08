@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
+  Workflow,
   Building2,
   Contact,
   Eye,
@@ -201,6 +202,16 @@ const definitions = [
     icon: SlidersHorizontal,
     group: "principal",
     description: "Quando cada campo adicional aparece, fica obrigatório ou some, conforme serviço, categoria e outros campos.",
+    parent: "gestao_atendimento",
+    adminOnly: true,
+  },
+  {
+    id: "gestao_atendimento_gatilhos",
+    label: "Gatilhos",
+    path: "/gestao-atendimento/gatilhos",
+    icon: Workflow,
+    group: "principal",
+    description: "Automações do ticket: quando algo acontece (ou passa um tempo), confere as condições e executa as ações.",
     parent: "gestao_atendimento",
     adminOnly: true,
   },
