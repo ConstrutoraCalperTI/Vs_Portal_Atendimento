@@ -174,6 +174,17 @@ export function chaveDoRotulo(rotulo: string): string {
 }
 
 /** "TI › Infraestrutura › Rede / VPN". */
+/** Equipe do serviço: a dele ou a do nível acima mais próximo (igual a ch_servico_equipe no banco). */
+export function equipeDoServico(id: number | null, servicos: readonly Servico[]): number | null {
+  let atual = servicos.find((s) => s.id === id);
+  while (atual) {
+    if (atual.equipeId !== null) return atual.equipeId;
+    const pai = atual.paiId;
+    atual = servicos.find((s) => s.id === pai);
+  }
+  return null;
+}
+
 export function caminhoServico(id: number | null, servicos: readonly Servico[]): string {
   const partes: string[] = [];
   let atual = servicos.find((s) => s.id === id);

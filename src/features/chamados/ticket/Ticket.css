@@ -561,3 +561,94 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Serviço com busca rápida e "Atribuir para mim" ---------- */
+.tk-busca {
+  position: relative;
+}
+
+.tk-busca .input {
+  width: 100%;
+  padding-right: 32px;
+  text-overflow: ellipsis;
+}
+
+.tk-busca__limpar {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.tk-busca__limpar:hover {
+  background: var(--brand-soft);
+  color: var(--ink);
+}
+
+.tk-busca__lista {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 300px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--ink) 35%, transparent);
+}
+
+.tk-busca__lista li {
+  padding: 7px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.tk-busca__lista li[aria-selected="true"] {
+  background: var(--brand-soft);
+}
+
+.tk-busca__lista li.is-atual {
+  font-weight: 600;
+}
+
+.tk-busca__lista .tk-busca__vazio {
+  color: var(--muted);
+  cursor: default;
+}
+
+.tk-btn-eu {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--success-fg);
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tk-btn-eu:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.tk-btn-eu:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -1,5 +1,5 @@
 import { ArrowLeft, Bell, BellOff, Copy, GitMerge, History, Lightbulb, Lock, MoreVertical, Printer, Timer, Trash2, Zap } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
@@ -11,7 +11,7 @@ import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
 import { camposPendentes, estadoCampos } from "../cadastros/regras";
-import { caminhoServico, type Cadastros, type Campo, type Macro } from "../cadastros/types";
+import { caminhoServico, equipeDoServico, type Cadastros, type Campo, type Macro } from "../cadastros/types";
 import { useCadastros, useMacros, useStatusTickets } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import {
@@ -28,11 +28,13 @@ import {
 import { ORIGENS, type PatchTicket, type Responsavel, type TicketDetalhe } from "./types";
 import "../pages/Chamados.css";
 import "../cadastros/Cadastros.css";
+import { ServicoBusca } from "./ServicoBusca";
 import "./Ticket.css";
 
 // Gestão de Chamados › Tickets › #número (mockup aprovado docs/mockups/tela-ticket.html): classificar à
 // esquerda, responder ao solicitante ou anotar no centro, usar a solução anterior e as funções do menu Opções.
-// O envio por e-mail e WhatsApp entra na Etapa 4: até lá a resposta pública fica "pendente de envio".
+// Os campos da esquerda são salvos junto com a ação (Wagner, 08/10/2026): ao enviar, o compositor exige serviço,
+// status e texto, e grava tudo numa chamada só (ch_ticket_acao com "campos" e "statusDepois").
 
 const TZ = "America/Sao_Paulo";
 const DATA_HORA = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: TZ });
@@ -96,7 +98,15 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
   const [texto, setTexto] = useState("");
   const textoRef = useRef<HTMLTextAreaElement>(null);
   const [macroAberta, setMacroAberta] = useState(false);
+  // Campos alterados à esquerda, ainda não salvos: vão junto com a próxima ação.
+  const rascunho = useRef<Rascunho>({ patch: {}, servicoId: d.servicoId });
   const ticketsPath = getMenuItem("gestao_chamados_tickets").path;
+  const guardarRascunho = useMemo(
+    () => (r: Rascunho) => {
+      rascunho.current = r;
+    },
+    [],
+  );
   const bloqueado = Boolean(d.mescladoEmId || d.excluidoEm);
   const statusAtual = status.find((s) => s.id === d.statusId);
   const justAtual = statusAtual?.justificativas.find((j) => j.id === d.justificativaId);
@@ -211,7 +221,16 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
       </div>
 
       <div className="tk-grid">
-        <PainelCampos key={`${d.id}-${d.eventos.length}`} d={d} cad={cad} responsaveis={responsaveis} meuId={user?.id ?? ""} bloqueado={bloqueado} onAlterarPrazo={() => setDialogo("prazo")} />
+        <PainelCampos
+          key={`${d.id}-${d.eventos.length}`}
+          d={d}
+          cad={cad}
+          responsaveis={responsaveis}
+          meuId={user?.id ?? ""}
+          bloqueado={bloqueado}
+          onAlterarPrazo={() => setDialogo("prazo")}
+          onRascunho={guardarRascunho}
+        />
 
         <section className="tk-main" aria-label="Conversa do ticket">
           <h1 className="tk-titulo">{d.assunto}</h1>
@@ -244,6 +263,7 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
               macroAberta={macroAberta}
               setMacroAberta={setMacroAberta}
               nomeAgente={user?.name ?? "Equipe"}
+              obterRascunho={() => rascunho.current}
               onPedirResolver={(alvo) => {
                 setAlvoResolver(alvo);
                 setDialogo("resolver");
@@ -305,6 +325,11 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
 
 // ---------- Esquerda: classificação ----------
 
+interface Rascunho {
+  patch: PatchTicket;
+  servicoId: number | null;
+}
+
 interface PainelProps {
   d: TicketDetalhe;
   cad: Cadastros;
@@ -312,10 +337,11 @@ interface PainelProps {
   meuId: string;
   bloqueado: boolean;
   onAlterarPrazo: () => void;
+  onRascunho: (r: Rascunho) => void;
 }
 
-function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }: PainelProps) {
-  const atualizar = useAtualizarDetalhe();
+function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo, onRascunho }: PainelProps) {
+  const servicoRotuloId = useId();
   const [aba, setAba] = useState<"publico" | "interno">("publico");
   const [servicoId, setServicoId] = useState<number | null>(d.servicoId);
   const [categoriaId, setCategoriaId] = useState<number | null>(d.categoriaId);
@@ -334,6 +360,7 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
         .sort((a, b) => caminhoServico(a.id, cad.servicos).localeCompare(caminhoServico(b.id, cad.servicos), "pt-BR")),
     [cad.servicos, d.servicoId],
   );
+  const opcoesServico = useMemo(() => folhas.map((s) => ({ id: s.id, rotulo: caminhoServico(s.id, cad.servicos) })), [folhas, cad.servicos]);
   const setorAtual = cad.servicos.find((s) => s.id === servicoId)?.setorId ?? d.setorId;
   const estado = estadoCampos(cad.campos, cad.regras, { servicoId, categoriaId, urgenciaId, setorId: setorAtual, origem: d.origem, campos }, cad.servicos);
   const visiveis = (interno: boolean) =>
@@ -352,14 +379,14 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
   if (listaCc.join("|") !== d.cc.join("|")) patch.cc = listaCc;
   if ((solucao.trim() || null) !== d.solucaoAplicada) patch.solucaoAplicada = solucao.trim() || null;
   const sujo = Object.keys(patch).length > 0;
+  const patchJson = JSON.stringify(patch);
 
-  const salvar = (p: PatchTicket, ok: string) =>
-    atualizar.mutate({ id: d.id, patch: p }, { onSuccess: () => toast.success(ok), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar os campos.")) });
+  // Sem botão "Salvar campos": o compositor lê este rascunho e salva junto com a ação.
+  useEffect(() => {
+    onRascunho({ patch: JSON.parse(patchJson) as PatchTicket, servicoId });
+  }, [patchJson, servicoId, onRascunho]);
 
-  const enviar = (e: FormEvent) => {
-    e.preventDefault();
-    if (sujo) salvar(patch, "Campos salvos");
-  };
+  const enviar = (e: FormEvent) => e.preventDefault();
 
   // Equipe › Pessoa: as equipes do setor do ticket (ou todas) e seus membros.
   const equipes = cad.equipes.filter((e) => e.ativa && (e.setorId === setorAtual || e.id === equipeId));
@@ -369,6 +396,27 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
     opcoesResp.push({ value: `${e.id}|`, label: `${e.nome} › (sem pessoa)` });
     for (const r of responsaveis.filter((x) => x.equipes.includes(e.id))) opcoesResp.push({ value: `${e.id}|${r.id}`, label: `${e.nome} › ${r.nome}` });
   }
+  // O serviço define a equipe; o responsável fica se for dessa equipe.
+  const escolherServico = (id: number | null) => {
+    setServicoId(id);
+    const eq = equipeDoServico(id, cad.servicos);
+    if (eq === null || eq === equipeId) return;
+    setEquipeId(eq);
+    if (responsavelId && !responsaveis.find((r) => r.id === responsavelId)?.equipes.includes(eq)) setResponsavelId(null);
+  };
+  // Seleciona o usuário logado. Equipe: a do serviço se ele for dela; senão a atual (se for dele) ou uma das dele no setor.
+  const atribuirParaMim = () => {
+    const minhas = responsaveis.find((r) => r.id === meuId)?.equipes ?? [];
+    const doServico = equipeDoServico(servicoId, cad.servicos);
+    const eq =
+      doServico !== null && minhas.includes(doServico)
+        ? doServico
+        : equipeId !== null && minhas.includes(equipeId)
+          ? equipeId
+          : (equipes.find((e) => minhas.includes(e.id))?.id ?? equipeId);
+    setEquipeId(eq);
+    setResponsavelId(meuId);
+  };
   if (!opcoesResp.some((o) => o.value === valorResp)) {
     const nome = responsaveis.find((r) => r.id === responsavelId)?.nome ?? (responsavelId === meuId ? "Você" : "Responsável atual");
     opcoesResp.push({ value: valorResp, label: `${cad.equipes.find((e) => e.id === equipeId)?.nome ?? "Sem equipe"} › ${nome}` });
@@ -402,18 +450,13 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
                 </div>
               </div>
             </div>
-            <label className="field">
-              <span className="field__label tk-req">Serviço</span>
-              <select className="input" value={servicoId ?? ""} onChange={(e) => setServicoId(e.target.value ? Number(e.target.value) : null)}>
-                <option value="">— Selecione —</option>
-                {folhas.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {caminhoServico(s.id, cad.servicos)}
-                  </option>
-                ))}
-              </select>
-              <span className="field__help">Define a equipe e o prazo de SLA. Obrigatório para resolver.</span>
-            </label>
+            <div className="field">
+              <span className="field__label tk-req" id={servicoRotuloId}>
+                Serviço
+              </span>
+              <ServicoBusca rotuloId={servicoRotuloId} opcoes={opcoesServico} valor={servicoId} onChange={escolherServico} />
+              <span className="field__help">Digite parte do nome (ex.: impressora, totvs). Define a equipe e o prazo de SLA. Obrigatório para enviar a ação.</span>
+            </div>
             <div className="tk-row2">
               <label className="field">
                 <span className="field__label">Categoria</span>
@@ -459,11 +502,9 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
             <label className="field">
               <span className="field__label">
                 Responsável
-                {responsavelId !== meuId && (
-                  <button type="button" className="tk-link" onClick={() => salvar({ responsavelId: meuId }, "Atribuído a você")}>
-                    Atribuir para mim
-                  </button>
-                )}
+                <button type="button" className="tk-btn-eu" disabled={!meuId || responsavelId === meuId} onClick={atribuirParaMim}>
+                  {responsavelId === meuId ? "Atribuído a você" : "Atribuir para mim"}
+                </button>
               </span>
               <select
                 className="input"
@@ -505,10 +546,7 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
             ))}
           </>
         )}
-        {sujo && <p className="tk-sujo">Há alterações não salvas.</p>}
-        <button type="submit" className="btn btn--primary" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} disabled={!sujo || atualizar.isPending}>
-          {atualizar.isPending ? "Salvando…" : "Salvar campos"}
-        </button>
+        {sujo && <p className="tk-sujo">Campos alterados: são salvos quando você enviar a ação.</p>}
       </fieldset>
     </form>
   );
@@ -609,10 +647,11 @@ interface CompositorProps {
   macroAberta: boolean;
   setMacroAberta: (v: boolean) => void;
   nomeAgente: string;
+  obterRascunho: () => Rascunho;
   onPedirResolver: (alvo: { statusId: number; justificativaId: number | null }) => void;
 }
 
-function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRef, macroAberta, setMacroAberta, nomeAgente, onPedirResolver }: CompositorProps) {
+function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRef, macroAberta, setMacroAberta, nomeAgente, obterRascunho, onPedirResolver }: CompositorProps) {
   const adicionar = useAdicionarAcao();
   const [depois, setDepois] = useState("");
   const [camposMacro, setCamposMacro] = useState<PatchTicket>({});
@@ -641,16 +680,22 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
   };
 
   const enviar = () => {
-    if (!texto.trim()) {
-      toast.error("Escreva a resposta antes de enviar.");
+    // Obrigatórios para salvar o ticket com a ação: serviço, status e o texto.
+    const r = obterRascunho();
+    const faltam = [!r.servicoId && "o serviço", !depois && "o status", !texto.trim() && "o texto da ação"].filter(Boolean) as string[];
+    if (faltam.length) {
+      toast.error(`Preencha ${faltam.join(", ").replace(/, ([^,]*)$/, " e $1")} antes de enviar.`);
+      if (!texto.trim()) textoRef.current?.focus();
       return;
     }
-    const statusDepois = depois ? lerStatus(depois) : undefined;
-    const st = status.find((s) => s.id === statusDepois?.statusId);
+    const campos = { ...r.patch, ...camposMacro };
+    const temCampos = Object.keys(campos).length > 0;
+    const statusDepois = lerStatus(depois);
+    const st = status.find((s) => s.id === statusDepois.statusId);
     // Resolver pede a solução aplicada e os obrigatórios: abre o diálogo de resolver antes.
-    if (statusDepois && st && (st.categoria === "resolvido" || st.categoria === "fechado") && !d.solucaoAplicada) {
+    if (st && (st.categoria === "resolvido" || st.categoria === "fechado") && !d.solucaoAplicada && !campos.solucaoAplicada) {
       adicionar.mutate(
-        { id: d.id, acao: { tipo, texto, campos: Object.keys(camposMacro).length ? camposMacro : undefined } },
+        { id: d.id, acao: { tipo, texto, campos: temCampos ? campos : undefined } },
         {
           onSuccess: () => {
             limpar();
@@ -662,11 +707,19 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
       return;
     }
     adicionar.mutate(
-      { id: d.id, acao: { tipo, texto, statusDepois, campos: Object.keys(camposMacro).length ? camposMacro : undefined } },
+      { id: d.id, acao: { tipo, texto, statusDepois, campos: temCampos ? campos : undefined } },
       {
         onSuccess: () => {
           limpar();
-          toast.success(interna ? "Nota interna adicionada." : canalExterno ? `Resposta registrada. Será enviada por ${ORIGENS[d.origem]} quando o envio estiver ligado.` : "Resposta registrada.");
+          toast.success(
+            interna
+              ? "Nota interna adicionada."
+              : d.origem === "email"
+                ? "Resposta registrada. Sai por e-mail para o solicitante em até 1 minuto."
+                : canalExterno
+                  ? `Resposta registrada. Será enviada por ${ORIGENS[d.origem]} quando o envio estiver ligado.`
+                  : "Resposta registrada.",
+          );
         },
         onError: (e) => toast.error(erroMsg(e, "Não foi possível adicionar a ação.")),
       },
@@ -726,16 +779,17 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
         </div>
         {Object.keys(camposMacro).length > 0 && <span className="ch-badge ch-badge--info">a macro também muda campos ao enviar</span>}
         <span className="tk-bar__spacer" />
-        <label className="ch-muted" style={{ fontSize: 12 }} htmlFor="tk-depois">
-          Depois de enviar:
+        <label className="ch-muted tk-req" style={{ fontSize: 12 }} htmlFor="tk-depois">
+          Status após enviar
         </label>
-        <select id="tk-depois" className="input" value={depois} onChange={(e) => setDepois(e.target.value)}>
-          <option value="">Manter o status atual</option>
+        <select id="tk-depois" className="input" value={depois} aria-required="true" onChange={(e) => setDepois(e.target.value)}>
+          <option value="">— Selecione —</option>
           {status
-            .filter((s) => s.ativo)
+            .filter((s) => s.ativo || s.id === d.statusId)
             .flatMap((s) => [
               <option key={`${s.id}:`} value={chaveStatus(s.id, null)}>
                 {s.nome}
+                {s.id === d.statusId && !d.justificativaId ? " (atual)" : ""}
               </option>,
               ...s.justificativas
                 .filter((j) => j.ativa)
