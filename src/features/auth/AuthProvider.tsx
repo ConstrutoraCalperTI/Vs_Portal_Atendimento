@@ -1,8 +1,9 @@
 import type { Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router";
 import { isAllowedLoginEmail, STORAGE_PREFIX } from "../../config/app";
-import { SUPABASE_CONFIGURED, SUPABASE_KEY_HINT, supabase } from "../../lib/supabase";
+import { OPENED_FROM_RECOVERY_LINK, SUPABASE_CONFIGURED, SUPABASE_KEY_HINT, supabase } from "../../lib/supabase";
 import { authService } from "../configuracoes/services";
 import { AuthContext, type AuthContextValue, type AuthStatus } from "./AuthContext";
 import { AuthFailure, DOMAIN_NOT_ALLOWED, toAuthFailure } from "./authErrors";
@@ -86,6 +87,7 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [email, setEmail] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
@@ -106,16 +108,20 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     };
 
     // Dispara INITIAL_SESSION ao assinar, então não é preciso chamar getSession().
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       // Chamadas ao Supabase dentro deste callback podem travar (recomendação do supabase-js): adia.
       setTimeout(() => void apply(session), 0);
+      // Sessão de recuperação aberta em outra rota: leva para criar a nova senha.
+      if (session && (event === "PASSWORD_RECOVERY" || (event === "INITIAL_SESSION" && OPENED_FROM_RECOVERY_LINK)) && location.pathname !== "/redefinir-senha") {
+        navigate("/redefinir-senha", { replace: true });
+      }
     });
 
     return () => {
       active = false;
       data.subscription.unsubscribe();
     };
-  }, [queryClient]);
+  }, [queryClient, navigate]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
