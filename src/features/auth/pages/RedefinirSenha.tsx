@@ -4,12 +4,13 @@ import { PageSkeleton } from "../../../components/PageSkeleton";
 import { useChangePassword } from "../../configuracoes/hooks/useAuth";
 import { AuthShell } from "../AuthShell";
 import { NewPasswordForm } from "../NewPasswordForm";
+import { LOGIN_PATH } from "../RequireSession";
 import { useAuthSession } from "../useAuthSession";
 import "../authCard.css";
 
 /** Destino do link de "Esqueci minha senha": o Supabase abre uma sessão de recuperação e aqui se define a nova senha. */
 export function RedefinirSenha() {
-  const { status } = useAuthSession();
+  const { status, signOut } = useAuthSession();
   // Troca a senha no Auth e conclui convite/troca obrigatória no portal (usuário vira ativo).
   const changePassword = useChangePassword();
   const navigate = useNavigate();
@@ -33,8 +34,10 @@ export function RedefinirSenha() {
               submitLabel="Salvar nova senha"
               onSave={async (password) => {
                 await changePassword.mutateAsync(password);
-                toast.success("Senha alterada com sucesso");
-                navigate("/home", { replace: true });
+                // Encerra a sessão aberta pelo link: a pessoa entra de novo, já com a senha nova.
+                await signOut();
+                toast.success("Senha alterada com sucesso. Entre com a nova senha.");
+                navigate(LOGIN_PATH, { replace: true });
               }}
             />
           </>

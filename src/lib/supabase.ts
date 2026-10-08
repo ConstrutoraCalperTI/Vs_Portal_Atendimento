@@ -54,7 +54,14 @@ export const SUPABASE_KEY_HINT = `${anonKey.slice(0, 18)}… (${anonKey.length} 
  * Link de "Esqueci minha senha" aberto fora de /redefinir-senha (ex.: o Auth caiu no Site URL porque a
  * URL não está em Redirect URLs). Lido antes do createClient, que limpa o #access_token da barra.
  */
-export const OPENED_FROM_RECOVERY_LINK = typeof window !== "undefined" && /(^|[#&])type=recovery(&|$)/.test(window.location.hash);
+let openedFromRecoveryLink = typeof window !== "undefined" && /(^|[#&])type=recovery(&|$)/.test(window.location.hash);
+
+/** Vale uma vez só: depois de levar a pessoa para /redefinir-senha, a navegação segue normal. */
+export function takeRecoveryLinkFlag(): boolean {
+  const opened = openedFromRecoveryLink;
+  openedFromRecoveryLink = false;
+  return opened;
+}
 
 export const supabase = createClient<Database, "portal_atendimento">(url || "http://modo-simulado.invalid", anonKey || "modo-simulado", {
   db: { schema: APP_SCHEMA as "portal_atendimento" },
