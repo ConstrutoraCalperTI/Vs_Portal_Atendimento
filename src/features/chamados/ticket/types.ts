@@ -15,6 +15,20 @@ export interface AcaoTicket {
   anexos: unknown[];
   envioStatus: "pendente" | "enviado" | "falhou" | "nao_se_aplica" | null;
   criadoEm: string;
+  enviadoEm?: string | null;
+  envioErro?: string | null;
+  envioTentativas?: number;
+  /** Cabeçalhos para o "Visualizar e-mail" (só ações públicas de e-mail). */
+  email?: EmailDaAcao | null;
+}
+
+export interface EmailDaAcao {
+  de: string | null;
+  deNome: string | null;
+  para: (string | null)[];
+  cc: string[];
+  assunto: string | null;
+  data: string | null;
 }
 
 export interface EventoTicket {

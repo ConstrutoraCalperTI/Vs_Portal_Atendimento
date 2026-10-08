@@ -668,7 +668,225 @@
   white-space: nowrap;
 }
 
-.tk-aviso.tk-aviso--ok {
-  background: var(--success-bg);
+.tk-tarja {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--warning-fg) 35%, transparent);
+  border-left: 6px solid var(--warning-fg);
+  border-radius: 10px;
+  background: var(--warning-bg);
+  color: var(--warning-strong);
+}
+
+.tk-tarja__texto {
+  display: grid;
+  flex: 1 1 280px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tk-tarja__texto b {
+  font-size: 15px;
+}
+
+.tk-tarja__texto span {
+  font-size: 13px;
+}
+
+.tk-tarja__reabrir {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tk-tarja__reabrir:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.tk-tarja__reabrir:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---------- Linha do tempo (modelo Movidesk) ---------- */
+.tl {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A linha vertical que liga os marcadores. */
+.tl::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 17px;
+  width: 2px;
+  background: var(--line);
+}
+
+.tl-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.tl-no {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tl-no--email {
+  background: var(--info-fg);
+  color: #ffffff;
+}
+
+.tl-no--whatsapp {
+  background: #15803d;
+  color: #ffffff;
+}
+
+.tl-no--interna {
+  background: var(--warning-bg);
+  color: var(--warning-strong);
+}
+
+.tl-no--gatilho {
+  background: var(--success-fg);
+  color: #ffffff;
+}
+
+.tl-no--ia {
+  background: #6d28d9;
+  color: #ffffff;
+}
+
+.tl-no--sistema {
+  background: #374151;
+  color: #ffffff;
+}
+
+.tl-no--pessoa {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.tl-evento {
+  align-self: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--neutral-bg);
+  font-size: 13px;
+}
+
+.tl-evento__h {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tl-evento__h b {
+  color: var(--ink);
+}
+
+.tl-evento__c {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.tl-acao--interna {
+  border-color: var(--warning-bg);
+}
+
+.tl-acao--interna .tk-acao__h {
+  background: var(--warning-bg);
+}
+
+.tl-acao--entrada .tk-acao__h {
+  background: var(--info-bg);
+}
+
+.tl-acao__rodape {
+  padding: 0 14px 10px;
+}
+
+.tl-acao__rodape .tk-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---------- Visualizar e-mail ---------- */
+.tl-email {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.tl-email dt {
+  font-weight: 700;
+}
+
+.tl-email dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tl-email__ok {
   color: var(--success-fg);
+  font-weight: 600;
+}
+
+.tl-email__pend {
+  color: var(--warning-strong);
+  font-weight: 600;
+}
+
+.tl-email__erro {
+  color: var(--danger-fg);
+  font-weight: 600;
+}
+
+.tl-email__corpo {
+  max-height: 50vh;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  overflow-y: auto;
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

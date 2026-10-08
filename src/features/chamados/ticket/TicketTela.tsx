@@ -28,6 +28,7 @@ import {
 import { ORIGENS, type PatchTicket, type Responsavel, type TicketDetalhe } from "./types";
 import "../pages/Chamados.css";
 import "../cadastros/Cadastros.css";
+import { LinhaDoTempo } from "./LinhaDoTempo";
 import { ServicoBusca } from "./ServicoBusca";
 import "./Ticket.css";
 
@@ -93,7 +94,8 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
   const [dialogo, setDialogo] = useState<"sla" | "clonar" | "mesclar" | "excluir" | "prazo" | null>(null);
   // "Status após enviar" do compositor. Fica aqui para o seletor do topo poder preencher (Resolvido/Fechado).
   const [depois, setDepois] = useState("");
-  const [historico, setHistorico] = useState(false);
+  // Linha do tempo com o histórico de alterações ligado: quem fez e o que fez (modelo Movidesk).
+  const [historico, setHistorico] = useState(true);
   // Compositor (fora do formulário da esquerda, para não perder o texto quando os campos são salvos).
   const [tipo, setTipo] = useState<"publica" | "interna">("publica");
   const [texto, setTexto] = useState("");
@@ -190,12 +192,6 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
               {rotuloStatus(statusAtual?.nome ?? "", justAtual?.nome)}
               {d.encerradoEm ? ` em ${fmt(d.encerradoEm)}` : ""}
             </span>
-            {!d.mescladoEmId && !d.excluidoEm && (
-              <button type="button" className="btn btn--outline" disabled={atualizar.isPending} onClick={reabrir}>
-                <RotateCcw size={15} aria-hidden="true" />
-                {atualizar.isPending ? "Reabrindo…" : "Reabrir ticket"}
-              </button>
-            )}
           </>
         ) : (
         <select className="input tk-status" aria-label="Status do ticket" value={chaveStatus(d.statusId, d.justificativaId)} disabled={bloqueado || atualizar.isPending} onChange={(e) => mudarStatus(e.target.value)}>
@@ -285,10 +281,21 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
           )}
           {d.excluidoEm && <div className="tk-aviso">Este ticket foi excluído em {fmt(d.excluidoEm)}.</div>}
           {encerrado && !d.mescladoEmId && !d.excluidoEm && (
-            <div className="tk-aviso tk-aviso--ok">
-              Ticket <b>{(statusAtual?.nome ?? "encerrado").toLowerCase()}</b>
-              {d.encerradoEm ? ` em ${fmt(d.encerradoEm)}` : ""}. Para responder ou mudar a classificação, clique em <b>Reabrir ticket</b>. Se o solicitante responder ao
-              e-mail, ele reabre sozinho.
+            // Tarja de ticket encerrado (modelo Movidesk): em destaque, com o botão de reabrir.
+            <div className="tk-tarja" role="status">
+              <div className="tk-tarja__texto">
+                <b>
+                  Esse ticket está {(statusAtual?.nome ?? "encerrado").toLowerCase()} e por isso não poderá ser atualizado.
+                </b>
+                <span>
+                  {d.encerradoEm ? `${statusAtual?.nome ?? "Encerrado"} em ${fmt(d.encerradoEm)}. ` : ""}Para voltar ao atendimento, reabra o ticket. Se o solicitante responder ao
+                  e-mail, ele reabre sozinho.
+                </span>
+              </div>
+              <button type="button" className="tk-tarja__reabrir" disabled={atualizar.isPending} onClick={reabrir}>
+                <RotateCcw size={16} aria-hidden="true" />
+                {atualizar.isPending ? "Reabrindo…" : "Reabrir ticket"}
+              </button>
             </div>
           )}
 
@@ -896,61 +903,6 @@ function SolucaoAnterior({ d, bloqueado, onUsarNaResposta }: { d: TicketDetalhe;
 }
 
 // ---------- Linha do tempo ----------
-
-function LinhaDoTempo({ d, historico, setHistorico }: { d: TicketDetalhe; historico: boolean; setHistorico: (v: boolean) => void }) {
-  const [publicas, setPublicas] = useState(true);
-  const [internas, setInternas] = useState(true);
-  type Item = { tipo: "acao"; quando: number; ordem: number; a: TicketDetalhe["acoes"][number] } | { tipo: "evento"; quando: number; ordem: number; e: TicketDetalhe["eventos"][number] };
-  const itens: Item[] = [
-    ...d.acoes.filter((a) => (a.tipo === "publica" ? publicas : internas)).map((a) => ({ tipo: "acao" as const, quando: Date.parse(a.criadoEm), ordem: a.numero, a })),
-    ...(historico ? d.eventos.map((e, i) => ({ tipo: "evento" as const, quando: Date.parse(e.criadoEm), ordem: -i, e })) : []),
-  ].sort((x, y) => y.quando - x.quando || y.ordem - x.ordem);
-
-  return (
-    <section aria-label="Linha do tempo">
-      <div className="tk-filtros">
-        Visualizar:
-        <label>
-          <input type="checkbox" checked={publicas} onChange={(e) => setPublicas(e.target.checked)} /> Ações públicas
-        </label>
-        <label>
-          <input type="checkbox" checked={internas} onChange={(e) => setInternas(e.target.checked)} /> Notas internas
-        </label>
-        <label>
-          <input type="checkbox" checked={historico} onChange={(e) => setHistorico(e.target.checked)} /> Histórico de alterações
-        </label>
-      </div>
-      {itens.length === 0 && <p className="ch-muted" style={{ fontSize: 13 }}>Nada para mostrar com estes filtros.</p>}
-      {itens.map((it) =>
-        it.tipo === "evento" ? (
-          <p key={`e-${it.ordem}-${it.quando}`} className="tk-hist">
-            {fmt(it.e.criadoEm)} · <b>{it.e.autorNome}</b> · {it.e.descricao}
-          </p>
-        ) : (
-          <article key={`a-${it.a.numero}`} className={`tk-acao${it.a.tipo === "interna" ? " tk-acao--interna" : ""}${it.a.direcao === "entrada" ? " tk-acao--entrada" : ""}`}>
-            <span className="tk-av" aria-hidden="true">
-              {iniciais(it.a.autorNome)}
-            </span>
-            <div className="tk-acao__box">
-              <div className="tk-acao__h">
-                <b>{it.a.autorNome}</b>
-                <span className="ch-muted">{fmt(it.a.criadoEm)}</span>
-                <span className="ch-badge">
-                  {it.a.tipo === "interna" ? "🔒 Nota interna" : it.a.direcao === "entrada" ? `Recebido · ${it.a.canal === "portal" ? "Portal" : ORIGENS[it.a.canal]}` : `Resposta · ${it.a.canal === "portal" ? "Portal" : ORIGENS[it.a.canal]}`}
-                </span>
-                {it.a.envioStatus === "pendente" && <span className="ch-badge ch-badge--warning">pendente de envio</span>}
-                {it.a.envioStatus === "falhou" && <span className="ch-badge ch-badge--danger">falha no envio</span>}
-                {it.a.envioStatus === "enviado" && <span className="ch-badge ch-badge--success">enviado</span>}
-                <span className="tk-acao__n">{it.a.numero}</span>
-              </div>
-              <div className="tk-acao__c">{it.a.texto}</div>
-            </div>
-          </article>
-        ),
-      )}
-    </section>
-  );
-}
 
 // ---------- Diálogos ----------
 

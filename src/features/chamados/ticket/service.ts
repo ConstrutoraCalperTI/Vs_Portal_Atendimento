@@ -130,6 +130,10 @@ function construir(t: DashboardTicket): TicketDetalhe {
         anexos: [],
         envioStatus: "nao_se_aplica",
         criadoEm: t.criado_em,
+        email:
+          ORIGEM[t.origin] === "email"
+            ? { de: "solicitante@calper.com.br", deNome: t.requester, para: ["chamados.ti@calper.com.br"], cc: [], assunto: t.subject, data: t.criado_em }
+            : null,
       },
     ],
     eventos: [{ tipo: "criado", descricao: `Ticket criado (${ORIGEM[t.origin] ?? "agente"})`, autorNome: "Sistema", criadoEm: t.criado_em }],
@@ -394,6 +398,10 @@ const mockTicket: TicketService = {
       anexos: [],
       envioStatus: a.tipo === "publica" && canal !== "portal" ? "pendente" : "nao_se_aplica",
       criadoEm: new Date().toISOString(),
+      email:
+        a.tipo === "publica" && canal === "email"
+          ? { de: "chamados.ti@calper.com.br", deNome: "Chamados TI - Calper", para: [d.solicitante.contato], cc: d.cc, assunto: `Re: [#${d.id}] ${d.assunto}`, data: new Date().toISOString() }
+          : null,
     });
     if (a.tipo === "publica" && !d.primeiraRespostaEm) d.primeiraRespostaEm = new Date().toISOString();
     const antes = structuredClone(d);
