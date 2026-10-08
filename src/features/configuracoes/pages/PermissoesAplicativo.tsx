@@ -46,6 +46,9 @@ function AppStatus({ app }: { app: AppAccessApp }) {
   return <StatusBadge variant="success">Controle ativo</StatusBadge>;
 }
 
+// Siglas fixas de aplicativos cujas iniciais automáticas confundem (Contratos e Pesagem).
+const SIGLAS_APP: Record<string, string> = { contratos: "CT", pesagem: "PS" };
+
 const initials = (name: string) =>
   name
     .split(/[\s_]+/)
@@ -117,7 +120,7 @@ export function PermissoesAplicativo() {
                   onClick={() => setSelected(app.schema)}
                 >
                   <span className="app-access__icon" aria-hidden="true">
-                    {initials(app.name)}
+                    {SIGLAS_APP[app.schema] ?? initials(app.name)}
                   </span>
                   <span className="app-access__app-text">
                     <strong>{app.name}</strong>
@@ -538,8 +541,8 @@ function UserRow({
         <div className="app-access__who">
           <UserAvatar name={row.name} />
           <div>
-            <strong>{row.name}</strong>
-            <small>{row.email}</small>
+            <strong title={row.name}>{row.name}</strong>
+            <small title={row.email}>{row.email}</small>
           </div>
         </div>
       </td>

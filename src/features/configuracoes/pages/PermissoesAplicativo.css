@@ -418,3 +418,61 @@
     margin-left: 0;
   }
 }
+
+/* Tabela de logins enquadrada na tela: colunas com largura fixa, nome e e-mail encurtados com "…"
+   (texto completo ao passar o mouse) e textos de status quebrando linha, sem barra de rolagem horizontal. */
+.app-access__table {
+  table-layout: fixed;
+}
+
+.app-access__table th {
+  white-space: normal;
+}
+
+.app-access__table th,
+.app-access__table td {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.app-access__table th:nth-child(1) { width: 40px; }
+.app-access__table th:nth-child(3) { width: 16%; }
+.app-access__table th:nth-child(4) { width: 19%; }
+.app-access__table th:nth-child(5) { width: 200px; }
+
+.app-access__who {
+  min-width: 0;
+}
+
+.app-access__who > :first-child {
+  flex-shrink: 0;
+}
+
+.app-access__who > div {
+  min-width: 0;
+}
+
+.app-access__who strong,
+.app-access__who small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-access__muted {
+  white-space: normal;
+}
+
+.app-access__enter {
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+/* Celular: a tabela volta a rolar de lado em vez de espremer as colunas. */
+@media (max-width: 720px) {
+  .app-access__table {
+    table-layout: auto;
+    min-width: 640px;
+  }
+}
