@@ -19,6 +19,7 @@ import {
   useSalvarConexaoOpenwa,
   useSalvarNumeroWhatsapp,
   useSalvarSetorWhatsapp,
+  useAdicionarAtendentesGrupo,
   useCriarGrupoInterno,
   useSalvarWhatsappAtendente,
   useTestarOpenwa,
@@ -253,6 +254,7 @@ function NumeroLinha({ n, p }: { n: NumeroWhatsapp; p: PainelOpenwa }) {
   const ids = useId();
   const salvar = useSalvarNumeroWhatsapp();
   const criarGrupo = useCriarGrupoInterno();
+  const adicionar = useAdicionarAtendentesGrupo();
   const [canal, setCanal] = useState(n.canal);
   const [sessao, setSessao] = useState(n.sessao ?? "");
   const [grupo, setGrupo] = useState(n.grupo ?? "");
@@ -335,15 +337,43 @@ function NumeroLinha({ n, p }: { n: NumeroWhatsapp; p: PainelOpenwa }) {
               onClick={() =>
                 criarGrupo.mutate(n.id, {
                   onSuccess: (r) => toast.success(`Grupo "${r.nome}" criado com ${r.participantes} atendente(s) e ligado a este número`),
-                  onError: (e) => toast.error(erroMsg(e, "O OpenWA não criou o grupo.")),
+                  onError: (e) => toast.error(erroMsg(e, "O OpenWA não criou o grupo."), { duration: 20_000 }),
                 })
               }
             >
               <Users size={14} aria-hidden="true" /> {criarGrupo.isPending ? "Criando…" : "Criar grupo interno"}
             </button>
           )}
+          <button type="button" className="btn btn--outline btn--sm" disabled={grupos.isFetching} onClick={() => void grupos.refetch()}>
+            <RefreshCw size={14} aria-hidden="true" /> {grupos.isFetching ? "Atualizando…" : "Atualizar grupos"}
+          </button>
+          {n.grupo && (
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={adicionar.isPending}
+              onClick={() =>
+                adicionar.mutate(n.id, {
+                  onSuccess: (r) => {
+                    const msg = `${r.adicionados} atendente(s) adicionado(s) ao grupo${r.jaEstavam ? ` · ${r.jaEstavam} já estavam` : ""}`;
+                    if (r.falhas.length) toast.warning(`${msg} · não entraram: ${r.falhas.map((f) => `${telefone(f.numero)} (${f.motivo})`).join(", ")}`, { duration: 20_000 });
+                    else toast.success(msg);
+                  },
+                  onError: (e) => toast.error(erroMsg(e, "O OpenWA não adicionou os atendentes.")),
+                })
+              }
+            >
+              <Users size={14} aria-hidden="true" /> {adicionar.isPending ? "Adicionando…" : "Adicionar atendentes ao grupo"}
+            </button>
+          )}
           {grupos.isError && <em className="zv-erro">{erroMsg(grupos.error, "Não foi possível listar os grupos.")}</em>}
         </div>
+      )}
+      {n.canal === "openwa" && n.sessao && !n.grupo && (
+        <p className="at-sec__ajuda">
+          Sem grupo interno ainda. Se "Criar grupo interno" avisar que esta sessão não cria grupos (engine whatsapp-web.js), crie o grupo no celular do número
+          {` ${telefone(n.numero)}`} com pelo menos um atendente, clique em "Atualizar grupos", escolha o grupo acima, salve e depois use "Adicionar atendentes ao grupo".
+        </p>
       )}
       {qr && n.sessao && <PainelQr sessao={n.sessao} />}
     </div>

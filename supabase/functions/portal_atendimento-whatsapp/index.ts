@@ -136,9 +136,17 @@ Deno.serve(async (req) => {
         if (participantes.length === 0) throw new PortalError("INVALID_INPUT", "Preencha o WhatsApp pessoal dos atendentes do setor antes de criar o grupo.");
         const setorNome = (n.data.at_setores as unknown as { nome: string } | null)?.nome ?? "setor";
         const nome = String(corpo.nome ?? "").trim() || `Atendimento ${setorNome} · interno`;
-        const criado = exigirOk<{ id?: string; name?: string }>(
-          await chamarOpenwa(fetch, ow.url, ow.chave, "POST", `/sessions/${encodeURIComponent(n.data.openwa_sessao)}/groups`, { name: nome.slice(0, 100), participants: participantes }),
-        );
+        const tentativa = await chamarOpenwa(fetch, ow.url, ow.chave, "POST", `/sessions/${encodeURIComponent(n.data.openwa_sessao)}/groups`, { name: nome.slice(0, 100), participants: participantes });
+        // Engine whatsapp-web.js não cria grupo (o WhatsApp Web tirou a função interna; só o Baileys cria): o grupo é
+        // criado no celular e o portal adiciona os atendentes (openwa_adicionar_atendentes).
+        if (tentativa.status === 501) {
+          throw new PortalError(
+            "INVALID_INPUT",
+            `Esta sessão do OpenWA (engine whatsapp-web.js) não consegue criar grupos. Crie no celular do número ${n.data.numero} um grupo chamado "${nome}" (com pelo menos um atendente), clique em "Atualizar grupos", escolha o grupo em "grupo interno", salve e use "Adicionar atendentes ao grupo".`,
+            400,
+          );
+        }
+        const criado = exigirOk<{ id?: string; name?: string }>(tentativa);
         if (!criado?.id) throw new PortalError("INVALID_INPUT", "O OpenWA não devolveu o id do grupo.");
         const up = await db.from("at_numeros").update({ grupo_interno: criado.id, grupo_interno_nome: criado.name ?? nome }).eq("id", numeroId);
         if (up.error) throw fromRpcError(up.error);
@@ -151,6 +159,30 @@ Escreva *RESOLVIDO* respondendo ao pedido para fechar o chamado.`,
         });
         await despachar(db, { limite: 5 });
         return json({ grupo: criado.id, nome: criado.name ?? nome, participantes: participantes.length });
+      }
+      case "openwa_adicionar_atendentes": {
+        // Coloca no grupo interno o WhatsApp de cada atendente do setor que ainda não está nele.
+        const numeroId = Number(corpo.numeroId);
+        const n = await db.from("at_numeros").select("id, numero, setor_id, openwa_sessao, grupo_interno").eq("id", numeroId).maybeSingle();
+        if (n.error || !n.data) throw new PortalError("NOT_FOUND", "Número não encontrado.", 404);
+        if (!n.data.openwa_sessao || !n.data.grupo_interno) throw new PortalError("INVALID_INPUT", "Escolha e salve o grupo interno do número antes.");
+        const sessao = encodeURIComponent(n.data.openwa_sessao);
+        const grupo = encodeURIComponent(n.data.grupo_interno);
+        const info = exigirOk<{ participants?: { id: string; number?: string }[] }>(await chamarOpenwa(fetch, ow.url, ow.chave, "GET", `/sessions/${sessao}/groups/${grupo}`));
+        const noGrupo = new Set((info.participants ?? []).map((x) => (x.number ?? x.id.split("@")[0] ?? "").replace(/\D/g, "")));
+        const at = await db.from("at_atendentes").select("whatsapp").eq("setor_id", n.data.setor_id).not("whatsapp", "is", null);
+        if (at.error) throw fromRpcError(at.error);
+        const numeroSistema = String(n.data.numero);
+        const todos = [...new Set((at.data ?? []).map((a) => String(a.whatsapp)).filter((w) => w && w !== numeroSistema))];
+        if (todos.length === 0) throw new PortalError("INVALID_INPUT", "Preencha o WhatsApp pessoal dos atendentes do setor antes.");
+        const faltam = todos.filter((w) => !noGrupo.has(w));
+        if (faltam.length === 0) return json({ adicionados: 0, jaEstavam: todos.length, falhas: [] });
+        const r = exigirOk<{ results?: { id: string; success: boolean; message?: string }[] }>(
+          await chamarOpenwa(fetch, ow.url, ow.chave, "POST", `/sessions/${sessao}/groups/${grupo}/participants`, { participants: faltam }),
+        );
+        const res = r?.results ?? [];
+        const falhas = res.filter((x) => !x.success).map((x) => ({ numero: x.id.split("@")[0], motivo: x.message ?? "recusado" }));
+        return json({ adicionados: res.filter((x) => x.success).length, jaEstavam: todos.length - faltam.length, falhas });
       }
       case "openwa_webhook": {
         // Cadastra (ou atualiza) o webhook desta sessão apontando para o portal, com o segredo do Vault.

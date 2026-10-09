@@ -108,6 +108,7 @@ export interface OpenwaService {
   membros(sessao: string, grupo: string): Promise<MembroGrupo[]>;
   webhook(sessao: string): Promise<{ criado: boolean; url: string }>;
   criarGrupo(numeroId: number): Promise<{ grupo: string; nome: string; participantes: number }>;
+  adicionarAtendentes(numeroId: number): Promise<{ adicionados: number; jaEstavam: number; falhas: { numero: string; motivo: string }[] }>;
   resumir(ticketId: number): Promise<{ solucao: string; resolvido: boolean }>;
   topSolicitantes(dias: number): Promise<TopSolicitantes>;
 }
@@ -144,6 +145,7 @@ const supabaseOpenwa: OpenwaService = {
   membros: (sessao, grupo) => funcao<MembroGrupo[]>("whatsapp", { acao: "openwa_membros", sessao, grupo }),
   webhook: (sessao) => funcao<{ criado: boolean; url: string }>("whatsapp", { acao: "openwa_webhook", sessao }),
   criarGrupo: (numeroId) => funcao<{ grupo: string; nome: string; participantes: number }>("whatsapp", { acao: "openwa_criar_grupo", numeroId }),
+  adicionarAtendentes: (numeroId) => funcao<{ adicionados: number; jaEstavam: number; falhas: { numero: string; motivo: string }[] }>("whatsapp", { acao: "openwa_adicionar_atendentes", numeroId }),
   resumir: (ticketId) => funcao<{ solucao: string; resolvido: boolean }>("ia", { acao: "resumir", ticketId }),
   topSolicitantes: (dias) => rpc<TopSolicitantes>("ch_top_solicitantes", { p_dias: dias }),
 };
@@ -234,6 +236,7 @@ const mockOpenwa: OpenwaService = {
   membros: async () => Promise.reject(semOpenwa()),
   webhook: async () => Promise.reject(semOpenwa()),
   criarGrupo: async () => Promise.reject(semOpenwa()),
+  adicionarAtendentes: async () => Promise.reject(semOpenwa()),
   async resumir() {
     await esperar(400);
     return { solucao: "Impressora com papel atolado; fila de impressão limpa remotamente e impressão normalizada.", resolvido: true };

@@ -188,6 +188,7 @@ export const useSalvarNumeroWhatsapp = () =>
 export const useSalvarSetorWhatsapp = () =>
   useMudaOpenwa((p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; waPedirDescricao: boolean; msgNaoCorporativo: string }) => openwaService.salvarSetor(p));
 export const useCriarGrupoInterno = () => useMudaOpenwa((numeroId: number) => openwaService.criarGrupo(numeroId));
+export const useAdicionarAtendentesGrupo = () => useMudaOpenwa((numeroId: number) => openwaService.adicionarAtendentes(numeroId));
 export const useSalvarWhatsappAtendente = () => useMudaOpenwa((p: { usuarioId: string; whatsapp: string }) => openwaService.salvarWhatsappAtendente(p));
 export const useTestarOpenwa = () => useMudaOpenwa(() => openwaService.testar());
 export const useImportarLinhas = () => useMudaOpenwa((linhas: LinhaImportar[]) => openwaService.importarLinhas(linhas));
