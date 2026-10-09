@@ -106,14 +106,15 @@ Migrations (renomeadas para depois das de segurança do login, que vieram no mer
       identificação, só corporativo, fila, ticket, repasse, resposta pelo grupo (com e sem citação, autor estranho), permissões
       (outro atendente, transferir só gestão), encerrar sem/com resolver (regra do serviço), ticket que continua × novo, "novo",
       ação pelo ticket, ciclo, métrica, tela OpenWA, importação de linhas e e-mail só domínio.
-- [ ] Migrations aplicadas na produção — **Wagner** (`npx supabase db push`).
-- [ ] Edge Functions publicadas — **Wagner**.
+- [x] Migrations aplicadas na produção (09/10/2026, Wagner, uma a uma com `npx supabase db query --linked -f …`; o `db push` não serve no Supabase compartilhado).
+- [x] Edge Functions publicadas (09/10/2026, Wagner): whatsapp, openwa-webhook, zenvia-webhook, ia.
 - [ ] OpenWA no ar, sessão pareada, webhook cadastrado e teste ponta a ponta com um celular — **Wagner**.
 
 ## 4. Como ativar (Wagner)
 
-1. **Banco:** `npx supabase db push`. Se o `20261009100000_…forma_atendimento_canal` já tinha sido aplicado com o nome antigo,
-   rode antes `npx supabase migration repair --status reverted 20261009100000` (o `…150000` é o mesmo conteúdo e pode rodar de novo).
+1. **Banco:** `npx supabase link --project-ref cjofyxgcuvpeeslkfawu` e, para cada migration nova, na ordem,
+   `npx supabase db query --linked -f supabase/migrations/<arquivo>.sql`. **Não use `db push`** (o histórico do projeto compartilhado tem
+   migrations de outros sistemas e ele pede `migration repair`, que não deve ser rodado).
 2. **Edge Functions:**
    `npx supabase functions deploy portal_atendimento-whatsapp portal_atendimento-openwa-webhook portal_atendimento-zenvia-webhook portal_atendimento-ia --project-ref cjofyxgcuvpeeslkfawu --use-api`
 3. **OpenWA na sua máquina:** `npm run dev` na pasta do OpenWA, com `RESOLVE_LID_TO_PHONE=true` no `.env` (sem isso, remetentes `@lid` chegam sem número e são ignorados).
