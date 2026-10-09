@@ -80,7 +80,7 @@ export function RelatoriosExecutivos() {
       <div className="ger-grid ger-grid--2">
         <Secao titulo="Tendência de 13 meses" subtitulo="Entradas e resolvidos por mês.">
           <GraficoLinha titulo="Entradas e resolvidos por mês" rotulos={m.map((p) => p.rotulo)} series={[{ nome: "Entradas", valores: m.map((p) => p.entradas) }, { nome: "Resolvidos", valores: m.map((p) => p.resolvidos) }]} formato={(x) => fmtNum(x)} altura={200} />
-          <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 13.5, lineHeight: 1.6 }}>
+          <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 12.5, lineHeight: 1.55 }}>
             <li>
               <b>{atual?.rotulo}:</b> {fmtNum(atual?.entradas ?? 0)} entradas, <Variacao pct={variacaoPct(atual?.entradas ?? null, anterior?.entradas ?? null)} maiorMelhor={false} sufixo="vs. mês anterior" />
               {anoPassado && (

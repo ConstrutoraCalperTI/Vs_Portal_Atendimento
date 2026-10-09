@@ -1,6 +1,6 @@
-import { Activity, ArrowLeftRight, BarChart3, Bell, BellRing, Briefcase, Download, FileText, Gauge, LayoutDashboard, Lightbulb, PieChart, Sparkles, TrendingUp, Trophy } from "lucide-react";
+import { Activity, ArrowLeftRight, BarChart3, Bell, BellRing, Briefcase, Building2, CalendarDays, CalendarRange, Download, FileText, Filter, Gauge, LayoutDashboard, Lightbulb, PieChart, Radio, Sparkles, TrendingUp, Trophy, Users } from "lucide-react";
 import { lazy, Suspense } from "react";
-import { Navigate, NavLink, Route, Routes } from "react-router";
+import { Navigate, NavLink, Route, Routes, useLocation } from "react-router";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { getMenuItem } from "../../../config/menuRegistry";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
@@ -80,6 +80,8 @@ function GerencialConteudo({ payload }: { payload: GerencialPayload }) {
         ))}
       </nav>
 
+      <IntroTela base={base} />
+
       <BarraFiltros filtros={filtros} preset={preset} definir={definir} aplicarPreset={aplicarPreset} hoje={hoje} setores={setores} equipes={equipes} total={payload.tickets.length} />
 
       <VisaoProvider payload={payload} filtros={filtros}>
@@ -112,6 +114,28 @@ function GerencialConteudo({ payload }: { payload: GerencialPayload }) {
   );
 }
 
+/** Faixa de abertura de cada tela: ícone, nome e o objetivo, para ninguém precisar adivinhar o que está vendo. */
+function IntroTela({ base }: { base: string }) {
+  const { pathname } = useLocation();
+  const tela = TELAS.find((t) => pathname.startsWith(`${base}/${t.segmento}`));
+  if (!tela) return null;
+  const [objetivo, detalhe] = tela.descricao.split(": ");
+  return (
+    <div className="ger-intro">
+      <span className="ger-intro__ico" aria-hidden="true">
+        <tela.icon size={20} />
+      </span>
+      <div>
+        <h2>{tela.label}</h2>
+        <p>
+          <b>{objetivo}</b>
+          {detalhe ? `: ${detalhe}` : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 interface BarraProps {
   filtros: Filtros;
   preset: string;
@@ -127,7 +151,7 @@ function BarraFiltros({ filtros, preset, definir, aplicarPreset, hoje, setores, 
   return (
     <div className="ger-filtros" role="group" aria-label="Filtros da visão gerencial">
       <div className="ger-filtros__grupo">
-        <span>Período</span>
+        <span className="ger-filtros__rotulo"><CalendarRange size={13} aria-hidden="true" /> Período</span>
         <div className="ger-filtros__presets">
           {PRESETS.map((p) => (
             <button key={p.id} type="button" className={`ger-filtros__preset${preset === p.id ? " ger-filtros__preset--ativo" : ""}`} onClick={() => aplicarPreset(p.id)}>
@@ -137,16 +161,16 @@ function BarraFiltros({ filtros, preset, definir, aplicarPreset, hoje, setores, 
         </div>
       </div>
       <label className="ger-filtros__grupo">
-        <span>De</span>
+        <span className="ger-filtros__rotulo"><CalendarDays size={13} aria-hidden="true" /> De</span>
         <input type="date" value={filtros.de} max={filtros.ate} onChange={(e) => e.target.value && definir({ de: e.target.value })} />
       </label>
       <label className="ger-filtros__grupo">
-        <span>Até</span>
+        <span className="ger-filtros__rotulo"><CalendarDays size={13} aria-hidden="true" /> Até</span>
         <input type="date" value={filtros.ate} min={filtros.de} max={hoje} onChange={(e) => e.target.value && definir({ ate: e.target.value })} />
       </label>
       {setores.length > 1 && (
         <label className="ger-filtros__grupo">
-          <span>Setor</span>
+          <span className="ger-filtros__rotulo"><Building2 size={13} aria-hidden="true" /> Setor</span>
           <select value={filtros.setor} onChange={(e) => definir({ setor: e.target.value, equipe: "" })}>
             <option value="">Todos</option>
             {setores.map((s) => (
@@ -156,7 +180,7 @@ function BarraFiltros({ filtros, preset, definir, aplicarPreset, hoje, setores, 
         </label>
       )}
       <label className="ger-filtros__grupo">
-        <span>Equipe</span>
+        <span className="ger-filtros__rotulo"><Users size={13} aria-hidden="true" /> Equipe</span>
         <select value={filtros.equipe} onChange={(e) => definir({ equipe: e.target.value })}>
           <option value="">Todas</option>
           {equipes.map((s) => (
@@ -165,7 +189,7 @@ function BarraFiltros({ filtros, preset, definir, aplicarPreset, hoje, setores, 
         </select>
       </label>
       <label className="ger-filtros__grupo">
-        <span>Canal</span>
+        <span className="ger-filtros__rotulo"><Radio size={13} aria-hidden="true" /> Canal</span>
         <select value={filtros.origem} onChange={(e) => definir({ origem: e.target.value as OrigemTicket | "" })}>
           <option value="">Todos</option>
           {(Object.keys(ORIGEM_ROTULO) as OrigemTicket[]).map((o) => (
@@ -174,7 +198,7 @@ function BarraFiltros({ filtros, preset, definir, aplicarPreset, hoje, setores, 
         </select>
       </label>
       <span className="ger-filtros__resumo">
-        {diasEntre(filtros.de, filtros.ate)} dias · {total.toLocaleString("pt-BR")} tickets carregados (13 meses)
+        <Filter size={13} aria-hidden="true" /> {diasEntre(filtros.de, filtros.ate)} dias · {total.toLocaleString("pt-BR")} tickets carregados (13 meses)
       </span>
     </div>
   );

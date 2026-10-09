@@ -69,7 +69,7 @@ export function RecomendacoesIa() {
       </Secao>
 
       <Secao titulo="O que a IA recebe" subtitulo="Transparência sobre os dados enviados.">
-        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.6 }}>
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.55 }}>
           <li><b>Período e filtros:</b> datas, setor, equipe e canal escolhidos.</li>
           <li><b>KPIs:</b> do período atual e do anterior (entradas, resolvidos, backlog, SLA, tempos, reabertura, triagem automática).</li>
           <li><b>Agregados:</b> até 8 equipes, 8 serviços e os canais, com entradas, resolvidos, backlog, vencidos, SLA e TMR.</li>

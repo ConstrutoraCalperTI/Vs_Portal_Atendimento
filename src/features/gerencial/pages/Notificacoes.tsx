@@ -63,7 +63,7 @@ export function Notificacoes() {
 
       <div className="ger-grid ger-grid--2">
         <Secao titulo="Alertas gerenciais automáticos" subtitulo="O que vai para o sino sem ninguém precisar abrir o Gerencial.">
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.6 }}>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.55 }}>
             <li>
               <b>Quando:</b> dias úteis às 8h (horário de São Paulo), de forma automática.
             </li>

@@ -55,7 +55,7 @@ interface LinhaProps {
 }
 
 /** Linhas (uma ou mais séries na mesma escala), com crosshair e tooltip. */
-export function GraficoLinha({ rotulos, series, altura = 220, formato = (v) => fmtNum(v, 1), titulo }: LinhaProps) {
+export function GraficoLinha({ rotulos, series, altura = 190, formato = (v) => fmtNum(v, 1), titulo }: LinhaProps) {
   const [hover, setHover] = useState<number | null>(null);
   const id = useId();
   const W = 600;
@@ -123,7 +123,7 @@ interface ColunasProps {
 }
 
 /** Colunas verticais (1 ou 2 séries lado a lado), com tooltip por coluna. */
-export function GraficoColunas({ rotulos, series, altura = 220, formato = (v) => fmtNum(v), titulo, rotulosDiretos }: ColunasProps) {
+export function GraficoColunas({ rotulos, series, altura = 190, formato = (v) => fmtNum(v), titulo, rotulosDiretos }: ColunasProps) {
   const [hover, setHover] = useState<number | null>(null);
   const id = useId();
   const W = 600;

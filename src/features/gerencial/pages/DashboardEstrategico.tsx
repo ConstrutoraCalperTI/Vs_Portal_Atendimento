@@ -130,7 +130,7 @@ export function DashboardEstrategico() {
           <p className="ger-nota">Confiabilidade {p30.confiabilidade} ({historico.length} dias de histórico). Não considera feriados nem campanhas.</p>
         </Secao>
         <Secao titulo="Capacidade e esforço" subtitulo="O que os tickets registram de custo é tempo e trabalho; valores em dinheiro não são cadastrados.">
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.6 }}>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.55 }}>
             <li><b>Resolvidos por dia útil:</b> {fmtNum(p30.capacidadePorDia, 1)} (média das últimas 8 semanas).</li>
             <li><b>Entradas por dia:</b> {fmtNum(p30.entradasPorDia, 1)}, tendência {p30.tendenciaPorDia >= 0 ? "+" : ""}{fmtNum(p30.tendenciaPorDia, 2)} por dia.</li>
             <li><b>Esforço:</b> {fmtNum(interacoesTotais)} interações públicas em {fmtNum(v.kpis.resolvidos)} resolvidos ({fmtNum(v.kpis.esforcoMedio, 1)} por ticket).</li>
