@@ -1863,3 +1863,24 @@ div.em-novo-setor {
   color: var(--muted);
   text-align: left;
 }
+
+/* ---------- WhatsApp OpenWA: chave geral ---------- */
+.ow-geral {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--success-fg);
+  border-radius: 10px;
+  background: var(--success-bg);
+}
+.ow-geral small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ow-geral--off {
+  border-color: var(--warning-fg);
+  background: var(--warning-bg);
+}

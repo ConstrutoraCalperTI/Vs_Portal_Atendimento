@@ -29,6 +29,10 @@ Deno.serve(async (req) => {
   const segredo = credLinha?.webhook_segredo ?? "";
   if (!(await assinaturaValida(segredo, bruto, req.headers.get("x-openwa-signature")))) return resposta(401, { erro: "Assinatura inválida." });
 
+  // Chave geral desligada pelo administrador: não grava nem processa nada (200 para o OpenWA não reenviar).
+  const ligado = await db.rpc("at_openwa_ligado");
+  if (ligado.data === false) return resposta(200, { ok: true, ignorado: "WhatsApp OpenWA desligado" });
+
   let envelope: unknown;
   try {
     envelope = JSON.parse(bruto);

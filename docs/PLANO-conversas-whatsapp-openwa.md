@@ -130,6 +130,11 @@ Migrations (renomeadas para depois das de segurança do login, que vieram no mer
 - [ ] Aplicar `…200000` (`db query`) — **Wagner**. Sem mudança de Edge nem de front.
 - Risco aceito: com um único pedido na fila, conversa casual no grupo vai para o colaborador (a confirmação ✔ mostra).
 
+### Chave geral do OpenWA (09/10/2026, noite)
+- [x] `20261009210000`: `at_config.openwa_ligado`; `at_openwa_ligar` (supervisão/super admin; ao desligar cancela os envios pendentes do OpenWA); despachante não reserva nada do OpenWA desligado; webhook descarta sem gravar.
+- [x] Tela: chave "WhatsApp OpenWA ligado/desligado" no card de conexão, com confirmação ao desligar.
+- [ ] Aplicar `…210000` (`db query`) e publicar `portal_atendimento-openwa-webhook` — **Wagner**.
+
 ## 4. Como ativar (Wagner)
 
 1. **Banco:** `npx supabase link --project-ref cjofyxgcuvpeeslkfawu` e, para cada migration nova, na ordem,

@@ -182,6 +182,7 @@ function useMudaOpenwa<T, R>(fn: (dados: T) => Promise<R>) {
   return useMutation({ mutationFn: fn, onSuccess: () => void queryClient.invalidateQueries({ queryKey: OPENWA }) });
 }
 
+export const useLigarOpenwa = () => useMudaOpenwa((ligado: boolean) => openwaService.ligar(ligado));
 export const useSalvarConexaoOpenwa = () => useMudaOpenwa((p: { url: string; chave?: string }) => openwaService.salvarConexao(p));
 export const useSalvarNumeroWhatsapp = () =>
   useMudaOpenwa((p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }) => openwaService.salvarNumero(p));

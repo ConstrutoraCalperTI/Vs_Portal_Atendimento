@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { formatDateTime } from "../../../utils/dates";
+import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { Notice } from "../../configuracoes/components/Notice";
@@ -11,6 +12,7 @@ import { ServiceError } from "../../configuracoes/services/types";
 import {
   useGruposOpenwa,
   useImportarLinhas,
+  useLigarOpenwa,
   useLinhas,
   useMembrosGrupo,
   usePainelOpenwa,
@@ -90,6 +92,19 @@ function Conexao({ p }: { p: PainelOpenwa }) {
   const ids = useId();
   const salvar = useSalvarConexaoOpenwa();
   const testar = useTestarOpenwa();
+  const ligar = useLigarOpenwa();
+  const [confirmarDesligar, setConfirmarDesligar] = useState(false);
+  const mudarLigado = (v: boolean) =>
+    ligar.mutate(v, {
+      onSuccess: (r) => {
+        setConfirmarDesligar(false);
+        toast.success(r.ligado ? "WhatsApp OpenWA ligado" : `WhatsApp OpenWA desligado${r.canceladas ? ` · ${r.canceladas} envio(s) pendente(s) cancelado(s)` : ""}`);
+      },
+      onError: (e) => {
+        setConfirmarDesligar(false);
+        toast.error(erroMsg(e, "Não foi possível mudar."));
+      },
+    });
   const [url, setUrl] = useState(p.conexao.url ?? "");
   const [chave, setChave] = useState("");
   const v = p.conexao.verificacao;
@@ -116,6 +131,35 @@ function Conexao({ p }: { p: PainelOpenwa }) {
           </button>
         )}
       </div>
+      <div className={`ow-geral${p.conexao.ligado ? "" : " ow-geral--off"}`}>
+        <Switch.Root
+          className="switch"
+          checked={p.conexao.ligado}
+          disabled={!p.supervisor || ligar.isPending}
+          aria-labelledby={`${ids}-lig`}
+          onCheckedChange={(v) => (v ? mudarLigado(true) : setConfirmarDesligar(true))}
+        >
+          <Switch.Thumb className="switch__thumb" />
+        </Switch.Root>
+        <span>
+          <b id={`${ids}-lig`}>{p.conexao.ligado ? "WhatsApp OpenWA ligado" : "WhatsApp OpenWA desligado"}</b>
+          <small>
+            {p.conexao.ligado
+              ? "Recebe as mensagens dos números OpenWA, abre os tickets e envia as respostas."
+              : "Nada é recebido nem enviado pelo OpenWA: as mensagens que chegarem são ignoradas. A configuração fica guardada; a Zenvia e o e-mail seguem normais."}
+          </small>
+        </span>
+      </div>
+      <ConfirmDialog
+        open={confirmarDesligar}
+        onOpenChange={setConfirmarDesligar}
+        title="Desligar o WhatsApp OpenWA?"
+        description="As mensagens que chegarem aos números OpenWA deixam de virar conversa e ticket, e nada é enviado por eles (inclusive o grupo interno). Os envios que estavam esperando são cancelados. A configuração fica guardada para religar depois."
+        confirmLabel="Desligar"
+        tone="warning"
+        isPending={ligar.isPending}
+        onConfirm={() => mudarLigado(false)}
+      />
       <div className="zv-passos">
         <Passo ok={p.conexao.url ? (v ? v.ok : null) : false} titulo="Endereço e API key">
           {p.conexao.url ? <>{p.conexao.url} · chave {p.conexao.chaveMascara ?? "não informada"}</> : "Ainda não informado."}
