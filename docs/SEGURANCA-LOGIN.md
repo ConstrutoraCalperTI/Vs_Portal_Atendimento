@@ -155,7 +155,7 @@ Outras recomendações para o Auth compartilhado (fora do escopo deste repositó
 
 ## Implantação (ordem)
 
-**Andamento (2026-10-09):** passos 1, 2 (só origens localhost; falta o domínio da Vercel) e 3 (só `portal_atendimento-auth`) feitos. Gateway testado em produção com conta inexistente: 401 uniforme, origem estranha recusada, IP real registrado. Faltam o domínio de produção no secret, o teste de login real, as demais Edge Functions e a etapa 2.
+**Andamento (2026-10-09):** passos 1, 2 (origens: portalatendimento.calperservicos.com.br, a URL de deploy da Vercel e localhost) e 3 (só `portal_atendimento-auth`) feitos. Gateway testado em produção com conta inexistente: 401 uniforme, origem estranha recusada, IP real registrado. Faltam o teste de login real, as demais Edge Functions e a etapa 2.
 
 1. **Migration etapa 1:** `20261009120000_portal_atendimento_seguranca_login.sql`. Não muda o acesso de ninguém.
 2. **Secret da função:** `AUTH_ALLOWED_ORIGINS=https://<domínio de produção>,https://<domínio de preview>,http://localhost:5173`. Opcionais: `AUTH_IP_HEADER` e `AUTH_MIN_RESPONSE_MS`.
