@@ -461,7 +461,7 @@ export function regressao(valores: number[]): [number, number] {
  * Projeta `diasFuturos` dias a partir da série diária: tendência linear das entradas × fator do dia da semana,
  * capacidade = média de resolvidos por dia útil observada. Backlog projetado = anterior + entradas − capacidade.
  */
-export function projecao(historico: PontoDiario[], diasFuturos: number, backlogAtual: number): Projecao {
+export function projecao(historico: PontoDiario[], diasFuturos: number, backlogAtual: number, ajusteCapacidade = 1): Projecao {
   const base = historico.slice(-56); // até 8 semanas
   if (base.length === 0) {
     return { dias: [], entradasPorDia: 0, capacidadePorDia: 0, tendenciaPorDia: 0, backlogFinal: backlogAtual, diasParaZerar: null, confiabilidade: "baixa" };
@@ -474,7 +474,7 @@ export function projecao(historico: PontoDiario[], diasFuturos: number, backlogA
   for (const p of base) porDiaSemana[new Date(`${p.dia}T12:00:00Z`).getUTCDay()].push(p.entradas);
   const fator = porDiaSemana.map((v) => (base.length >= 14 && v.length && mediaEntradas > 0 ? v.reduce((s, x) => s + x, 0) / v.length / mediaEntradas : 1));
   const diasUteis = base.filter((p) => ![0, 6].includes(new Date(`${p.dia}T12:00:00Z`).getUTCDay()));
-  const capacidade = diasUteis.length ? diasUteis.reduce((s, p) => s + p.resolvidos, 0) / diasUteis.length : 0;
+  const capacidade = (diasUteis.length ? diasUteis.reduce((s, p) => s + p.resolvidos, 0) / diasUteis.length : 0) * ajusteCapacidade;
 
   const dias: Projecao["dias"] = [];
   let backlog = backlogAtual;
