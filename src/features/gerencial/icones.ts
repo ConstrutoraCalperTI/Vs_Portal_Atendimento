@@ -7,7 +7,6 @@ import {
   BarChart3,
   Bell,
   BellRing,
-  Bot,
   Briefcase,
   Building2,
   CalendarClock,
@@ -77,6 +76,14 @@ const REGRAS: Regra[] = [
   { re: /resumo executivo|executiv|diretoria/i, icone: Briefcase, tema: "roxo" },
   { re: /desvio/i, icone: AlertTriangle, tema: "vermelho" },
 
+  // Títulos que misturam assuntos: resolvidos antes das regras genéricas
+  { re: /metas e limites/i, icone: Target, tema: "verde" },
+  { re: /mapa de calor|dia × hora|dia da semana|quando os chamados/i, icone: Flame, tema: "vermelho" },
+  { re: /waterfall|ponte do backlog/i, icone: Waves, tema: "azul" },
+  { re: /linha do tempo|ritmo/i, icone: Activity, tema: "azul" },
+  { re: /entradas e resolvidos|entradas, resolvidos/i, icone: Activity, tema: "azul" },
+  { re: /produtividade/i, icone: UserRound, tema: "ciano" },
+
   // Alertas e avisos
   { re: /cr[ií]tico/i, icone: Siren, tema: "vermelho" },
   { re: /aten[cç][aã]o/i, icone: AlertTriangle, tema: "ambar" },
@@ -112,7 +119,7 @@ const REGRAS: Regra[] = [
   { re: /\bsla\b|no prazo/i, icone: Timer, tema: "verde" },
   { re: /1ª resposta|primeira resposta|\btpr\b/i, icone: MessagesSquare, tema: "ciano" },
   { re: /assumir/i, icone: UserRound, tema: "ciano" },
-  { re: /mais antigo|idade/i, icone: Hourglass, tema: "ambar" },
+  { re: /mais antigo|idade/i, icone: Hourglass, tema: "ambar" },
   { re: /parado/i, icone: PauseCircle, tema: "vermelho" },
   { re: /pendente|pend[eê]ncia/i, icone: Hourglass, tema: "ambar" },
   { re: /tempo|\btmr\b|prazo/i, icone: Clock, tema: "ciano" },
