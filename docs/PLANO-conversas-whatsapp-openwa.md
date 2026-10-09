@@ -124,6 +124,12 @@ Migrations (renomeadas para depois das de segurança do login, que vieram no mer
 - [x] Ensaio local do zero (5 roteiros), 138 testes, lint, `deno check`.
 - [ ] Aplicar `…190000` (`db query`), publicar `portal_atendimento-whatsapp` e `portal_atendimento-openwa-webhook`, preencher o WhatsApp dos atendentes e clicar em **Criar grupo interno** — **Wagner**.
 
+### Grupo interno sem citação (09/10/2026, noite)
+- [x] `20261009200000`: resposta do atendente no grupo **sem citar** — "#1021 texto" vai para o ticket; sem número, vai para o único atendimento que está com ele ou, sem nenhum, assume o único pedido da fila; ambíguo → lista "#ticket · nome" no grupo e não envia. "RESOLVIDO" segue a mesma escolha. Confirmação "✔ Enviado a … (#ticket)" / "✅ #ticket resolvido por …".
+- [x] Ensaio local (8 cenários do grupo + os 5 roteiros anteriores).
+- [ ] Aplicar `…200000` (`db query`) — **Wagner**. Sem mudança de Edge nem de front.
+- Risco aceito: com um único pedido na fila, conversa casual no grupo vai para o colaborador (a confirmação ✔ mostra).
+
 ## 4. Como ativar (Wagner)
 
 1. **Banco:** `npx supabase link --project-ref cjofyxgcuvpeeslkfawu` e, para cada migration nova, na ordem,
