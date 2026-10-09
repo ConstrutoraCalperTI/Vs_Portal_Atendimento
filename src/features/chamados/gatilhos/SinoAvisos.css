@@ -105,3 +105,122 @@
   content: "● ";
   color: var(--brand);
 }
+
+/* Alertas do Gerencial no sino: contador vermelho forte quando há crítico, abas e itens com faixa de cor. */
+.sino__n--critico {
+  background: var(--danger-fg);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.sino__abas {
+  position: sticky;
+  top: 45px;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.sino__aba {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sino__aba:hover {
+  background: var(--table-head);
+  color: var(--ink);
+}
+
+.sino__aba--ativa,
+.sino__aba--ativa:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.sino__cont {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 10.5px;
+  line-height: 17px;
+  text-align: center;
+}
+
+.sino__cont--critico {
+  background: var(--danger-fg);
+}
+
+.sino__vazio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sino__vazio svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--success-fg);
+}
+
+.sino__item--alerta {
+  border-left: 3px solid transparent;
+}
+
+.sino__item--alerta b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sino__item--critico {
+  border-left-color: var(--danger-fg);
+}
+
+.sino__item--critico b svg {
+  color: var(--danger-fg);
+}
+
+.sino__item--atencao {
+  border-left-color: var(--warning-fg);
+}
+
+.sino__item--atencao b svg {
+  color: var(--warning-fg);
+}
+
+.sino__rodape {
+  position: sticky;
+  bottom: 0;
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brand);
+  text-align: center;
+  cursor: pointer;
+}
+
+.sino__rodape:hover {
+  background: var(--brand-soft);
+}
