@@ -131,7 +131,8 @@ export async function chamarOpenwa(f: Fetch, url: string, chave: string, metodo:
   try {
     r = await f(`${base(url)}/api${caminho}`, {
       method: metodo,
-      headers: { "X-API-Key": chave, ...(corpo === undefined ? {} : { "Content-Type": "application/json" }) },
+      // X-Tunnel-Skip-AntiPhishing-Page: no túnel do VS Code (devtunnels.ms) pula a página de aviso; fora dele é ignorado.
+      headers: { "X-API-Key": chave, "X-Tunnel-Skip-AntiPhishing-Page": "true", ...(corpo === undefined ? {} : { "Content-Type": "application/json" }) },
       body: corpo === undefined ? undefined : JSON.stringify(corpo),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
