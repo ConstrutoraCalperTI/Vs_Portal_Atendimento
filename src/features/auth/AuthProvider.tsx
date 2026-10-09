@@ -3,12 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { isAllowedLoginEmail, STORAGE_PREFIX } from "../../config/app";
-<<<<<<< HEAD
 import { LOGIN_FAILED_MESSAGE, OFFLINE_MESSAGE, requestResetThroughGateway, signInThroughGateway } from "../../lib/authGateway";
-import { SUPABASE_CONFIGURED, supabase } from "../../lib/supabase";
-=======
-import { SUPABASE_CONFIGURED, takeRecoveryLinkFlag, SUPABASE_KEY_HINT, supabase } from "../../lib/supabase";
->>>>>>> 969f4e94ea2cfbcbb657fa4ceda78e80909e3abe
+import { SUPABASE_CONFIGURED, takeRecoveryLinkFlag, supabase } from "../../lib/supabase";
 import { authService } from "../configuracoes/services";
 import { AuthContext, type AuthContextValue, type AuthStatus } from "./AuthContext";
 import { AuthFailure, DOMAIN_NOT_ALLOWED, toAuthFailure } from "./authErrors";
