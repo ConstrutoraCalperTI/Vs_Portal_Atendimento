@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
+  BarChart3,
   Workflow,
   Building2,
   Contact,
@@ -117,6 +118,15 @@ const definitions = [
     icon: Monitor,
     group: "principal",
     description: "Indicadores, atendentes e conversas em tempo real. Gestores veem os setores deles; a supervisão geral, todos.",
+    parent: "gestao_chamados",
+  },
+  {
+    id: "gestao_chamados_gerencial",
+    label: "Gerencial",
+    path: "/gestao-chamados/gerencial",
+    icon: BarChart3,
+    group: "principal",
+    description: "Visão gerencial e estratégica: KPIs, metas, relatórios, análises, projeções, alertas e insights sobre os chamados.",
     parent: "gestao_chamados",
   },
   {
