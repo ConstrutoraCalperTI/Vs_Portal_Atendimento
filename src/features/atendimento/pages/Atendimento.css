@@ -1858,3 +1858,8 @@ div.em-novo-setor {
   padding: 0;
   list-style: none;
 }
+.at-bal__sem-arquivo small {
+  display: inline;
+  color: var(--muted);
+  text-align: left;
+}
