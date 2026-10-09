@@ -1,6 +1,7 @@
 import { Lock, Mail, MessageCircle, Settings, Sparkles, Zap } from "lucide-react";
 import { useState } from "react";
 import { DetailDialog } from "../../../components/ds";
+import { ListaAnexos } from "../../atendimento/pages/Anexos";
 import { ORIGENS, type AcaoTicket, type EventoTicket, type TicketDetalhe } from "./types";
 
 // Linha do tempo no modelo da Movidesk (Wagner, 08/10/2026): uma linha vertical com um marcador por interação —
@@ -86,6 +87,7 @@ export function LinhaDoTempo({ d, historico, setHistorico }: { d: TicketDetalhe;
                   <span className="tk-acao__n">{it.a.numero}</span>
                 </div>
                 <div className="tk-acao__c">{it.a.texto}</div>
+                {it.a.canal === "whatsapp" && <ListaAnexos anexos={it.a.anexos} />}
                 {it.a.email && (
                   <div className="tl-acao__rodape">
                     <button type="button" className="tk-link" onClick={() => setEmailAberto(it.a)}>
@@ -139,7 +141,7 @@ function DialogoEmail({ a, onFechar }: { a: AcaoTicket; onFechar: () => void }) 
         </dd>
       </dl>
       <div className="tl-email__corpo">{a.texto}</div>
-      {a.anexos.length > 0 && <p className="ch-muted" style={{ fontSize: 12 }}>{a.anexos.length} anexo(s) neste e-mail.</p>}
+      <ListaAnexos anexos={a.anexos} />
     </DetailDialog>
   );
 }

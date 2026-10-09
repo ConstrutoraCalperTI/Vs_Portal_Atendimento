@@ -25,6 +25,8 @@ export interface SetorWhatsapp {
   waSoCorporativo: boolean;
   /** Respostas automáticas (boas-vindas, identificação, encerramento) nos números OpenWA do setor. */
   waRespostasAuto: boolean;
+  /** Depois de identificar, pede a descrição do problema e o print quando a 1ª mensagem não explicou. */
+  waPedirDescricao: boolean;
   msgNaoCorporativo: string;
   gestor: boolean;
   numeros: NumeroWhatsapp[];
@@ -92,7 +94,7 @@ export interface OpenwaService {
   painel(): Promise<PainelOpenwa>;
   salvarConexao(p: { url: string; chave?: string }): Promise<void>;
   salvarNumero(p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }): Promise<void>;
-  salvarSetor(p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; msgNaoCorporativo: string }): Promise<void>;
+  salvarSetor(p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; waPedirDescricao: boolean; msgNaoCorporativo: string }): Promise<void>;
   salvarWhatsappAtendente(p: { usuarioId: string; whatsapp: string }): Promise<void>;
   linhas(busca: string): Promise<Linha[]>;
   importarLinhas(linhas: LinhaImportar[]): Promise<{ salvas: number; invalidas: string[] }>;
@@ -105,6 +107,7 @@ export interface OpenwaService {
   grupos(sessao: string): Promise<{ id: string; name: string }[]>;
   membros(sessao: string, grupo: string): Promise<MembroGrupo[]>;
   webhook(sessao: string): Promise<{ criado: boolean; url: string }>;
+  criarGrupo(numeroId: number): Promise<{ grupo: string; nome: string; participantes: number }>;
   resumir(ticketId: number): Promise<{ solucao: string; resolvido: boolean }>;
   topSolicitantes(dias: number): Promise<TopSolicitantes>;
 }
@@ -140,6 +143,7 @@ const supabaseOpenwa: OpenwaService = {
   grupos: (sessao) => funcao<{ id: string; name: string }[]>("whatsapp", { acao: "openwa_grupos", sessao }),
   membros: (sessao, grupo) => funcao<MembroGrupo[]>("whatsapp", { acao: "openwa_membros", sessao, grupo }),
   webhook: (sessao) => funcao<{ criado: boolean; url: string }>("whatsapp", { acao: "openwa_webhook", sessao }),
+  criarGrupo: (numeroId) => funcao<{ grupo: string; nome: string; participantes: number }>("whatsapp", { acao: "openwa_criar_grupo", numeroId }),
   resumir: (ticketId) => funcao<{ solucao: string; resolvido: boolean }>("ia", { acao: "resumir", ticketId }),
   topSolicitantes: (dias) => rpc<TopSolicitantes>("ch_top_solicitantes", { p_dias: dias }),
 };
@@ -160,6 +164,7 @@ const mockPainel: PainelOpenwa = {
       waIdentificar: true,
       waSoCorporativo: true,
       waRespostasAuto: true,
+      waPedirDescricao: true,
       msgNaoCorporativo: "Este canal atende apenas linhas corporativas da Calper. Envie sua solicitação por e-mail.",
       gestor: true,
       numeros: [{ id: 1, numero: "5521900000001", canal: "openwa", sessao: null, grupo: null, grupoNome: null }],
@@ -228,6 +233,7 @@ const mockOpenwa: OpenwaService = {
   grupos: async () => Promise.reject(semOpenwa()),
   membros: async () => Promise.reject(semOpenwa()),
   webhook: async () => Promise.reject(semOpenwa()),
+  criarGrupo: async () => Promise.reject(semOpenwa()),
   async resumir() {
     await esperar(400);
     return { solucao: "Impressora com papel atolado; fila de impressão limpa remotamente e impressão normalizada.", resolvido: true };

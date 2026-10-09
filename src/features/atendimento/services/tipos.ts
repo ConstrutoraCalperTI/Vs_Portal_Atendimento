@@ -118,7 +118,7 @@ export interface Mensagem {
   autorNome: string | null;
   tipo: "texto" | "arquivo" | "imagem" | "audio" | "video" | "evento";
   texto: string | null;
-  arquivo: { nome?: string | null; url?: string; mime?: string } | null;
+  arquivo: { nome?: string | null; url?: string; mime?: string; path?: string; bucket?: string; erro?: string } | null;
   status: "recebida" | "pendente" | "enviada" | "entregue" | "lida" | "falhou";
   erro: string | null;
   criadoEm: string;

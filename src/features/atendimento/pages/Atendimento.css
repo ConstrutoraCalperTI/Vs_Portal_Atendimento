@@ -1840,3 +1840,21 @@ div.em-novo-setor {
   gap: 8px;
   margin-bottom: 12px;
 }
+
+/* ---------- Prints e anexos (Storage) ---------- */
+.anx-img img {
+  display: block;
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+.anx-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}

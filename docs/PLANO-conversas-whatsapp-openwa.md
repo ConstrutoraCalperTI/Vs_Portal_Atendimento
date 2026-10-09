@@ -117,6 +117,13 @@ Migrations (renomeadas para depois das de segurança do login, que vieram no mer
 - [x] Ensaio local (4 roteiros, inclusive como usuário logado), 135 testes, `deno check`.
 - [ ] Aplicar `…160000` e `…170000` (`db query`), publicar `portal_atendimento-whatsapp` e `portal_atendimento-openwa-webhook`, clicar de novo em **Cadastrar webhook** — **Wagner**.
 
+### Grupo interno pelo portal + descrição e print (09/10/2026, fim da tarde)
+- [x] `20261009190000` (renomeada: a frente gerencial já usava `…180000`): pergunta "Descreva em poucas palavras… envie um print" depois de identificar, quando a 1ª mensagem não explica (`at_precisa_descricao`, chave `wa_pedir_descricao` por setor); print sozinho → "Recebi o print 👍 Agora escreva…"; a descrição vira o assunto; print anexado à 1ª ação e repassado ao grupo como imagem (`at_repasses.arquivo`); bucket privado `atendimento-whatsapp`.
+- [x] Edge: webhook guarda a mídia no Storage (base64 do webhook ou download pela API do OpenWA, até 15 MB); despachante manda o print ao grupo (`send-image` com link assinado); ação `openwa_criar_grupo` (grupo com o WhatsApp dos atendentes, ligado ao número, mensagem de apresentação).
+- [x] Front: botão **Criar grupo interno**, chave **Pedir a descrição e o print**, print no chat (miniatura) e anexos com link na linha do tempo do ticket (WhatsApp e e-mail).
+- [x] Ensaio local do zero (5 roteiros), 138 testes, lint, `deno check`.
+- [ ] Aplicar `…190000` (`db query`), publicar `portal_atendimento-whatsapp` e `portal_atendimento-openwa-webhook`, preencher o WhatsApp dos atendentes e clicar em **Criar grupo interno** — **Wagner**.
+
 ## 4. Como ativar (Wagner)
 
 1. **Banco:** `npx supabase link --project-ref cjofyxgcuvpeeslkfawu` e, para cada migration nova, na ordem,

@@ -1,5 +1,5 @@
 import * as Switch from "@radix-ui/react-switch";
-import { CheckCircle2, CircleAlert, Info, KeyRound, Link2, QrCode, RefreshCw, Smartphone, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, CircleAlert, Info, KeyRound, Link2, QrCode, RefreshCw, Smartphone, Trash2, Upload, Users } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
@@ -19,6 +19,7 @@ import {
   useSalvarConexaoOpenwa,
   useSalvarNumeroWhatsapp,
   useSalvarSetorWhatsapp,
+  useCriarGrupoInterno,
   useSalvarWhatsappAtendente,
   useTestarOpenwa,
 } from "../hooks/useAtendimento";
@@ -172,8 +173,9 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
   const [ident, setIdent] = useState(s.waIdentificar);
   const [soCorp, setSoCorp] = useState(s.waSoCorporativo);
   const [auto, setAuto] = useState(s.waRespostasAuto);
+  const [descricao, setDescricao] = useState(s.waPedirDescricao);
   const [msg, setMsg] = useState(s.msgNaoCorporativo);
-  const mudou = ident !== s.waIdentificar || soCorp !== s.waSoCorporativo || auto !== s.waRespostasAuto || msg !== s.msgNaoCorporativo;
+  const mudou = ident !== s.waIdentificar || soCorp !== s.waSoCorporativo || auto !== s.waRespostasAuto || descricao !== s.waPedirDescricao || msg !== s.msgNaoCorporativo;
 
   return (
     <section className="card at-sec" aria-labelledby={`${ids}-t`}>
@@ -199,6 +201,15 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
           </span>
         </label>
         <label className="ow-chave">
+          <Switch.Root className="switch" checked={descricao} disabled={!s.gestor} onCheckedChange={setDescricao}>
+            <Switch.Thumb className="switch__thumb" />
+          </Switch.Root>
+          <span>
+            <b>Pedir a descrição do problema e o print</b>
+            <small>Depois de identificar, se a 1ª mensagem não explicou (ex.: "Oi", "Bom dia"), pergunta "Descreva em poucas palavras qual é o problema e, se puder, envie um print da tela".</small>
+          </span>
+        </label>
+        <label className="ow-chave">
           <Switch.Root className="switch" checked={soCorp} disabled={!s.gestor} onCheckedChange={setSoCorp}>
             <Switch.Thumb className="switch__thumb" />
           </Switch.Root>
@@ -217,7 +228,7 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
               type="button"
               className="btn btn--primary btn--sm"
               disabled={salvar.isPending}
-              onClick={() => salvar.mutate({ setorId: s.id, waIdentificar: ident, waSoCorporativo: soCorp, waRespostasAuto: auto, msgNaoCorporativo: msg }, { onSuccess: () => toast.success("Regras salvas"), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar.")) })}
+              onClick={() => salvar.mutate({ setorId: s.id, waIdentificar: ident, waSoCorporativo: soCorp, waRespostasAuto: auto, waPedirDescricao: descricao, msgNaoCorporativo: msg }, { onSuccess: () => toast.success("Regras salvas"), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar.")) })}
             >
               Salvar regras
             </button>
@@ -241,6 +252,7 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
 function NumeroLinha({ n, p }: { n: NumeroWhatsapp; p: PainelOpenwa }) {
   const ids = useId();
   const salvar = useSalvarNumeroWhatsapp();
+  const criarGrupo = useCriarGrupoInterno();
   const [canal, setCanal] = useState(n.canal);
   const [sessao, setSessao] = useState(n.sessao ?? "");
   const [grupo, setGrupo] = useState(n.grupo ?? "");
@@ -315,6 +327,21 @@ function NumeroLinha({ n, p }: { n: NumeroWhatsapp; p: PainelOpenwa }) {
           <button type="button" className="btn btn--outline btn--sm" onClick={() => void cadastrarWebhook()}>
             <Link2 size={14} aria-hidden="true" /> Cadastrar webhook
           </button>
+          {!n.grupo && (
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={criarGrupo.isPending}
+              onClick={() =>
+                criarGrupo.mutate(n.id, {
+                  onSuccess: (r) => toast.success(`Grupo "${r.nome}" criado com ${r.participantes} atendente(s) e ligado a este número`),
+                  onError: (e) => toast.error(erroMsg(e, "O OpenWA não criou o grupo.")),
+                })
+              }
+            >
+              <Users size={14} aria-hidden="true" /> {criarGrupo.isPending ? "Criando…" : "Criar grupo interno"}
+            </button>
+          )}
           {grupos.isError && <em className="zv-erro">{erroMsg(grupos.error, "Não foi possível listar os grupos.")}</em>}
         </div>
       )}

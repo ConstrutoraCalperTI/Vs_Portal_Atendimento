@@ -2,7 +2,7 @@
 //   1. pg_cron (job portal-atendimento-whatsapp-1min): cabeçalho x-atendimento-chave (Vault) → acao "ciclo";
 //   2. pessoa logada (JWT do portal):
 //        despachar {conversaId?}   envia na hora o que a ação deixou pendente (qualquer usuário do portal)
-//        openwa_*                  administração do OpenWA (gestão do atendimento; criar/parear: supervisão geral)
+//        openwa_*                  administração do OpenWA (gestão do atendimento; criar sessão/grupo, parear: supervisão geral)
 //
 // O banco decide tudo (at_whatsapp_ciclo, at_conversa_acao…); aqui só entra e sai: Zenvia e OpenWA.
 
@@ -122,6 +122,35 @@ Deno.serve(async (req) => {
           await chamarOpenwa(fetch, ow.url, ow.chave, "GET", `/sessions/${s}/groups/${encodeURIComponent(g)}`),
         );
         return json((info.participants ?? []).map((p) => ({ id: p.id, numero: (p.number ?? p.id.split("@")[0] ?? "").replace(/\D/g, ""), nome: p.name ?? null, admin: Boolean(p.isAdmin) })));
+      }
+      case "openwa_criar_grupo": {
+        // Cria o grupo interno do número com o WhatsApp de cada atendente do setor e liga ao número.
+        const numeroId = Number(corpo.numeroId);
+        const n = await db.from("at_numeros").select("id, numero, setor_id, openwa_sessao, canal, at_setores(nome)").eq("id", numeroId).maybeSingle();
+        if (n.error || !n.data) throw new PortalError("NOT_FOUND", "Número não encontrado.", 404);
+        if (n.data.canal !== "openwa" || !n.data.openwa_sessao) throw new PortalError("INVALID_INPUT", "Salve o número como OpenWA, com a sessão, antes.");
+        const numeroSistema = String(n.data.numero);
+        const at = await db.from("at_atendentes").select("whatsapp").eq("setor_id", n.data.setor_id).not("whatsapp", "is", null);
+        if (at.error) throw fromRpcError(at.error);
+        const participantes = [...new Set((at.data ?? []).map((a) => String(a.whatsapp)).filter((w) => w && w !== numeroSistema))];
+        if (participantes.length === 0) throw new PortalError("INVALID_INPUT", "Preencha o WhatsApp pessoal dos atendentes do setor antes de criar o grupo.");
+        const setorNome = (n.data.at_setores as unknown as { nome: string } | null)?.nome ?? "setor";
+        const nome = String(corpo.nome ?? "").trim() || `Atendimento ${setorNome} · interno`;
+        const criado = exigirOk<{ id?: string; name?: string }>(
+          await chamarOpenwa(fetch, ow.url, ow.chave, "POST", `/sessions/${encodeURIComponent(n.data.openwa_sessao)}/groups`, { name: nome.slice(0, 100), participants: participantes }),
+        );
+        if (!criado?.id) throw new PortalError("INVALID_INPUT", "O OpenWA não devolveu o id do grupo.");
+        const up = await db.from("at_numeros").update({ grupo_interno: criado.id, grupo_interno_nome: criado.name ?? nome }).eq("id", numeroId);
+        if (up.error) throw fromRpcError(up.error);
+        await db.from("at_repasses").insert({
+          numero_id: numeroId,
+          tipo: "aviso",
+          texto: `👋 Grupo de atendimento do setor ${setorNome}.
+Cada pedido de suporte chega aqui como 🆕 *#ticket*. Para responder ao colaborador, toque e segure o pedido e escolha *Responder*.
+Escreva *RESOLVIDO* respondendo ao pedido para fechar o chamado.`,
+        });
+        await despachar(db, { limite: 5 });
+        return json({ grupo: criado.id, nome: criado.name ?? nome, participantes: participantes.length });
       }
       case "openwa_webhook": {
         // Cadastra (ou atualiza) o webhook desta sessão apontando para o portal, com o segredo do Vault.

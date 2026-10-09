@@ -7,7 +7,10 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { despachar } from "../_shared/atendimento/despacho.ts";
-import { assinaturaValida, lerEventoOpenwa } from "../_shared/atendimento/openwa.ts";
+import { assinaturaValida, baixarMidiaOpenwa, bytesDeBase64, caminhoMidia, lerEventoOpenwa } from "../_shared/atendimento/openwa.ts";
+
+const BUCKET = "atendimento-whatsapp";
+const MIDIA_MAX = 15 * 1_048_576;
 
 const resposta = (status: number, corpo: Record<string, unknown>) =>
   new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
@@ -22,7 +25,8 @@ Deno.serve(async (req) => {
   // Corpo bruto ANTES do JSON.parse: a assinatura é sobre os bytes recebidos.
   const bruto = await req.text();
   const cred = await db.rpc("at_ler_credencial_openwa");
-  const segredo = (cred.data as { webhook_segredo: string | null }[] | null)?.[0]?.webhook_segredo ?? "";
+  const credLinha = (cred.data as { url: string | null; chave: string | null; webhook_segredo: string | null }[] | null)?.[0];
+  const segredo = credLinha?.webhook_segredo ?? "";
   if (!(await assinaturaValida(segredo, bruto, req.headers.get("x-openwa-signature")))) return resposta(401, { erro: "Assinatura inválida." });
 
   let envelope: unknown;
@@ -49,6 +53,23 @@ Deno.serve(async (req) => {
   let resultado: unknown = { estado: "ignorado", motivo: ev.tipo === "ignorado" ? ev.motivo : null };
   try {
     if (ev.tipo === "privada") {
+      // Print/arquivo: guarda no Storage (veio em base64 no webhook ou baixa pela API do OpenWA).
+      let arquivo: Record<string, unknown> | null = null;
+      if (ev.midia) {
+        arquivo = { nome: ev.midia.nome ?? `[${ev.midia.tipo}]`, mime: ev.midia.mime };
+        try {
+          const bytes = ev.midia.data
+            ? bytesDeBase64(ev.midia.data)
+            : await baixarMidiaOpenwa(fetch, credLinha?.url ?? "", credLinha?.chave ?? "", ev.sessao, ev.midia.chatId, ev.externoId, MIDIA_MAX);
+          if (bytes.byteLength > MIDIA_MAX) throw new Error("arquivo maior que 15 MB");
+          const path = caminhoMidia(ev.sessao, ev.externoId, ev.midia.mime);
+          const up = await db.storage.from(BUCKET).upload(path, bytes, { contentType: ev.midia.mime, upsert: true });
+          if (up.error) throw new Error(up.error.message);
+          arquivo = { ...arquivo, bucket: BUCKET, path, tamanho: bytes.byteLength };
+        } catch (err) {
+          arquivo = { ...arquivo, erro: String(err instanceof Error ? err.message : err).slice(0, 200) };
+        }
+      }
       const r = await db.rpc("at_whatsapp_receber", {
         p: {
           canal: "openwa",
@@ -57,7 +78,7 @@ Deno.serve(async (req) => {
           nome: ev.nome,
           texto: ev.texto,
           tipo: ev.midia?.tipo ?? "texto",
-          arquivo: ev.midia ? { nome: ev.midia.nome ?? `[${ev.midia.tipo}]`, mime: ev.midia.mime } : null,
+          arquivo,
           externoId: ev.externoId,
         },
       });

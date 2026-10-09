@@ -2,7 +2,7 @@
 // supabase/functions/_shared/atendimento/openwa.ts e _shared/ia/resumo.ts são TypeScript puro.
 import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { assinaturaValida, chatIdDe, comAutor, enviarTextoOpenwa, lerEventoOpenwa, telefoneDoJid } from "../supabase/functions/_shared/atendimento/openwa.ts";
+import { assinaturaValida, bytesDeBase64, caminhoMidia, chatIdDe, comAutor, enviarImagemOpenwa, enviarTextoOpenwa, lerEventoOpenwa, telefoneDoJid } from "../supabase/functions/_shared/atendimento/openwa.ts";
 import { montarConversa, validarResumo } from "../supabase/functions/_shared/ia/resumo.ts";
 
 const envelope = (data: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
@@ -49,7 +49,9 @@ describe("lerEventoOpenwa", () => {
 
   it("imagem sem legenda vira mídia", () => {
     const e = lerEventoOpenwa(envelope({ id: "x1", from: "5521996453552@c.us", chatId: "5521996453552@c.us", body: "", type: "image", fromMe: false, isGroup: false, media: { mimetype: "image/jpeg", omitted: true } }));
-    expect(e.tipo === "privada" && e.midia).toEqual({ tipo: "imagem", nome: null, mime: "image/jpeg" });
+    expect(e.tipo === "privada" && e.midia).toEqual({ tipo: "imagem", nome: null, mime: "image/jpeg", data: null, chatId: "5521996453552@c.us" });
+    const comDados = lerEventoOpenwa(envelope({ id: "x2", from: "5521996453552@c.us", chatId: "5521996453552@c.us", body: "", type: "image", fromMe: false, isGroup: false, media: { mimetype: "image/png", data: "iVBORw0KGgo=" } }));
+    expect(comDados.tipo === "privada" && comDados.midia?.data).toBe("iVBORw0KGgo=");
   });
 
   it("mensagem no grupo interno: autor e a mensagem citada", () => {
@@ -141,5 +143,24 @@ describe("resumo da IA (encerramento)", () => {
     expect(validarResumo({ solucao: "  Fila limpa e impressão normalizada. ", resolvido: true })).toEqual({ solucao: "Fila limpa e impressão normalizada.", resolvido: true });
     expect(validarResumo({ solucao: "ok" })).toBeNull();
     expect(validarResumo(null)).toBeNull();
+  });
+});
+
+describe("print (mídia)", () => {
+  it("caminho seguro no bucket por sessão e mês", () => {
+    expect(caminhoMidia("b4cab961-03e6", "false_5521@c.us_3EB0/../x", "image/jpeg", new Date("2026-10-09T12:00:00Z"))).toBe("openwa/b4cab961-03e6/2026-10/false_5521_c_us_3EB0____x.jpg");
+    expect(caminhoMidia("s", "id", "application/x-desconhecido")).toMatch(/\.bin$/);
+  });
+  it("base64 com ou sem prefixo data:", () => {
+    expect(Array.from(bytesDeBase64("AQID"))).toEqual([1, 2, 3]);
+    expect(Array.from(bytesDeBase64("data:image/png;base64,AQID"))).toEqual([1, 2, 3]);
+  });
+  it("imagem para o grupo com legenda e citação", async () => {
+    const f = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ messageId: "true_g_IMG" }), { status: 201 }));
+    const r = await enviarImagemOpenwa(f, "https://x", "k", "s", "1203630@g.us", { url: "https://sb/print.jpg?token=1", mime: "image/jpeg" }, "🆕 #1003", "3EBNOVO");
+    expect(r.ok).toBe(true);
+    const [url, init] = f.mock.calls[0]!;
+    expect(url).toBe("https://x/api/sessions/s/messages/send-image");
+    expect(JSON.parse(String(init!.body))).toEqual({ chatId: "1203630@g.us", url: "https://sb/print.jpg?token=1", mimetype: "image/jpeg", caption: "🆕 #1003", quotedMessageId: "3EBNOVO" });
   });
 });
