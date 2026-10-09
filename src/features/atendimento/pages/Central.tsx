@@ -22,6 +22,7 @@ import {
 } from "../hooks/useAtendimento";
 import type { AcaoConversa, Contexto, Conversa, Mensagem, Setor } from "../services/tipos";
 import { gerencia, gravar, hora, iniciais, ler, rotuloSituacao, situacao, SITUACAO_SELO, telefone, type Situacao } from "./util";
+import { ImagemAnexo, ListaAnexos } from "./Anexos";
 import { EncerrarConversa } from "./EncerrarConversa";
 import "./Atendimento.css";
 
@@ -389,13 +390,23 @@ function Bolha({ m }: { m: Mensagem }) {
   return (
     <div className={`at-bal at-bal--${m.autor}`}>
       {autor && <span className="at-bal__autor">{autor}</span>}
-      {m.tipo !== "texto" ? (
+      {m.tipo !== "texto" && m.arquivo && (m.arquivo.path || m.arquivo.url) && (m.arquivo.mime ?? "").startsWith("image/") ? (
         <span>
-          <FileText size={14} aria-hidden="true" /> <b>{m.arquivo?.nome ?? `[${m.tipo}]`}</b>{" "}
-          {m.arquivo?.url && (
-            <a href={m.arquivo.url} target="_blank" rel="noreferrer noopener">abrir</a>
-          )}
-          {m.texto && <><br />{m.texto}</>}
+          <ImagemAnexo a={m.arquivo} />
+          {m.texto && !/^\[[a-z]+\]$/.test(m.texto) && <><br />{m.texto}</>}
+        </span>
+      ) : m.tipo !== "texto" && m.arquivo && (m.arquivo.path || m.arquivo.url) ? (
+        <span>
+          <ListaAnexos anexos={[m.arquivo]} />
+          {m.texto && !/^\[[a-z]+\]$/.test(m.texto) && <><br />{m.texto}</>}
+        </span>
+      ) : m.tipo !== "texto" ? (
+        // Chegou sem o arquivo (o WhatsApp/OpenWA não liberou o download): deixa claro em vez de "[imagem]".
+        <span className="at-bal__sem-arquivo">
+          <FileText size={14} aria-hidden="true" /> <b>{m.tipo === "imagem" ? "Imagem" : m.tipo === "audio" ? "Áudio" : m.tipo === "video" ? "Vídeo" : "Arquivo"} não recebido(a)</b>
+          <br />
+          <small>{m.arquivo?.erro ? `Motivo: ${m.arquivo.erro}.` : "O WhatsApp não liberou o arquivo."} Peça ao colaborador para reenviar.</small>
+          {m.texto && !/^\[[a-z]+\]$/.test(m.texto) && <><br />{m.texto}</>}
         </span>
       ) : (
         m.texto

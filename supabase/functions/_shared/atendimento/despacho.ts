@@ -4,7 +4,7 @@
 // webhooks (resposta automática na hora). A reserva de 2 min no banco evita envio duplo entre chamadas.
 
 import { enviarTexto } from "./zenvia.ts";
-import { comAutor, enviarTextoOpenwa, type Fetch } from "./openwa.ts";
+import { comAutor, enviarImagemOpenwa, enviarTextoOpenwa, type Fetch } from "./openwa.ts";
 
 // deno-lint-ignore no-explicit-any
 export type Db = any;
@@ -27,6 +27,8 @@ interface RepassePendente {
   citar: string | null;
   sessao: string | null;
   grupo: string | null;
+  /** Print do pedido (Storage): vai como imagem com o texto na legenda. */
+  arquivo: { bucket?: string; path?: string; mime?: string } | null;
 }
 
 interface Credenciais {
@@ -96,7 +98,16 @@ export async function despachar(db: Db, opcoes: { conversaId?: number | null; li
       await resultado({ tipo: "repasse", id: x.id, ok: false, erro: "OpenWA não configurado (URL, API key, sessão ou grupo interno)." });
       continue;
     }
-    let r = await enviarTextoOpenwa(f, cred.openwa.url, cred.openwa.chave, x.sessao, x.grupo, x.texto, x.citar);
+    let r = { ok: false, status: 0, id: null as string | null, erro: null as string | null };
+    if (x.arquivo?.bucket && x.arquivo.path && (x.arquivo.mime ?? "").startsWith("image/")) {
+      // Link assinado de 1 h: o OpenWA baixa a imagem do bucket privado e manda com o texto na legenda.
+      const assinado = await db.storage.from(x.arquivo.bucket).createSignedUrl(x.arquivo.path, 3600);
+      if (assinado.data?.signedUrl) {
+        r = await enviarImagemOpenwa(f, cred.openwa.url, cred.openwa.chave, x.sessao, x.grupo, { url: assinado.data.signedUrl, mime: x.arquivo.mime! }, x.texto, x.citar);
+      }
+    }
+    // Sem print (ou a imagem falhou): só o texto.
+    if (!r.ok) r = await enviarTextoOpenwa(f, cred.openwa.url, cred.openwa.chave, x.sessao, x.grupo, x.texto, x.citar);
     // Citação que o WhatsApp não acha (mensagem antiga): manda sem citar.
     if (!r.ok && x.citar && (r.status === 400 || r.status === 404 || r.status === 501)) {
       r = await enviarTextoOpenwa(f, cred.openwa.url, cred.openwa.chave, x.sessao, x.grupo, x.texto);

@@ -182,11 +182,24 @@ function useMudaOpenwa<T, R>(fn: (dados: T) => Promise<R>) {
   return useMutation({ mutationFn: fn, onSuccess: () => void queryClient.invalidateQueries({ queryKey: OPENWA }) });
 }
 
+export function useLigarOpenwa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ligado: boolean) => openwaService.ligar(ligado),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: OPENWA });
+      // Conversas e Monitor aparecem/somem conforme o recurso (AccessProvider).
+      void queryClient.invalidateQueries({ queryKey: ["recursos"] });
+    },
+  });
+}
 export const useSalvarConexaoOpenwa = () => useMudaOpenwa((p: { url: string; chave?: string }) => openwaService.salvarConexao(p));
 export const useSalvarNumeroWhatsapp = () =>
   useMudaOpenwa((p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }) => openwaService.salvarNumero(p));
 export const useSalvarSetorWhatsapp = () =>
-  useMudaOpenwa((p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; msgNaoCorporativo: string }) => openwaService.salvarSetor(p));
+  useMudaOpenwa((p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; waPedirDescricao: boolean; msgNaoCorporativo: string }) => openwaService.salvarSetor(p));
+export const useCriarGrupoInterno = () => useMudaOpenwa((numeroId: number) => openwaService.criarGrupo(numeroId));
+export const useAdicionarAtendentesGrupo = () => useMudaOpenwa((numeroId: number) => openwaService.adicionarAtendentes(numeroId));
 export const useSalvarWhatsappAtendente = () => useMudaOpenwa((p: { usuarioId: string; whatsapp: string }) => openwaService.salvarWhatsappAtendente(p));
 export const useTestarOpenwa = () => useMudaOpenwa(() => openwaService.testar());
 export const useImportarLinhas = () => useMudaOpenwa((linhas: LinhaImportar[]) => openwaService.importarLinhas(linhas));

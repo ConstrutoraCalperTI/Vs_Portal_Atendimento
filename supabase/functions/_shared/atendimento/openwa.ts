@@ -52,9 +52,12 @@ export type EventoOpenwa =
       de: string;
       nome: string | null;
       texto: string;
-      midia: { tipo: "imagem" | "audio" | "video" | "arquivo"; nome: string | null; mime: string } | null;
+      /** data: base64 quando veio junto no webhook (até ~1 MiB); senão omitido e a Edge baixa pela API. */
+      midia: { tipo: "imagem" | "audio" | "video" | "arquivo"; nome: string | null; mime: string; data: string | null; chatId: string } | null;
     }
   | { tipo: "grupo"; chave: string | null; sessao: string; externoId: string; grupo: string; autor: string; texto: string; citadoId: string | null }
+  /** Digitada no próprio celular do número do sistema (message.sent) para um colaborador, no privado. */
+  | { tipo: "propria"; chave: string | null; sessao: string; externoId: string; para: string; texto: string }
   | { tipo: "ignorado"; chave: string | null; sessao: string | null; motivo: string };
 
 /** Telefone (só dígitos) de um JID "5521…@c.us" / "@s.whatsapp.net"; @lid usa o senderPhone resolvido. */
@@ -79,20 +82,30 @@ const MIDIA: Record<string, "imagem" | "audio" | "video" | "arquivo"> = {
   document: "arquivo",
 };
 
-/** Lê o envelope do webhook. Só mensagens recebidas; as próprias (fromMe) e status/broadcast são ignoradas. */
+/**
+ * Lê o envelope do webhook. message.received: privada ou do grupo interno. message.sent (fromMe) no privado: o que o
+ * dono do número digitou no celular (o eco do que o sistema enviou é descartado no banco). Status/broadcast: ignorados.
+ */
 export function lerEventoOpenwa(envelope: unknown): EventoOpenwa {
   const e = (envelope ?? {}) as Record<string, unknown>;
   const chave = (e.idempotencyKey as string | undefined) ?? (e.deliveryId as string | undefined) ?? null;
   const sessao = (e.sessionId as string | undefined) ?? null;
   const ign = (motivo: string): EventoOpenwa => ({ tipo: "ignorado", chave, sessao, motivo });
   if (!sessao) return ign("sem sessão");
-  if (e.event !== "message.received") return ign(`evento ${String(e.event ?? "?")}`);
+  if (e.event !== "message.received" && e.event !== "message.sent") return ign(`evento ${String(e.event ?? "?")}`);
   const d = (e.data ?? {}) as Record<string, unknown>;
-  if (d.fromMe === true) return ign("mensagem própria");
-  if (d.isStatusBroadcast === true || /status@broadcast/.test(String(d.from ?? ""))) return ign("status");
+  if (d.isStatusBroadcast === true || /status@broadcast/.test(String(d.from ?? "") + String(d.to ?? ""))) return ign("status");
   const externoId = String(d.id ?? "");
   if (!externoId) return ign("sem id");
   const texto = String(d.body ?? "").trim();
+
+  if (e.event === "message.sent" || d.fromMe === true) {
+    if (d.isGroup === true) return ign("mensagem própria no grupo");
+    const para = telefoneDoJid((d.chatId as string) ?? (d.to as string)) ?? telefoneDoJid(d.to as string);
+    if (!para) return ign("destino sem telefone");
+    if (!texto) return ign("mensagem própria sem texto");
+    return { tipo: "propria", chave, sessao, externoId, para, texto };
+  }
 
   if (d.isGroup === true) {
     const grupo = String(d.chatId ?? d.from ?? "");
@@ -107,8 +120,16 @@ export function lerEventoOpenwa(envelope: unknown): EventoOpenwa {
   const contato = (d.contact ?? {}) as Record<string, unknown>;
   const nome = ((contato.pushname ?? contato.name ?? contato.shortName) as string | undefined)?.trim() || null;
   const tipoMidia = MIDIA[String(d.type ?? "")];
-  const media = d.media as { mimetype?: string; filename?: string } | undefined;
-  const midia = tipoMidia ? { tipo: tipoMidia, nome: media?.filename ?? null, mime: media?.mimetype ?? "application/octet-stream" } : null;
+  const media = d.media as { mimetype?: string; filename?: string; data?: string; omitted?: boolean } | undefined;
+  const midia = tipoMidia
+    ? {
+        tipo: tipoMidia,
+        nome: media?.filename ?? null,
+        mime: media?.mimetype ?? "application/octet-stream",
+        data: media?.data && !media.omitted ? media.data : null,
+        chatId: String(d.chatId ?? d.from ?? ""),
+      }
+    : null;
   if (!texto && !midia) return ign(`tipo ${String(d.type ?? "?")} sem texto`);
   return { tipo: "privada", chave, sessao, externoId, de, nome, texto, midia };
 }
@@ -131,7 +152,8 @@ export async function chamarOpenwa(f: Fetch, url: string, chave: string, metodo:
   try {
     r = await f(`${base(url)}/api${caminho}`, {
       method: metodo,
-      headers: { "X-API-Key": chave, ...(corpo === undefined ? {} : { "Content-Type": "application/json" }) },
+      // X-Tunnel-Skip-AntiPhishing-Page: no túnel do VS Code (devtunnels.ms) pula a página de aviso; fora dele é ignorado.
+      headers: { "X-API-Key": chave, "X-Tunnel-Skip-AntiPhishing-Page": "true", ...(corpo === undefined ? {} : { "Content-Type": "application/json" }) },
       body: corpo === undefined ? undefined : JSON.stringify(corpo),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -171,4 +193,45 @@ export function comAutor(texto: string, autor: string | null, setor: string | nu
   const nome = autor?.trim().split(/\s+/)[0];
   if (!nome) return texto;
   return `*${nome}${setor ? ` (${setor})` : ""}:* ${texto}`;
+}
+
+/** Imagem com legenda (o print do pedido vai junto ao grupo interno). url = link assinado do Storage. */
+export function enviarImagemOpenwa(f: Fetch, url: string, chave: string, sessao: string, destino: string, imagem: { url: string; mime: string }, legenda: string, citar?: string | null): Promise<ResultadoOpenwa> {
+  return chamarOpenwa(f, url, chave, "POST", `/sessions/${encodeURIComponent(sessao)}/messages/send-image`, {
+    chatId: chatIdDe(destino),
+    url: imagem.url,
+    mimetype: imagem.mime,
+    caption: legenda,
+    ...(citar ? { quotedMessageId: citar } : {}),
+  });
+}
+
+/** Binário da mídia que não veio no webhook (GET /sessions/:id/messages/:chatId/:messageId/media). */
+export async function baixarMidiaOpenwa(f: Fetch, url: string, chave: string, sessao: string, chatId: string, mensagemId: string, limiteBytes: number): Promise<Uint8Array> {
+  const r = await f(`${base(url)}/api/sessions/${encodeURIComponent(sessao)}/messages/${encodeURIComponent(chatId)}/${encodeURIComponent(mensagemId)}/media`, {
+    headers: { "X-API-Key": chave, "X-Tunnel-Skip-AntiPhishing-Page": "true" },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!r.ok) throw new Error(`OpenWA ${r.status} ao baixar a mídia`);
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  if (bytes.byteLength > limiteBytes) throw new Error(`mídia maior que ${Math.round(limiteBytes / 1_048_576)} MB`);
+  return bytes;
+}
+
+/** Base64 (com ou sem prefixo data:) → bytes. */
+export function bytesDeBase64(b64: string): Uint8Array {
+  const limpo = b64.replace(/^data:[^,]*,/, "");
+  const bin = atob(limpo);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+const EXTENSOES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "application/pdf": "pdf", "audio/ogg": "ogg", "video/mp4": "mp4" };
+
+/** Caminho do arquivo no bucket: openwa/<sessão>/<AAAA-MM>/<id da mensagem>.<ext> (só caracteres seguros). */
+export function caminhoMidia(sessao: string, externoId: string, mime: string, quando = new Date()): string {
+  const ext = EXTENSOES[mime.split(";")[0]!.trim()] ?? "bin";
+  const id = externoId.replace(/[^A-Za-z0-9_-]/g, "_").slice(-80);
+  return `openwa/${sessao.replace(/[^A-Za-z0-9_-]/g, "_")}/${quando.toISOString().slice(0, 7)}/${id}.${ext}`;
 }

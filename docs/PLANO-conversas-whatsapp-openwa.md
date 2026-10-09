@@ -106,14 +106,42 @@ Migrations (renomeadas para depois das de segurança do login, que vieram no mer
       identificação, só corporativo, fila, ticket, repasse, resposta pelo grupo (com e sem citação, autor estranho), permissões
       (outro atendente, transferir só gestão), encerrar sem/com resolver (regra do serviço), ticket que continua × novo, "novo",
       ação pelo ticket, ciclo, métrica, tela OpenWA, importação de linhas e e-mail só domínio.
-- [ ] Migrations aplicadas na produção — **Wagner** (`npx supabase db push`).
-- [ ] Edge Functions publicadas — **Wagner**.
+- [x] Migrations aplicadas na produção (09/10/2026, Wagner, uma a uma com `npx supabase db query --linked -f …`; o `db push` não serve no Supabase compartilhado).
+- [x] Edge Functions publicadas (09/10/2026, Wagner): whatsapp, openwa-webhook, zenvia-webhook, ia.
 - [ ] OpenWA no ar, sessão pareada, webhook cadastrado e teste ponta a ponta com um celular — **Wagner**.
+
+### Ajustes do 1º teste real (09/10/2026, tarde)
+- [x] `20261009160000`: lista de Conversas falhava para usuário logado (subselect em `at_pessoas` sem SELECT) e o ticket vinha vazio (RLS de `at_atendimentos`): funções auxiliares `at_nome_pessoa` e `at_ticket_do_atendimento`.
+- [x] `20261009170000`: respostas automáticas do OpenWA por setor (`wa_respostas_auto`, ligada por padrão; a Zenvia segue a chave dela); identificação procura também em **Pessoas**; pessoa com e-mail @domínio conta como colaborador; **RESOLVIDO** (portal, grupo interno ou celular do número) resolve o ticket; mensagem final sempre com o número do chamado; resposta digitada no próprio celular entra na conversa e no ticket (`at_whatsapp_propria`, evento `message.sent`).
+- [x] Edge: `message.sent` no webhook (o "Cadastrar webhook" atualiza o existente) e conteúdo de evento ignorado não fica guardado.
+- [x] Ensaio local (4 roteiros, inclusive como usuário logado), 135 testes, `deno check`.
+- [ ] Aplicar `…160000` e `…170000` (`db query`), publicar `portal_atendimento-whatsapp` e `portal_atendimento-openwa-webhook`, clicar de novo em **Cadastrar webhook** — **Wagner**.
+
+### Grupo interno pelo portal + descrição e print (09/10/2026, fim da tarde)
+- [x] `20261009190000` (renomeada: a frente gerencial já usava `…180000`): pergunta "Descreva em poucas palavras… envie um print" depois de identificar, quando a 1ª mensagem não explica (`at_precisa_descricao`, chave `wa_pedir_descricao` por setor); print sozinho → "Recebi o print 👍 Agora escreva…"; a descrição vira o assunto; print anexado à 1ª ação e repassado ao grupo como imagem (`at_repasses.arquivo`); bucket privado `atendimento-whatsapp`.
+- [x] Edge: webhook guarda a mídia no Storage (base64 do webhook ou download pela API do OpenWA, até 15 MB); despachante manda o print ao grupo (`send-image` com link assinado); ação `openwa_criar_grupo` (grupo com o WhatsApp dos atendentes, ligado ao número, mensagem de apresentação).
+- [x] Front: botão **Criar grupo interno**, chave **Pedir a descrição e o print**, print no chat (miniatura) e anexos com link na linha do tempo do ticket (WhatsApp e e-mail).
+- [x] Ensaio local do zero (5 roteiros), 138 testes, lint, `deno check`.
+- [ ] Aplicar `…190000` (`db query`), publicar `portal_atendimento-whatsapp` e `portal_atendimento-openwa-webhook`, preencher o WhatsApp dos atendentes e clicar em **Criar grupo interno** — **Wagner**.
+
+### Grupo interno sem citação (09/10/2026, noite)
+- [x] `20261009200000`: resposta do atendente no grupo **sem citar** — "#1021 texto" vai para o ticket; sem número, vai para o único atendimento que está com ele ou, sem nenhum, assume o único pedido da fila; ambíguo → lista "#ticket · nome" no grupo e não envia. "RESOLVIDO" segue a mesma escolha. Confirmação "✔ Enviado a … (#ticket)" / "✅ #ticket resolvido por …".
+- [x] Ensaio local (8 cenários do grupo + os 5 roteiros anteriores).
+- [ ] Aplicar `…200000` (`db query`) — **Wagner**. Sem mudança de Edge nem de front.
+- Risco aceito: com um único pedido na fila, conversa casual no grupo vai para o colaborador (a confirmação ✔ mostra).
+
+### Chave geral do OpenWA (09/10/2026, noite)
+- [x] `20261009210000`: `at_config.openwa_ligado`; `at_openwa_ligar` (supervisão/super admin; ao desligar cancela os envios pendentes do OpenWA); despachante não reserva nada do OpenWA desligado; webhook descarta sem gravar.
+- [x] Tela: chave "WhatsApp OpenWA ligado/desligado" no card de conexão, com confirmação ao desligar.
+- [ ] Aplicar `…210000` (`db query`) e publicar `portal_atendimento-openwa-webhook` — **Wagner**.
+- [x] `20261009220000`: só **Administrador ou Super admin** ligam/desligam (antes: supervisão); `at_whatsapp_disponivel()` (OpenWA ligado com número, ou número Zenvia ativo). Sem WhatsApp em uso, o `AccessProvider` nega `gestao_atendimento_central` (Conversas) e `gestao_chamados_monitor` (Monitor): somem do menu, das seções e das rotas, sem mexer em Perfis e permissões. O Administrador abre a tela WhatsApp OpenWA mesmo sem a permissão de supervisão.
+- [ ] Aplicar `…220000` (`db query`) — **Wagner**.
 
 ## 4. Como ativar (Wagner)
 
-1. **Banco:** `npx supabase db push`. Se o `20261009100000_…forma_atendimento_canal` já tinha sido aplicado com o nome antigo,
-   rode antes `npx supabase migration repair --status reverted 20261009100000` (o `…150000` é o mesmo conteúdo e pode rodar de novo).
+1. **Banco:** `npx supabase link --project-ref cjofyxgcuvpeeslkfawu` e, para cada migration nova, na ordem,
+   `npx supabase db query --linked -f supabase/migrations/<arquivo>.sql`. **Não use `db push`** (o histórico do projeto compartilhado tem
+   migrations de outros sistemas e ele pede `migration repair`, que não deve ser rodado).
 2. **Edge Functions:**
    `npx supabase functions deploy portal_atendimento-whatsapp portal_atendimento-openwa-webhook portal_atendimento-zenvia-webhook portal_atendimento-ia --project-ref cjofyxgcuvpeeslkfawu --use-api`
 3. **OpenWA na sua máquina:** `npm run dev` na pasta do OpenWA, com `RESOLVE_LID_TO_PHONE=true` no `.env` (sem isso, remetentes `@lid` chegam sem número e são ignorados).

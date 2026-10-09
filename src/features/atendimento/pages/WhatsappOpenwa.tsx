@@ -1,9 +1,10 @@
 import * as Switch from "@radix-ui/react-switch";
-import { CheckCircle2, CircleAlert, Info, KeyRound, Link2, QrCode, RefreshCw, Smartphone, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, CircleAlert, Info, KeyRound, Link2, QrCode, RefreshCw, Smartphone, Trash2, Upload, Users } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { formatDateTime } from "../../../utils/dates";
+import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { Notice } from "../../configuracoes/components/Notice";
@@ -11,6 +12,7 @@ import { ServiceError } from "../../configuracoes/services/types";
 import {
   useGruposOpenwa,
   useImportarLinhas,
+  useLigarOpenwa,
   useLinhas,
   useMembrosGrupo,
   usePainelOpenwa,
@@ -19,6 +21,8 @@ import {
   useSalvarConexaoOpenwa,
   useSalvarNumeroWhatsapp,
   useSalvarSetorWhatsapp,
+  useAdicionarAtendentesGrupo,
+  useCriarGrupoInterno,
   useSalvarWhatsappAtendente,
   useTestarOpenwa,
 } from "../hooks/useAtendimento";
@@ -65,8 +69,8 @@ export function WhatsappOpenwa() {
     <div className="ow">
       <Notice icon={Info}>
         O colaborador manda mensagem no <b>privado</b> para o número do sistema do setor. Cada pedido vira ticket e é repassado ao <b>grupo interno</b> dos
-        atendentes; quem responde <b>citando</b> o pedido (no celular ou pelo portal) fala com o colaborador. As respostas automáticas seguem a chave de Integrações ›
-        Zenvia WhatsApp (hoje: <b>{p.conexao.autoLigado ? "ligadas" : "desligadas"}</b>{p.conexao.travaPiloto ? ", só para os telefones do piloto" : ""}).
+        atendentes; quem responde <b>citando</b> o pedido (no celular ou pelo portal) fala com o colaborador. Escrever <b>RESOLVIDO</b> (no portal, no grupo ou no
+        celular do número) resolve o ticket e avisa o colaborador com o número do chamado. As respostas automáticas do OpenWA são ligadas em cada setor, abaixo.
       </Notice>
       <Conexao p={p} />
       {p.setores.length === 0 && (
@@ -88,6 +92,19 @@ function Conexao({ p }: { p: PainelOpenwa }) {
   const ids = useId();
   const salvar = useSalvarConexaoOpenwa();
   const testar = useTestarOpenwa();
+  const ligar = useLigarOpenwa();
+  const [confirmarDesligar, setConfirmarDesligar] = useState(false);
+  const mudarLigado = (v: boolean) =>
+    ligar.mutate(v, {
+      onSuccess: (r) => {
+        setConfirmarDesligar(false);
+        toast.success(r.ligado ? "WhatsApp OpenWA ligado" : `WhatsApp OpenWA desligado${r.canceladas ? ` · ${r.canceladas} envio(s) pendente(s) cancelado(s)` : ""}`);
+      },
+      onError: (e) => {
+        setConfirmarDesligar(false);
+        toast.error(erroMsg(e, "Não foi possível mudar."));
+      },
+    });
   const [url, setUrl] = useState(p.conexao.url ?? "");
   const [chave, setChave] = useState("");
   const v = p.conexao.verificacao;
@@ -114,6 +131,36 @@ function Conexao({ p }: { p: PainelOpenwa }) {
           </button>
         )}
       </div>
+      <div className={`ow-geral${p.conexao.ligado ? "" : " ow-geral--off"}`}>
+        <Switch.Root
+          className="switch"
+          checked={p.conexao.ligado}
+          disabled={!p.podeLigar || ligar.isPending}
+          aria-labelledby={`${ids}-lig`}
+          onCheckedChange={(v) => (v ? mudarLigado(true) : setConfirmarDesligar(true))}
+        >
+          <Switch.Thumb className="switch__thumb" />
+        </Switch.Root>
+        <span>
+          <b id={`${ids}-lig`}>{p.conexao.ligado ? "WhatsApp OpenWA ligado" : "WhatsApp OpenWA desligado"}</b>
+          <small>
+            {p.conexao.ligado
+              ? "Recebe as mensagens dos números OpenWA, abre os tickets e envia as respostas."
+              : "Nada é recebido nem enviado pelo OpenWA: as mensagens que chegarem são ignoradas e as abas Conversas e Monitor de atendimento ficam ocultas. A configuração fica guardada; a Zenvia e o e-mail seguem normais."}
+            {!p.podeLigar && " Só o Administrador ou o Super admin muda esta chave."}
+          </small>
+        </span>
+      </div>
+      <ConfirmDialog
+        open={confirmarDesligar}
+        onOpenChange={setConfirmarDesligar}
+        title="Desligar o WhatsApp OpenWA?"
+        description="As mensagens que chegarem aos números OpenWA deixam de virar conversa e ticket, e nada é enviado por eles (inclusive o grupo interno). Os envios que estavam esperando são cancelados e as abas Conversas e Monitor de atendimento ficam ocultas para todos. A configuração fica guardada para religar depois."
+        confirmLabel="Desligar"
+        tone="warning"
+        isPending={ligar.isPending}
+        onConfirm={() => mudarLigado(false)}
+      />
       <div className="zv-passos">
         <Passo ok={p.conexao.url ? (v ? v.ok : null) : false} titulo="Endereço e API key">
           {p.conexao.url ? <>{p.conexao.url} · chave {p.conexao.chaveMascara ?? "não informada"}</> : "Ainda não informado."}
@@ -171,8 +218,10 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
   const salvar = useSalvarSetorWhatsapp();
   const [ident, setIdent] = useState(s.waIdentificar);
   const [soCorp, setSoCorp] = useState(s.waSoCorporativo);
+  const [auto, setAuto] = useState(s.waRespostasAuto);
+  const [descricao, setDescricao] = useState(s.waPedirDescricao);
   const [msg, setMsg] = useState(s.msgNaoCorporativo);
-  const mudou = ident !== s.waIdentificar || soCorp !== s.waSoCorporativo || msg !== s.msgNaoCorporativo;
+  const mudou = ident !== s.waIdentificar || soCorp !== s.waSoCorporativo || auto !== s.waRespostasAuto || descricao !== s.waPedirDescricao || msg !== s.msgNaoCorporativo;
 
   return (
     <section className="card at-sec" aria-labelledby={`${ids}-t`}>
@@ -180,12 +229,30 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
 
       <div className="ow-regras">
         <label className="ow-chave">
+          <Switch.Root className="switch" checked={auto} disabled={!s.gestor} onCheckedChange={setAuto}>
+            <Switch.Thumb className="switch__thumb" />
+          </Switch.Root>
+          <span>
+            <b>Respostas automáticas</b>
+            <small>Boas-vindas, perguntas de identificação e a mensagem final com o número do chamado. Vale para os números OpenWA do setor (a Zenvia segue a chave dela).</small>
+          </span>
+        </label>
+        <label className="ow-chave">
           <Switch.Root className="switch" checked={ident} disabled={!s.gestor} onCheckedChange={setIdent}>
             <Switch.Thumb className="switch__thumb" />
           </Switch.Root>
           <span>
             <b>Identificar o colaborador no 1º contato</b>
             <small>Pergunta "Você é Fulano (e-mail)?" ou pede nome e e-mail @{p.conexao.dominios.join(", @")}. Confirmado uma vez, não pergunta mais.</small>
+          </span>
+        </label>
+        <label className="ow-chave">
+          <Switch.Root className="switch" checked={descricao} disabled={!s.gestor} onCheckedChange={setDescricao}>
+            <Switch.Thumb className="switch__thumb" />
+          </Switch.Root>
+          <span>
+            <b>Pedir a descrição do problema e o print</b>
+            <small>Depois de identificar, se a 1ª mensagem não explicou (ex.: "Oi", "Bom dia"), pergunta "Descreva em poucas palavras qual é o problema e, se puder, envie um print da tela".</small>
           </span>
         </label>
         <label className="ow-chave">
@@ -207,7 +274,7 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
               type="button"
               className="btn btn--primary btn--sm"
               disabled={salvar.isPending}
-              onClick={() => salvar.mutate({ setorId: s.id, waIdentificar: ident, waSoCorporativo: soCorp, msgNaoCorporativo: msg }, { onSuccess: () => toast.success("Regras salvas"), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar.")) })}
+              onClick={() => salvar.mutate({ setorId: s.id, waIdentificar: ident, waSoCorporativo: soCorp, waRespostasAuto: auto, waPedirDescricao: descricao, msgNaoCorporativo: msg }, { onSuccess: () => toast.success("Regras salvas"), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar.")) })}
             >
               Salvar regras
             </button>
@@ -231,6 +298,8 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
 function NumeroLinha({ n, p }: { n: NumeroWhatsapp; p: PainelOpenwa }) {
   const ids = useId();
   const salvar = useSalvarNumeroWhatsapp();
+  const criarGrupo = useCriarGrupoInterno();
+  const adicionar = useAdicionarAtendentesGrupo();
   const [canal, setCanal] = useState(n.canal);
   const [sessao, setSessao] = useState(n.sessao ?? "");
   const [grupo, setGrupo] = useState(n.grupo ?? "");
@@ -305,8 +374,51 @@ function NumeroLinha({ n, p }: { n: NumeroWhatsapp; p: PainelOpenwa }) {
           <button type="button" className="btn btn--outline btn--sm" onClick={() => void cadastrarWebhook()}>
             <Link2 size={14} aria-hidden="true" /> Cadastrar webhook
           </button>
+          {!n.grupo && (
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={criarGrupo.isPending}
+              onClick={() =>
+                criarGrupo.mutate(n.id, {
+                  onSuccess: (r) => toast.success(`Grupo "${r.nome}" criado com ${r.participantes} atendente(s) e ligado a este número`),
+                  onError: (e) => toast.error(erroMsg(e, "O OpenWA não criou o grupo."), { duration: 20_000 }),
+                })
+              }
+            >
+              <Users size={14} aria-hidden="true" /> {criarGrupo.isPending ? "Criando…" : "Criar grupo interno"}
+            </button>
+          )}
+          <button type="button" className="btn btn--outline btn--sm" disabled={grupos.isFetching} onClick={() => void grupos.refetch()}>
+            <RefreshCw size={14} aria-hidden="true" /> {grupos.isFetching ? "Atualizando…" : "Atualizar grupos"}
+          </button>
+          {n.grupo && (
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={adicionar.isPending}
+              onClick={() =>
+                adicionar.mutate(n.id, {
+                  onSuccess: (r) => {
+                    const msg = `${r.adicionados} atendente(s) adicionado(s) ao grupo${r.jaEstavam ? ` · ${r.jaEstavam} já estavam` : ""}`;
+                    if (r.falhas.length) toast.warning(`${msg} · não entraram: ${r.falhas.map((f) => `${telefone(f.numero)} (${f.motivo})`).join(", ")}`, { duration: 20_000 });
+                    else toast.success(msg);
+                  },
+                  onError: (e) => toast.error(erroMsg(e, "O OpenWA não adicionou os atendentes.")),
+                })
+              }
+            >
+              <Users size={14} aria-hidden="true" /> {adicionar.isPending ? "Adicionando…" : "Adicionar atendentes ao grupo"}
+            </button>
+          )}
           {grupos.isError && <em className="zv-erro">{erroMsg(grupos.error, "Não foi possível listar os grupos.")}</em>}
         </div>
+      )}
+      {n.canal === "openwa" && n.sessao && !n.grupo && (
+        <p className="at-sec__ajuda">
+          Sem grupo interno ainda. Se "Criar grupo interno" avisar que esta sessão não cria grupos (engine whatsapp-web.js), crie o grupo no celular do número
+          {` ${telefone(n.numero)}`} com pelo menos um atendente, clique em "Atualizar grupos", escolha o grupo acima, salve e depois use "Adicionar atendentes ao grupo".
+        </p>
       )}
       {qr && n.sessao && <PainelQr sessao={n.sessao} />}
     </div>

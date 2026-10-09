@@ -1840,3 +1840,47 @@ div.em-novo-setor {
   gap: 8px;
   margin-bottom: 12px;
 }
+
+/* ---------- Prints e anexos (Storage) ---------- */
+.anx-img img {
+  display: block;
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+.anx-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.at-bal__sem-arquivo small {
+  display: inline;
+  color: var(--muted);
+  text-align: left;
+}
+
+/* ---------- WhatsApp OpenWA: chave geral ---------- */
+.ow-geral {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--success-fg);
+  border-radius: 10px;
+  background: var(--success-bg);
+}
+.ow-geral small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ow-geral--off {
+  border-color: var(--warning-fg);
+  background: var(--warning-bg);
+}

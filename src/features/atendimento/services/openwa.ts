@@ -23,6 +23,10 @@ export interface SetorWhatsapp {
   nome: string;
   waIdentificar: boolean;
   waSoCorporativo: boolean;
+  /** Respostas automáticas (boas-vindas, identificação, encerramento) nos números OpenWA do setor. */
+  waRespostasAuto: boolean;
+  /** Depois de identificar, pede a descrição do problema e o print quando a 1ª mensagem não explicou. */
+  waPedirDescricao: boolean;
   msgNaoCorporativo: string;
   gestor: boolean;
   numeros: NumeroWhatsapp[];
@@ -38,6 +42,8 @@ export interface VerificacaoOpenwa {
 
 export interface PainelOpenwa {
   superAdmin: boolean;
+  /** Administrador ou Super admin: liga/desliga o recurso. */
+  podeLigar: boolean;
   supervisor: boolean;
   conexao: {
     url: string | null;
@@ -47,6 +53,8 @@ export interface PainelOpenwa {
     autoLigado: boolean;
     travaPiloto: boolean;
     dominios: string[];
+    /** Chave geral: desligado, o OpenWA não recebe nem envia nada (a Zenvia e o e-mail seguem). */
+    ligado: boolean;
   };
   setores: SetorWhatsapp[];
   linhas: number;
@@ -89,8 +97,11 @@ export interface TopSolicitantes {
 export interface OpenwaService {
   painel(): Promise<PainelOpenwa>;
   salvarConexao(p: { url: string; chave?: string }): Promise<void>;
+  ligar(ligado: boolean): Promise<{ ligado: boolean; canceladas: number }>;
+  /** Há WhatsApp em uso (OpenWA ligado com número, ou número Zenvia)? Sem isso, Conversas e Monitor somem. */
+  whatsappDisponivel(): Promise<boolean>;
   salvarNumero(p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }): Promise<void>;
-  salvarSetor(p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; msgNaoCorporativo: string }): Promise<void>;
+  salvarSetor(p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; waPedirDescricao: boolean; msgNaoCorporativo: string }): Promise<void>;
   salvarWhatsappAtendente(p: { usuarioId: string; whatsapp: string }): Promise<void>;
   linhas(busca: string): Promise<Linha[]>;
   importarLinhas(linhas: LinhaImportar[]): Promise<{ salvas: number; invalidas: string[] }>;
@@ -103,6 +114,8 @@ export interface OpenwaService {
   grupos(sessao: string): Promise<{ id: string; name: string }[]>;
   membros(sessao: string, grupo: string): Promise<MembroGrupo[]>;
   webhook(sessao: string): Promise<{ criado: boolean; url: string }>;
+  criarGrupo(numeroId: number): Promise<{ grupo: string; nome: string; participantes: number }>;
+  adicionarAtendentes(numeroId: number): Promise<{ adicionados: number; jaEstavam: number; falhas: { numero: string; motivo: string }[] }>;
   resumir(ticketId: number): Promise<{ solucao: string; resolvido: boolean }>;
   topSolicitantes(dias: number): Promise<TopSolicitantes>;
 }
@@ -122,6 +135,8 @@ async function funcao<T>(nome: "whatsapp" | "ia", corpo: Record<string, unknown>
 const supabaseOpenwa: OpenwaService = {
   painel: () => rpc<PainelOpenwa>("at_openwa_painel"),
   salvarConexao: (p) => rpc<void>("at_openwa_salvar", { p: p as unknown as Json }),
+  ligar: (ligado) => rpc<{ ligado: boolean; canceladas: number }>("at_openwa_ligar", { p_ligado: ligado }),
+  whatsappDisponivel: () => rpc<boolean>("at_whatsapp_disponivel"),
   salvarNumero: (p) => rpc<void>("at_openwa_numero_salvar", { p: p as unknown as Json }),
   salvarSetor: (p) => rpc<void>("at_setor_whatsapp_salvar", { p: p as unknown as Json }),
   salvarWhatsappAtendente: (p) => rpc<void>("at_atendente_whatsapp_salvar", { p: p as unknown as Json }),
@@ -138,6 +153,8 @@ const supabaseOpenwa: OpenwaService = {
   grupos: (sessao) => funcao<{ id: string; name: string }[]>("whatsapp", { acao: "openwa_grupos", sessao }),
   membros: (sessao, grupo) => funcao<MembroGrupo[]>("whatsapp", { acao: "openwa_membros", sessao, grupo }),
   webhook: (sessao) => funcao<{ criado: boolean; url: string }>("whatsapp", { acao: "openwa_webhook", sessao }),
+  criarGrupo: (numeroId) => funcao<{ grupo: string; nome: string; participantes: number }>("whatsapp", { acao: "openwa_criar_grupo", numeroId }),
+  adicionarAtendentes: (numeroId) => funcao<{ adicionados: number; jaEstavam: number; falhas: { numero: string; motivo: string }[] }>("whatsapp", { acao: "openwa_adicionar_atendentes", numeroId }),
   resumir: (ticketId) => funcao<{ solucao: string; resolvido: boolean }>("ia", { acao: "resumir", ticketId }),
   topSolicitantes: (dias) => rpc<TopSolicitantes>("ch_top_solicitantes", { p_dias: dias }),
 };
@@ -149,14 +166,17 @@ const semOpenwa = () => new ServiceError("INTEGRATION_NOT_CONFIGURED", "Modo sim
 
 const mockPainel: PainelOpenwa = {
   superAdmin: true,
+  podeLigar: true,
   supervisor: true,
-  conexao: { url: null, chaveMascara: null, definidoEm: null, verificacao: null, autoLigado: false, travaPiloto: true, dominios: ["calper.com.br"] },
+  conexao: { url: null, chaveMascara: null, definidoEm: null, verificacao: null, autoLigado: false, travaPiloto: true, dominios: ["calper.com.br"], ligado: true },
   setores: [
     {
       id: 1,
       nome: "TI",
       waIdentificar: true,
       waSoCorporativo: true,
+      waRespostasAuto: true,
+      waPedirDescricao: true,
       msgNaoCorporativo: "Este canal atende apenas linhas corporativas da Calper. Envie sua solicitação por e-mail.",
       gestor: true,
       numeros: [{ id: 1, numero: "5521900000001", canal: "openwa", sessao: null, grupo: null, grupoNome: null }],
@@ -173,6 +193,14 @@ const mockOpenwa: OpenwaService = {
   async painel() {
     await esperar(120);
     return structuredClone({ ...mockPainel, linhas: mockLinhas.length });
+  },
+  async whatsappDisponivel() {
+    return mockPainel.conexao.ligado;
+  },
+  async ligar(ligado) {
+    await esperar(120);
+    mockPainel.conexao.ligado = ligado;
+    return { ligado, canceladas: 0 };
   },
   async salvarConexao(p) {
     await esperar(120);
@@ -225,6 +253,8 @@ const mockOpenwa: OpenwaService = {
   grupos: async () => Promise.reject(semOpenwa()),
   membros: async () => Promise.reject(semOpenwa()),
   webhook: async () => Promise.reject(semOpenwa()),
+  criarGrupo: async () => Promise.reject(semOpenwa()),
+  adicionarAtendentes: async () => Promise.reject(semOpenwa()),
   async resumir() {
     await esperar(400);
     return { solucao: "Impressora com papel atolado; fila de impressão limpa remotamente e impressão normalizada.", resolvido: true };
