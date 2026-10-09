@@ -131,7 +131,7 @@ LOGOUT .................... PASS  sessão apagada no Auth corta o acesso na hora
 
 **Pendente de validação no ambiente real** (não dá para testar sem o deploy):
 
-1. **IP confiável.** O padrão é o 1º item de `x-forwarded-for` (`AUTH_IP_HEADER`). Depois do deploy, mande duas requisições com `X-Forwarded-For: 203.0.113.7` e confira `ip_prefix` em `security_events`. Se aparecer `203.0.113.0/24`, o cabeçalho é forjável: troque `AUTH_IP_HEADER` pelo cabeçalho que a plataforma sobrescreve. Bloqueio e limite por conta não dependem do IP.
+1. ~~**IP confiável.**~~ **Validado em 2026-10-09:** uma requisição com `X-Forwarded-For: 203.0.113.7` foi registrada com o IP real (`ip_prefix` do cliente), então o 1º item de `x-forwarded-for` é posto pela plataforma e não é forjável. Padrão `AUTH_IP_HEADER` mantido.
 2. **Limite nativo do Auth.** Todas as chamadas do gateway chegam ao Auth vindas da Edge Function. Confira se o limite "sign-ins por 5 min por IP" do Auth não estrangula logins legítimos em horário de pico.
 3. **Fluxos reais.** Login, "esqueci a senha" pelo link, troca de senha, sair e "encerrar sessão" de outro usuário.
 
@@ -154,6 +154,8 @@ Outras recomendações para o Auth compartilhado (fora do escopo deste repositó
 - `supabase/templates/` (gerador `npm run novo-app`) não foi alterado. Aplicativos novos nascem sem o gateway até o template ser atualizado.
 
 ## Implantação (ordem)
+
+**Andamento (2026-10-09):** passos 1, 2 (só origens localhost; falta o domínio da Vercel) e 3 (só `portal_atendimento-auth`) feitos. Gateway testado em produção com conta inexistente: 401 uniforme, origem estranha recusada, IP real registrado. Faltam o domínio de produção no secret, o teste de login real, as demais Edge Functions e a etapa 2.
 
 1. **Migration etapa 1:** `20261009120000_portal_atendimento_seguranca_login.sql`. Não muda o acesso de ninguém.
 2. **Secret da função:** `AUTH_ALLOWED_ORIGINS=https://<domínio de produção>,https://<domínio de preview>,http://localhost:5173`. Opcionais: `AUTH_IP_HEADER` e `AUTH_MIN_RESPONSE_MS`.
