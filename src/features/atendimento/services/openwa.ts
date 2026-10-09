@@ -42,6 +42,8 @@ export interface VerificacaoOpenwa {
 
 export interface PainelOpenwa {
   superAdmin: boolean;
+  /** Administrador ou Super admin: liga/desliga o recurso. */
+  podeLigar: boolean;
   supervisor: boolean;
   conexao: {
     url: string | null;
@@ -96,6 +98,8 @@ export interface OpenwaService {
   painel(): Promise<PainelOpenwa>;
   salvarConexao(p: { url: string; chave?: string }): Promise<void>;
   ligar(ligado: boolean): Promise<{ ligado: boolean; canceladas: number }>;
+  /** Há WhatsApp em uso (OpenWA ligado com número, ou número Zenvia)? Sem isso, Conversas e Monitor somem. */
+  whatsappDisponivel(): Promise<boolean>;
   salvarNumero(p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }): Promise<void>;
   salvarSetor(p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; waPedirDescricao: boolean; msgNaoCorporativo: string }): Promise<void>;
   salvarWhatsappAtendente(p: { usuarioId: string; whatsapp: string }): Promise<void>;
@@ -132,6 +136,7 @@ const supabaseOpenwa: OpenwaService = {
   painel: () => rpc<PainelOpenwa>("at_openwa_painel"),
   salvarConexao: (p) => rpc<void>("at_openwa_salvar", { p: p as unknown as Json }),
   ligar: (ligado) => rpc<{ ligado: boolean; canceladas: number }>("at_openwa_ligar", { p_ligado: ligado }),
+  whatsappDisponivel: () => rpc<boolean>("at_whatsapp_disponivel"),
   salvarNumero: (p) => rpc<void>("at_openwa_numero_salvar", { p: p as unknown as Json }),
   salvarSetor: (p) => rpc<void>("at_setor_whatsapp_salvar", { p: p as unknown as Json }),
   salvarWhatsappAtendente: (p) => rpc<void>("at_atendente_whatsapp_salvar", { p: p as unknown as Json }),
@@ -161,6 +166,7 @@ const semOpenwa = () => new ServiceError("INTEGRATION_NOT_CONFIGURED", "Modo sim
 
 const mockPainel: PainelOpenwa = {
   superAdmin: true,
+  podeLigar: true,
   supervisor: true,
   conexao: { url: null, chaveMascara: null, definidoEm: null, verificacao: null, autoLigado: false, travaPiloto: true, dominios: ["calper.com.br"], ligado: true },
   setores: [
@@ -187,6 +193,9 @@ const mockOpenwa: OpenwaService = {
   async painel() {
     await esperar(120);
     return structuredClone({ ...mockPainel, linhas: mockLinhas.length });
+  },
+  async whatsappDisponivel() {
+    return mockPainel.conexao.ligado;
   },
   async ligar(ligado) {
     await esperar(120);

@@ -135,7 +135,7 @@ function Conexao({ p }: { p: PainelOpenwa }) {
         <Switch.Root
           className="switch"
           checked={p.conexao.ligado}
-          disabled={!p.supervisor || ligar.isPending}
+          disabled={!p.podeLigar || ligar.isPending}
           aria-labelledby={`${ids}-lig`}
           onCheckedChange={(v) => (v ? mudarLigado(true) : setConfirmarDesligar(true))}
         >
@@ -146,7 +146,8 @@ function Conexao({ p }: { p: PainelOpenwa }) {
           <small>
             {p.conexao.ligado
               ? "Recebe as mensagens dos números OpenWA, abre os tickets e envia as respostas."
-              : "Nada é recebido nem enviado pelo OpenWA: as mensagens que chegarem são ignoradas. A configuração fica guardada; a Zenvia e o e-mail seguem normais."}
+              : "Nada é recebido nem enviado pelo OpenWA: as mensagens que chegarem são ignoradas e as abas Conversas e Monitor de atendimento ficam ocultas. A configuração fica guardada; a Zenvia e o e-mail seguem normais."}
+            {!p.podeLigar && " Só o Administrador ou o Super admin muda esta chave."}
           </small>
         </span>
       </div>
@@ -154,7 +155,7 @@ function Conexao({ p }: { p: PainelOpenwa }) {
         open={confirmarDesligar}
         onOpenChange={setConfirmarDesligar}
         title="Desligar o WhatsApp OpenWA?"
-        description="As mensagens que chegarem aos números OpenWA deixam de virar conversa e ticket, e nada é enviado por eles (inclusive o grupo interno). Os envios que estavam esperando são cancelados. A configuração fica guardada para religar depois."
+        description="As mensagens que chegarem aos números OpenWA deixam de virar conversa e ticket, e nada é enviado por eles (inclusive o grupo interno). Os envios que estavam esperando são cancelados e as abas Conversas e Monitor de atendimento ficam ocultas para todos. A configuração fica guardada para religar depois."
         confirmLabel="Desligar"
         tone="warning"
         isPending={ligar.isPending}

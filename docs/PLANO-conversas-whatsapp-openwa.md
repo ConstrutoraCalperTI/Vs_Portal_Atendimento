@@ -134,6 +134,8 @@ Migrations (renomeadas para depois das de segurança do login, que vieram no mer
 - [x] `20261009210000`: `at_config.openwa_ligado`; `at_openwa_ligar` (supervisão/super admin; ao desligar cancela os envios pendentes do OpenWA); despachante não reserva nada do OpenWA desligado; webhook descarta sem gravar.
 - [x] Tela: chave "WhatsApp OpenWA ligado/desligado" no card de conexão, com confirmação ao desligar.
 - [ ] Aplicar `…210000` (`db query`) e publicar `portal_atendimento-openwa-webhook` — **Wagner**.
+- [x] `20261009220000`: só **Administrador ou Super admin** ligam/desligam (antes: supervisão); `at_whatsapp_disponivel()` (OpenWA ligado com número, ou número Zenvia ativo). Sem WhatsApp em uso, o `AccessProvider` nega `gestao_atendimento_central` (Conversas) e `gestao_chamados_monitor` (Monitor): somem do menu, das seções e das rotas, sem mexer em Perfis e permissões. O Administrador abre a tela WhatsApp OpenWA mesmo sem a permissão de supervisão.
+- [ ] Aplicar `…220000` (`db query`) — **Wagner**.
 
 ## 4. Como ativar (Wagner)
 
