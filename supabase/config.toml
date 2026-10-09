@@ -26,6 +26,11 @@ verify_jwt = false
 [functions.portal_atendimento-email]
 verify_jwt = true
 
+# Security Gateway do login: chamado ANTES de existir sessão, então sem JWT. A função valida
+# origem, payload, limites e bloqueio antes de chamar o Supabase Auth (docs/SEGURANCA-LOGIN.md).
+[functions.portal_atendimento-auth]
+verify_jwt = false
+
 # Leitura das caixas e envio das respostas (Etapa 4): quem chama é o pg_cron, com x-atendimento-chave (chave no Vault).
 # Um usuário logado da supervisão geral também pode chamar ("Ler agora"); a função confere o token.
 [functions.portal_atendimento-email-sync]
