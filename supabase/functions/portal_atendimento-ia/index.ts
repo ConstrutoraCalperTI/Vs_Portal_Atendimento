@@ -1,0 +1,95 @@
+// IA nos tickets — triagem por equipe (docs/PLANO-ia-triagem-solucoes.md, IA-2).
+// Chamada pelo pg_cron a cada 1 min (job portal-atendimento-ia-1min), sem JWT: a autenticação é o cabeçalho
+// x-atendimento-chave (chave no Vault). Também aceita a supervisão geral logada (rodar agora).
+//
+//   {acao: "triagem"}  classifica até 10 tickets sem equipe de setores com IA ligada (ch_ia_pendentes)
+//
+// Para cada ticket: limpa e mascara o texto, pede ao Gemini a equipe e o serviço SÓ entre os do setor, valida a
+// resposta e grava em ch_ia_registrar (que aplica sozinho no modo automático com confiança ≥ limiar).
+// Secrets: GEMINI_API_KEY (chave Calper), APP_PORTAL_ATENDIMENTO_IA_MODELO e _RESERVA (opcionais).
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders, errorResponse, json, PortalError, portalContext, type AdminClient } from "../_shared/portal.ts";
+import { classificarComGemini } from "../_shared/ia/gemini.ts";
+import {
+  ESQUEMA_CLASSIFICACAO,
+  montarPedido,
+  prepararTicket,
+  REGRAS_FIXAS,
+  validarClassificacao,
+  type EquipeCandidata,
+  type ServicoCandidato,
+} from "../_shared/ia/triagem.ts";
+
+interface Pendente {
+  ticketId: number;
+  assunto: string;
+  descricao: string;
+  equipes: EquipeCandidata[];
+  servicos: ServicoCandidato[];
+}
+
+function iguais(a: string, b: string): boolean {
+  if (!a || a.length !== b.length) return false;
+  let dif = 0;
+  for (let i = 0; i < a.length; i++) dif |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return dif === 0;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ code: "INVALID_INPUT", message: "Método não suportado." }, 405);
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) throw new PortalError("INTERNAL", "Função sem configuração do Supabase.", 500);
+    let db: AdminClient = createClient(url, key, { db: { schema: "portal_atendimento" }, auth: { persistSession: false, autoRefreshToken: false } });
+
+    const chave = await db.rpc("at_ia_cron_chave");
+    if (!iguais(req.headers.get("x-atendimento-chave") ?? "", (chave.data as string | null) ?? "")) {
+      const { caller, admin } = await portalContext(req);
+      const [perfil, sup] = await Promise.all([
+        admin.rpc("perfil_de", { p_usuario: caller.id }),
+        admin.rpc("tem_permissao_de", { p_usuario: caller.id, p_permissao: "gestao_atendimento_supervisao" }),
+      ]);
+      if (!(perfil.data === "super_admin" || sup.data === true)) throw new PortalError("FORBIDDEN", "Só a supervisão geral roda a triagem.", 403);
+      db = admin;
+    }
+
+    const chaveIa = Deno.env.get("GEMINI_API_KEY") ?? "";
+    if (!chaveIa) throw new PortalError("INTEGRATION_NOT_CONFIGURED", "Falta o secret GEMINI_API_KEY nas Edge Functions.");
+    const modelo = Deno.env.get("APP_PORTAL_ATENDIMENTO_IA_MODELO") || "gemini-3.6-flash";
+    const reserva = Deno.env.get("APP_PORTAL_ATENDIMENTO_IA_RESERVA") || "gemini-flash-latest";
+
+    const { data, error } = await db.rpc("ch_ia_pendentes", { p_limite: 10 });
+    if (error) throw new Error(error.message);
+    const resultados: Record<string, unknown>[] = [];
+    for (const t of (data ?? []) as Pendente[]) {
+      const inicio = Date.now();
+      let registro: Record<string, unknown>;
+      try {
+        if (t.equipes.length === 0) throw new Error("O setor não tem equipes ativas.");
+        const r = await classificarComGemini(fetch, {
+          chave: chaveIa,
+          modelo,
+          reserva,
+          sistema: REGRAS_FIXAS,
+          pedido: montarPedido(prepararTicket(t.assunto, t.descricao), t.equipes, t.servicos),
+          esquema: ESQUEMA_CLASSIFICACAO,
+        });
+        const c = validarClassificacao(r.json, t.equipes, t.servicos);
+        registro = c
+          ? { ...c, modelo: r.modelo, tokensEntrada: r.tokensEntrada, tokensSaida: r.tokensSaida, ms: Date.now() - inicio }
+          : { erro: "Resposta da IA fora das equipes do setor.", modelo: r.modelo, ms: Date.now() - inicio };
+      } catch (e) {
+        registro = { erro: String(e instanceof Error ? e.message : e).slice(0, 500), modelo, ms: Date.now() - inicio };
+      }
+      const g = await db.rpc("ch_ia_registrar", { p_ticket: t.ticketId, p: registro });
+      resultados.push({ ticket: t.ticketId, ...(g.error ? { erro: g.error.message } : (g.data as Record<string, unknown>)) });
+    }
+    console.log(JSON.stringify({ evento: "ia.triagem", resultados }));
+    return json({ resultados });
+  } catch (error) {
+    return errorResponse(error);
+  }
+});

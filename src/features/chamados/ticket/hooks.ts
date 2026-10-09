@@ -17,7 +17,7 @@ export function useResponsaveis() {
   return useQuery({ queryKey: ["chamados", "responsaveis"], queryFn: () => ticketService.responsaveis(), staleTime: 60_000 });
 }
 
-/** Mutação do ticket: recarrega o ticket e o painel (listas, KPIs e Página Inicial). */
+/** Mutação do ticket: recarrega o ticket, o painel (listas, KPIs e Página Inicial), os avisos e os gatilhos. */
 function useMudaTicket<T, R>(fn: (p: T) => Promise<R>) {
   const qc = useQueryClient();
   return useMutation({
@@ -25,6 +25,9 @@ function useMudaTicket<T, R>(fn: (p: T) => Promise<R>) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: TICKET });
       void qc.invalidateQueries({ queryKey: PAINEL });
+      // Gatilhos podem ter avisado alguém (sino) e registrado execuções.
+      void qc.invalidateQueries({ queryKey: ["chamados", "notificacoes"] });
+      void qc.invalidateQueries({ queryKey: ["chamados", "gatilhos"] });
     },
   });
 }

@@ -1,5 +1,7 @@
 # Plano de ação: IA nos tickets (triagem por equipe e "já existe solução?")
 
+> **08/10/2026 — Triagem em produção** (migração `20261008140000`, Edge `portal_atendimento-ia`). D4 revista pelo Wagner: na TI, **automático com confiança ≥ 80%**; abaixo disso, o ticket fica sem equipe para revisão. Ainda faltam: pgvector, base de conhecimento, "já existe solução?", painel Assistente e tela Testar IA.
+
 Pedido do Wagner (07/10/2026):
 1. Para **cada ticket aberto**, venha do e-mail ou do WhatsApp, uma IA lê o contexto e **avisa o agente se já existe uma solução** para aquela demanda.
 2. Num chamado da **TI**, a IA distingue **Infraestrutura** de **Sistemas**.

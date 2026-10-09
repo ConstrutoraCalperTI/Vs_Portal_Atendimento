@@ -1,9 +1,14 @@
 import type { Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router";
 import { isAllowedLoginEmail, STORAGE_PREFIX } from "../../config/app";
+<<<<<<< HEAD
 import { LOGIN_FAILED_MESSAGE, OFFLINE_MESSAGE, requestResetThroughGateway, signInThroughGateway } from "../../lib/authGateway";
 import { SUPABASE_CONFIGURED, supabase } from "../../lib/supabase";
+=======
+import { SUPABASE_CONFIGURED, takeRecoveryLinkFlag, SUPABASE_KEY_HINT, supabase } from "../../lib/supabase";
+>>>>>>> 969f4e94ea2cfbcbb657fa4ceda78e80909e3abe
 import { authService } from "../configuracoes/services";
 import { AuthContext, type AuthContextValue, type AuthStatus } from "./AuthContext";
 import { AuthFailure, DOMAIN_NOT_ALLOWED, toAuthFailure } from "./authErrors";
@@ -93,6 +98,10 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [email, setEmail] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // O navigate muda a cada rota; no efeito do Auth isso reassinaria o listener a cada navegação.
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   useEffect(() => {
     let active = true;
@@ -120,9 +129,14 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     };
 
     // Dispara INITIAL_SESSION ao assinar, então não é preciso chamar getSession().
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       // Chamadas ao Supabase dentro deste callback podem travar (recomendação do supabase-js): adia.
       setTimeout(() => void apply(session), 0);
+      // Sessão de recuperação aberta em outra rota: leva para criar a nova senha.
+      const recovery = event === "PASSWORD_RECOVERY" || (event === "INITIAL_SESSION" && takeRecoveryLinkFlag());
+      if (session && recovery && location.pathname !== "/redefinir-senha") {
+        navigateRef.current("/redefinir-senha", { replace: true });
+      }
     });
 
     return () => {
@@ -149,6 +163,10 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         await authService.endSession();
         const { error } = await supabase.auth.signOut();
         if (error) throw toAuthFailure(error, "Não foi possível sair. Tente novamente.");
+        // Já marca como deslogado: quem navega logo em seguida para /login não é devolvido para /home
+        // pelo status antigo (o SIGNED_OUT do listener chega depois, adiado).
+        setEmail(null);
+        setStatus("signedOut");
       },
       requestPasswordReset: async (resetEmail) => {
         const normalized = resetEmail.trim().toLowerCase();

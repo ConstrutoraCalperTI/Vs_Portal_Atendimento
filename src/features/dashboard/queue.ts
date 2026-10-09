@@ -67,7 +67,9 @@ export function baseTickets(tickets: readonly DashboardTicket[], f: BaseFilters)
   return tickets.filter(
     (t) =>
       (f.scope !== "mine" || t.owner?.id === f.currentUserId) &&
-      (f.scope !== "team" || f.myTeams.includes(t.team)) &&
+      // Sem equipe (ex.: ticket aberto por e-mail num setor sem equipe padrão): o banco já só devolve os do setor
+      // de quem vê, então entra em "Minhas equipes" para alguém assumir.
+      (f.scope !== "team" || !t.team || f.myTeams.includes(t.team)) &&
       (!f.team || t.team === f.team) &&
       (!f.origin || t.origin === f.origin),
   );

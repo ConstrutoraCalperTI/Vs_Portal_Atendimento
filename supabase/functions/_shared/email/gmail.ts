@@ -60,11 +60,12 @@ async function rotulo(f: Fetch, token: string, pasta: string): Promise<{ total: 
   return { total: j.messagesTotal ?? 0, naoLidas: j.messagesUnread ?? 0 };
 }
 
-export async function enviarGmail(f: Fetch, token: string, mensagemRfc822: string): Promise<string> {
+/** threadId: conversa do Gmail da caixa (a resposta fica junto do e-mail do cliente em "Enviados"). */
+export async function enviarGmail(f: Fetch, token: string, mensagemRfc822: string, threadId?: string | null): Promise<string> {
   const r = await f(`${GMAIL}/messages/send`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ raw: base64url(mensagemRfc822) }),
+    body: JSON.stringify(threadId ? { raw: base64url(mensagemRfc822), threadId } : { raw: base64url(mensagemRfc822) }),
     signal: AbortSignal.timeout(20_000),
   });
   const texto = await r.text();

@@ -50,6 +50,19 @@ export const SUPABASE_KEY_HINT = `${anonKey.slice(0, 18)}… (${anonKey.length} 
  *   npx supabase gen types typescript --project-id <ref> --schema <schema>,public > src/lib/database.types.ts
  * troque "comercial" pelo nome do schema no client e use supabase.schema("public") no `central`.
  */
+/**
+ * Link de "Esqueci minha senha" aberto fora de /redefinir-senha (ex.: o Auth caiu no Site URL porque a
+ * URL não está em Redirect URLs). Lido antes do createClient, que limpa o #access_token da barra.
+ */
+let openedFromRecoveryLink = typeof window !== "undefined" && /(^|[#&])type=recovery(&|$)/.test(window.location.hash);
+
+/** Vale uma vez só: depois de levar a pessoa para /redefinir-senha, a navegação segue normal. */
+export function takeRecoveryLinkFlag(): boolean {
+  const opened = openedFromRecoveryLink;
+  openedFromRecoveryLink = false;
+  return opened;
+}
+
 export const supabase = createClient<Database, "portal_atendimento">(url || "http://modo-simulado.invalid", anonKey || "modo-simulado", {
   db: { schema: APP_SCHEMA as "portal_atendimento" },
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },

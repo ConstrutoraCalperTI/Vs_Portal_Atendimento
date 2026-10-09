@@ -1,5 +1,5 @@
-import { ArrowLeft, Bell, BellOff, Copy, GitMerge, History, Lightbulb, Lock, MoreVertical, Printer, Timer, Trash2, Zap } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { ArrowLeft, Bell, BellOff, CheckCircle2, Copy, GitMerge, History, Lightbulb, Lock, MoreVertical, Printer, RotateCcw, Timer, Trash2, Zap } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
@@ -10,8 +10,8 @@ import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
-import { camposPendentes, estadoCampos } from "../cadastros/regras";
-import { caminhoServico, type Cadastros, type Campo, type Macro } from "../cadastros/types";
+import { estadoCampos } from "../cadastros/regras";
+import { caminhoServico, equipeDoServico, type Cadastros, type Campo, type Macro } from "../cadastros/types";
 import { useCadastros, useMacros, useStatusTickets } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import {
@@ -28,11 +28,14 @@ import {
 import { ORIGENS, type PatchTicket, type Responsavel, type TicketDetalhe } from "./types";
 import "../pages/Chamados.css";
 import "../cadastros/Cadastros.css";
+import { LinhaDoTempo } from "./LinhaDoTempo";
+import { ServicoBusca } from "./ServicoBusca";
 import "./Ticket.css";
 
 // Gestão de Chamados › Tickets › #número (mockup aprovado docs/mockups/tela-ticket.html): classificar à
 // esquerda, responder ao solicitante ou anotar no centro, usar a solução anterior e as funções do menu Opções.
-// O envio por e-mail e WhatsApp entra na Etapa 4: até lá a resposta pública fica "pendente de envio".
+// Os campos da esquerda são salvos junto com a ação (Wagner, 08/10/2026): ao enviar, o compositor exige serviço,
+// status e texto, e grava tudo numa chamada só (ch_ticket_acao com "campos" e "statusDepois").
 
 const TZ = "America/Sao_Paulo";
 const DATA_HORA = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: TZ });
@@ -88,34 +91,62 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
   const atualizar = useAtualizarDetalhe();
   const seguir = useSeguirTicket();
   const [menu, setMenu] = useState(false);
-  const [dialogo, setDialogo] = useState<"resolver" | "sla" | "clonar" | "mesclar" | "excluir" | "prazo" | null>(null);
-  const [alvoResolver, setAlvoResolver] = useState<{ statusId: number; justificativaId: number | null } | null>(null);
-  const [historico, setHistorico] = useState(false);
+  const [dialogo, setDialogo] = useState<"sla" | "clonar" | "mesclar" | "excluir" | "prazo" | null>(null);
+  // "Status após enviar" do compositor. Fica aqui para o seletor do topo poder preencher (Resolvido/Fechado).
+  const [depois, setDepois] = useState("");
+  // Linha do tempo com o histórico de alterações ligado: quem fez e o que fez (modelo Movidesk).
+  const [historico, setHistorico] = useState(true);
   // Compositor (fora do formulário da esquerda, para não perder o texto quando os campos são salvos).
   const [tipo, setTipo] = useState<"publica" | "interna">("publica");
   const [texto, setTexto] = useState("");
   const textoRef = useRef<HTMLTextAreaElement>(null);
   const [macroAberta, setMacroAberta] = useState(false);
+  // Campos alterados à esquerda, ainda não salvos: vão junto com a próxima ação.
+  const rascunho = useRef<Rascunho>({ patch: {}, servicoId: d.servicoId });
   const ticketsPath = getMenuItem("gestao_chamados_tickets").path;
-  const bloqueado = Boolean(d.mescladoEmId || d.excluidoEm);
+  const guardarRascunho = useMemo(
+    () => (r: Rascunho) => {
+      rascunho.current = r;
+    },
+    [],
+  );
   const statusAtual = status.find((s) => s.id === d.statusId);
+  // Encerrado (resolvido, fechado ou cancelado): só leitura até "Reabrir ticket".
+  const encerrado = Boolean(statusAtual && ["resolvido", "fechado", "cancelado"].includes(statusAtual.categoria));
+  const bloqueado = Boolean(d.mescladoEmId || d.excluidoEm || encerrado);
   const justAtual = statusAtual?.justificativas.find((j) => j.id === d.justificativaId);
 
   const mudarStatus = (v: string) => {
     const alvo = lerStatus(v);
     const st = status.find((s) => s.id === alvo.statusId);
+    // Encerrar exige a ação de encerramento: o seletor só prepara o compositor.
     if (st && (st.categoria === "resolvido" || st.categoria === "fechado")) {
-      setAlvoResolver(alvo);
-      setDialogo("resolver");
+      setDepois(v);
+      focarResposta("publica");
+      toast.info(`Escreva a ação de encerramento e clique em "Adicionar ação" para deixar o ticket ${st.nome.toLowerCase()}.`);
       return;
     }
     atualizar.mutate({ id: d.id, patch: alvo }, { onSuccess: () => toast.success(`Status: ${rotuloStatus(st?.nome ?? "", st?.justificativas.find((j) => j.id === alvo.justificativaId)?.nome)}`), onError: (e) => toast.error(erroMsg(e, "Não foi possível mudar o status.")) });
   };
 
-  const focarResposta = (t: "publica" | "interna") => {
+  const reabrir = () => {
+    const alvo =
+      status.find((s) => s.ativo && s.categoria === "andamento" && s.nome.trim().toLowerCase() === "reaberto") ??
+      [...status].filter((s) => s.ativo && s.categoria === "andamento").sort((a, b) => a.ordem - b.ordem)[0];
+    if (!alvo) {
+      toast.error("Cadastre um status de atendimento para poder reabrir.");
+      return;
+    }
+    atualizar.mutate(
+      { id: d.id, patch: { statusId: alvo.id, justificativaId: null } },
+      { onSuccess: () => toast.success(`Ticket #${d.id} reaberto (${alvo.nome}).`), onError: (e) => toast.error(erroMsg(e, "Não foi possível reabrir o ticket.")) },
+    );
+  };
+
+  function focarResposta(t: "publica" | "interna") {
     setTipo(t);
     setTimeout(() => textoRef.current?.focus(), 0);
-  };
+  }
 
   useEffect(() => {
     if (!menu) return;
@@ -154,6 +185,15 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
           {d.seguindo ? <BellOff size={15} aria-hidden="true" /> : <Bell size={15} aria-hidden="true" />}
           {d.seguindo ? "Seguindo" : "Seguir"}
         </button>
+        {encerrado ? (
+          <>
+            <span className="tk-encerrado" role="status">
+              <CheckCircle2 size={16} aria-hidden="true" />
+              {rotuloStatus(statusAtual?.nome ?? "", justAtual?.nome)}
+              {d.encerradoEm ? ` em ${fmt(d.encerradoEm)}` : ""}
+            </span>
+          </>
+        ) : (
         <select className="input tk-status" aria-label="Status do ticket" value={chaveStatus(d.statusId, d.justificativaId)} disabled={bloqueado || atualizar.isPending} onChange={(e) => mudarStatus(e.target.value)}>
           {status
             .filter((s) => s.ativo || s.id === d.statusId)
@@ -170,6 +210,7 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
                 )),
             ])}
         </select>
+        )}
         <div className="tk-menu">
           <button type="button" className="btn btn--outline" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
             Opções
@@ -211,7 +252,16 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
       </div>
 
       <div className="tk-grid">
-        <PainelCampos key={`${d.id}-${d.eventos.length}`} d={d} cad={cad} responsaveis={responsaveis} meuId={user?.id ?? ""} bloqueado={bloqueado} onAlterarPrazo={() => setDialogo("prazo")} />
+        <PainelCampos
+          key={`${d.id}-${d.eventos.length}`}
+          d={d}
+          cad={cad}
+          responsaveis={responsaveis}
+          meuId={user?.id ?? ""}
+          bloqueado={bloqueado}
+          onAlterarPrazo={() => setDialogo("prazo")}
+          onRascunho={guardarRascunho}
+        />
 
         <section className="tk-main" aria-label="Conversa do ticket">
           <h1 className="tk-titulo">{d.assunto}</h1>
@@ -230,6 +280,24 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
             </div>
           )}
           {d.excluidoEm && <div className="tk-aviso">Este ticket foi excluído em {fmt(d.excluidoEm)}.</div>}
+          {encerrado && !d.mescladoEmId && !d.excluidoEm && (
+            // Tarja de ticket encerrado (modelo Movidesk): em destaque, com o botão de reabrir.
+            <div className="tk-tarja" role="status">
+              <div className="tk-tarja__texto">
+                <b>
+                  Esse ticket está {(statusAtual?.nome ?? "encerrado").toLowerCase()} e por isso não poderá ser atualizado.
+                </b>
+                <span>
+                  {d.encerradoEm ? `${statusAtual?.nome ?? "Encerrado"} em ${fmt(d.encerradoEm)}. ` : ""}Para voltar ao atendimento, reabra o ticket. Se o solicitante responder ao
+                  e-mail, ele reabre sozinho.
+                </span>
+              </div>
+              <button type="button" className="tk-tarja__reabrir" disabled={atualizar.isPending} onClick={reabrir}>
+                <RotateCcw size={16} aria-hidden="true" />
+                {atualizar.isPending ? "Reabrindo…" : "Reabrir ticket"}
+              </button>
+            </div>
+          )}
 
           {!bloqueado && (
             <Compositor
@@ -244,10 +312,9 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
               macroAberta={macroAberta}
               setMacroAberta={setMacroAberta}
               nomeAgente={user?.name ?? "Equipe"}
-              onPedirResolver={(alvo) => {
-                setAlvoResolver(alvo);
-                setDialogo("resolver");
-              }}
+              obterRascunho={() => rascunho.current}
+              depois={depois}
+              setDepois={setDepois}
             />
           )}
 
@@ -291,9 +358,6 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
       </div>
 
       {/* ---------- Diálogos ---------- */}
-      {dialogo === "resolver" && alvoResolver && (
-        <DialogoResolver d={d} cad={cad} status={status} alvo={alvoResolver} onFechar={() => setDialogo(null)} />
-      )}
       {dialogo === "prazo" && <DialogoPrazo d={d} onFechar={() => setDialogo(null)} />}
       {dialogo === "sla" && <DialogoSla d={d} cad={cad} onFechar={() => setDialogo(null)} />}
       {dialogo === "clonar" && <DialogoClonar d={d} onFechar={() => setDialogo(null)} onClonado={(novo) => navigate(`${ticketsPath}/${novo}`)} />}
@@ -305,6 +369,11 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
 
 // ---------- Esquerda: classificação ----------
 
+interface Rascunho {
+  patch: PatchTicket;
+  servicoId: number | null;
+}
+
 interface PainelProps {
   d: TicketDetalhe;
   cad: Cadastros;
@@ -312,10 +381,11 @@ interface PainelProps {
   meuId: string;
   bloqueado: boolean;
   onAlterarPrazo: () => void;
+  onRascunho: (r: Rascunho) => void;
 }
 
-function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }: PainelProps) {
-  const atualizar = useAtualizarDetalhe();
+function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo, onRascunho }: PainelProps) {
+  const servicoRotuloId = useId();
   const [aba, setAba] = useState<"publico" | "interno">("publico");
   const [servicoId, setServicoId] = useState<number | null>(d.servicoId);
   const [categoriaId, setCategoriaId] = useState<number | null>(d.categoriaId);
@@ -334,6 +404,7 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
         .sort((a, b) => caminhoServico(a.id, cad.servicos).localeCompare(caminhoServico(b.id, cad.servicos), "pt-BR")),
     [cad.servicos, d.servicoId],
   );
+  const opcoesServico = useMemo(() => folhas.map((s) => ({ id: s.id, rotulo: caminhoServico(s.id, cad.servicos) })), [folhas, cad.servicos]);
   const setorAtual = cad.servicos.find((s) => s.id === servicoId)?.setorId ?? d.setorId;
   const estado = estadoCampos(cad.campos, cad.regras, { servicoId, categoriaId, urgenciaId, setorId: setorAtual, origem: d.origem, campos }, cad.servicos);
   const visiveis = (interno: boolean) =>
@@ -352,14 +423,14 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
   if (listaCc.join("|") !== d.cc.join("|")) patch.cc = listaCc;
   if ((solucao.trim() || null) !== d.solucaoAplicada) patch.solucaoAplicada = solucao.trim() || null;
   const sujo = Object.keys(patch).length > 0;
+  const patchJson = JSON.stringify(patch);
 
-  const salvar = (p: PatchTicket, ok: string) =>
-    atualizar.mutate({ id: d.id, patch: p }, { onSuccess: () => toast.success(ok), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar os campos.")) });
+  // Sem botão "Salvar campos": o compositor lê este rascunho e salva junto com a ação.
+  useEffect(() => {
+    onRascunho({ patch: JSON.parse(patchJson) as PatchTicket, servicoId });
+  }, [patchJson, servicoId, onRascunho]);
 
-  const enviar = (e: FormEvent) => {
-    e.preventDefault();
-    if (sujo) salvar(patch, "Campos salvos");
-  };
+  const enviar = (e: FormEvent) => e.preventDefault();
 
   // Equipe › Pessoa: as equipes do setor do ticket (ou todas) e seus membros.
   const equipes = cad.equipes.filter((e) => e.ativa && (e.setorId === setorAtual || e.id === equipeId));
@@ -369,6 +440,27 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
     opcoesResp.push({ value: `${e.id}|`, label: `${e.nome} › (sem pessoa)` });
     for (const r of responsaveis.filter((x) => x.equipes.includes(e.id))) opcoesResp.push({ value: `${e.id}|${r.id}`, label: `${e.nome} › ${r.nome}` });
   }
+  // O serviço define a equipe; o responsável fica se for dessa equipe.
+  const escolherServico = (id: number | null) => {
+    setServicoId(id);
+    const eq = equipeDoServico(id, cad.servicos);
+    if (eq === null || eq === equipeId) return;
+    setEquipeId(eq);
+    if (responsavelId && !responsaveis.find((r) => r.id === responsavelId)?.equipes.includes(eq)) setResponsavelId(null);
+  };
+  // Seleciona o usuário logado. Equipe: a do serviço se ele for dela; senão a atual (se for dele) ou uma das dele no setor.
+  const atribuirParaMim = () => {
+    const minhas = responsaveis.find((r) => r.id === meuId)?.equipes ?? [];
+    const doServico = equipeDoServico(servicoId, cad.servicos);
+    const eq =
+      doServico !== null && minhas.includes(doServico)
+        ? doServico
+        : equipeId !== null && minhas.includes(equipeId)
+          ? equipeId
+          : (equipes.find((e) => minhas.includes(e.id))?.id ?? equipeId);
+    setEquipeId(eq);
+    setResponsavelId(meuId);
+  };
   if (!opcoesResp.some((o) => o.value === valorResp)) {
     const nome = responsaveis.find((r) => r.id === responsavelId)?.nome ?? (responsavelId === meuId ? "Você" : "Responsável atual");
     opcoesResp.push({ value: valorResp, label: `${cad.equipes.find((e) => e.id === equipeId)?.nome ?? "Sem equipe"} › ${nome}` });
@@ -402,18 +494,13 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
                 </div>
               </div>
             </div>
-            <label className="field">
-              <span className="field__label tk-req">Serviço</span>
-              <select className="input" value={servicoId ?? ""} onChange={(e) => setServicoId(e.target.value ? Number(e.target.value) : null)}>
-                <option value="">— Selecione —</option>
-                {folhas.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {caminhoServico(s.id, cad.servicos)}
-                  </option>
-                ))}
-              </select>
-              <span className="field__help">Define a equipe e o prazo de SLA. Obrigatório para resolver.</span>
-            </label>
+            <div className="field">
+              <span className="field__label tk-req" id={servicoRotuloId}>
+                Serviço
+              </span>
+              <ServicoBusca rotuloId={servicoRotuloId} opcoes={opcoesServico} valor={servicoId} onChange={escolherServico} />
+              <span className="field__help">Digite parte do nome (ex.: impressora, totvs). Define a equipe e o prazo de SLA. Obrigatório para enviar a ação.</span>
+            </div>
             <div className="tk-row2">
               <label className="field">
                 <span className="field__label">Categoria</span>
@@ -459,11 +546,9 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
             <label className="field">
               <span className="field__label">
                 Responsável
-                {responsavelId !== meuId && (
-                  <button type="button" className="tk-link" onClick={() => salvar({ responsavelId: meuId }, "Atribuído a você")}>
-                    Atribuir para mim
-                  </button>
-                )}
+                <button type="button" className="tk-btn-eu" disabled={!meuId || responsavelId === meuId} onClick={atribuirParaMim}>
+                  {responsavelId === meuId ? "Atribuído a você" : "Atribuir para mim"}
+                </button>
               </span>
               <select
                 className="input"
@@ -505,10 +590,7 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo }
             ))}
           </>
         )}
-        {sujo && <p className="tk-sujo">Há alterações não salvas.</p>}
-        <button type="submit" className="btn btn--primary" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} disabled={!sujo || atualizar.isPending}>
-          {atualizar.isPending ? "Salvando…" : "Salvar campos"}
-        </button>
+        {sujo && <p className="tk-sujo">Campos alterados: são salvos quando você enviar a ação.</p>}
       </fieldset>
     </form>
   );
@@ -609,12 +691,13 @@ interface CompositorProps {
   macroAberta: boolean;
   setMacroAberta: (v: boolean) => void;
   nomeAgente: string;
-  onPedirResolver: (alvo: { statusId: number; justificativaId: number | null }) => void;
+  obterRascunho: () => Rascunho;
+  depois: string;
+  setDepois: (v: string) => void;
 }
 
-function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRef, macroAberta, setMacroAberta, nomeAgente, onPedirResolver }: CompositorProps) {
+function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRef, macroAberta, setMacroAberta, nomeAgente, obterRascunho, depois, setDepois }: CompositorProps) {
   const adicionar = useAdicionarAcao();
-  const [depois, setDepois] = useState("");
   const [camposMacro, setCamposMacro] = useState<PatchTicket>({});
   const [busca, setBusca] = useState("");
   const interna = tipo === "interna";
@@ -641,32 +724,40 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
   };
 
   const enviar = () => {
-    if (!texto.trim()) {
-      toast.error("Escreva a resposta antes de enviar.");
+    // Obrigatórios para salvar o ticket com a ação: serviço, status e o texto.
+    const r = obterRascunho();
+    const faltam = [!r.servicoId && "o serviço", !depois && "o status", !texto.trim() && "o texto da ação"].filter(Boolean) as string[];
+    if (faltam.length) {
+      toast.error(`Preencha ${faltam.join(", ").replace(/, ([^,]*)$/, " e $1")} antes de enviar.`);
+      if (!texto.trim()) textoRef.current?.focus();
       return;
     }
-    const statusDepois = depois ? lerStatus(depois) : undefined;
-    const st = status.find((s) => s.id === statusDepois?.statusId);
-    // Resolver pede a solução aplicada e os obrigatórios: abre o diálogo de resolver antes.
-    if (statusDepois && st && (st.categoria === "resolvido" || st.categoria === "fechado") && !d.solucaoAplicada) {
-      adicionar.mutate(
-        { id: d.id, acao: { tipo, texto, campos: Object.keys(camposMacro).length ? camposMacro : undefined } },
-        {
-          onSuccess: () => {
-            limpar();
-            onPedirResolver(statusDepois);
-          },
-          onError: (e) => toast.error(erroMsg(e, "Não foi possível adicionar a ação.")),
-        },
-      );
-      return;
-    }
+    const campos: PatchTicket = { ...r.patch, ...camposMacro };
+    const statusDepois = lerStatus(depois);
+    const st = status.find((s) => s.id === statusDepois.statusId);
+    const encerra = Boolean(st && (st.categoria === "resolvido" || st.categoria === "fechado"));
+    // Encerrar sem janela (Wagner, 08/10/2026): sem "Solução aplicada" preenchida, o texto da ação de encerramento
+    // vira a solução (é o que a IA sugere nos próximos tickets). Obrigatórios faltando: o banco recusa tudo e avisa.
+    if (encerra && !d.solucaoAplicada && !campos.solucaoAplicada) campos.solucaoAplicada = texto.trim();
+    const temCampos = Object.keys(campos).length > 0;
     adicionar.mutate(
-      { id: d.id, acao: { tipo, texto, statusDepois, campos: Object.keys(camposMacro).length ? camposMacro : undefined } },
+      { id: d.id, acao: { tipo, texto, statusDepois, campos: temCampos ? campos : undefined } },
       {
         onSuccess: () => {
           limpar();
-          toast.success(interna ? "Nota interna adicionada." : canalExterno ? `Resposta registrada. Será enviada por ${ORIGENS[d.origem]} quando o envio estiver ligado.` : "Resposta registrada.");
+          if (encerra) {
+            toast.success(`Ticket #${d.id} ${st?.nome.toLowerCase() ?? "encerrado"}.${!interna && d.origem === "email" ? " A resposta sai por e-mail em até 1 minuto." : ""}`);
+            return;
+          }
+          toast.success(
+            interna
+              ? "Nota interna adicionada."
+              : d.origem === "email"
+                ? "Resposta registrada. Sai por e-mail para o solicitante em até 1 minuto."
+                : canalExterno
+                  ? `Resposta registrada. Será enviada por ${ORIGENS[d.origem]} quando o envio estiver ligado.`
+                  : "Resposta registrada.",
+          );
         },
         onError: (e) => toast.error(erroMsg(e, "Não foi possível adicionar a ação.")),
       },
@@ -726,16 +817,17 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
         </div>
         {Object.keys(camposMacro).length > 0 && <span className="ch-badge ch-badge--info">a macro também muda campos ao enviar</span>}
         <span className="tk-bar__spacer" />
-        <label className="ch-muted" style={{ fontSize: 12 }} htmlFor="tk-depois">
-          Depois de enviar:
+        <label className="ch-muted tk-req" style={{ fontSize: 12 }} htmlFor="tk-depois">
+          Status após enviar
         </label>
-        <select id="tk-depois" className="input" value={depois} onChange={(e) => setDepois(e.target.value)}>
-          <option value="">Manter o status atual</option>
+        <select id="tk-depois" className="input" value={depois} aria-required="true" onChange={(e) => setDepois(e.target.value)}>
+          <option value="">— Selecione —</option>
           {status
-            .filter((s) => s.ativo)
+            .filter((s) => s.ativo || s.id === d.statusId)
             .flatMap((s) => [
               <option key={`${s.id}:`} value={chaveStatus(s.id, null)}>
                 {s.nome}
+                {s.id === d.statusId && !d.justificativaId ? " (atual)" : ""}
               </option>,
               ...s.justificativas
                 .filter((j) => j.ativa)
@@ -812,114 +904,7 @@ function SolucaoAnterior({ d, bloqueado, onUsarNaResposta }: { d: TicketDetalhe;
 
 // ---------- Linha do tempo ----------
 
-function LinhaDoTempo({ d, historico, setHistorico }: { d: TicketDetalhe; historico: boolean; setHistorico: (v: boolean) => void }) {
-  const [publicas, setPublicas] = useState(true);
-  const [internas, setInternas] = useState(true);
-  type Item = { tipo: "acao"; quando: number; ordem: number; a: TicketDetalhe["acoes"][number] } | { tipo: "evento"; quando: number; ordem: number; e: TicketDetalhe["eventos"][number] };
-  const itens: Item[] = [
-    ...d.acoes.filter((a) => (a.tipo === "publica" ? publicas : internas)).map((a) => ({ tipo: "acao" as const, quando: Date.parse(a.criadoEm), ordem: a.numero, a })),
-    ...(historico ? d.eventos.map((e, i) => ({ tipo: "evento" as const, quando: Date.parse(e.criadoEm), ordem: -i, e })) : []),
-  ].sort((x, y) => y.quando - x.quando || y.ordem - x.ordem);
-
-  return (
-    <section aria-label="Linha do tempo">
-      <div className="tk-filtros">
-        Visualizar:
-        <label>
-          <input type="checkbox" checked={publicas} onChange={(e) => setPublicas(e.target.checked)} /> Ações públicas
-        </label>
-        <label>
-          <input type="checkbox" checked={internas} onChange={(e) => setInternas(e.target.checked)} /> Notas internas
-        </label>
-        <label>
-          <input type="checkbox" checked={historico} onChange={(e) => setHistorico(e.target.checked)} /> Histórico de alterações
-        </label>
-      </div>
-      {itens.length === 0 && <p className="ch-muted" style={{ fontSize: 13 }}>Nada para mostrar com estes filtros.</p>}
-      {itens.map((it) =>
-        it.tipo === "evento" ? (
-          <p key={`e-${it.ordem}-${it.quando}`} className="tk-hist">
-            {fmt(it.e.criadoEm)} · <b>{it.e.autorNome}</b> · {it.e.descricao}
-          </p>
-        ) : (
-          <article key={`a-${it.a.numero}`} className={`tk-acao${it.a.tipo === "interna" ? " tk-acao--interna" : ""}${it.a.direcao === "entrada" ? " tk-acao--entrada" : ""}`}>
-            <span className="tk-av" aria-hidden="true">
-              {iniciais(it.a.autorNome)}
-            </span>
-            <div className="tk-acao__box">
-              <div className="tk-acao__h">
-                <b>{it.a.autorNome}</b>
-                <span className="ch-muted">{fmt(it.a.criadoEm)}</span>
-                <span className="ch-badge">
-                  {it.a.tipo === "interna" ? "🔒 Nota interna" : it.a.direcao === "entrada" ? `Recebido · ${it.a.canal === "portal" ? "Portal" : ORIGENS[it.a.canal]}` : `Resposta · ${it.a.canal === "portal" ? "Portal" : ORIGENS[it.a.canal]}`}
-                </span>
-                {it.a.envioStatus === "pendente" && <span className="ch-badge ch-badge--warning">pendente de envio</span>}
-                {it.a.envioStatus === "falhou" && <span className="ch-badge ch-badge--danger">falha no envio</span>}
-                {it.a.envioStatus === "enviado" && <span className="ch-badge ch-badge--success">enviado</span>}
-                <span className="tk-acao__n">{it.a.numero}</span>
-              </div>
-              <div className="tk-acao__c">{it.a.texto}</div>
-            </div>
-          </article>
-        ),
-      )}
-    </section>
-  );
-}
-
 // ---------- Diálogos ----------
-
-function DialogoResolver({ d, cad, status, alvo, onFechar }: { d: TicketDetalhe; cad: Cadastros; status: StatusTicket[]; alvo: { statusId: number; justificativaId: number | null }; onFechar: () => void }) {
-  const atualizar = useAtualizarDetalhe();
-  const [solucao, setSolucao] = useState(d.solucaoAplicada ?? "");
-  const [erro, setErro] = useState<string | null>(null);
-  const st = status.find((s) => s.id === alvo.statusId);
-  const estado = estadoCampos(cad.campos, cad.regras, { servicoId: d.servicoId, categoriaId: d.categoriaId, urgenciaId: d.urgenciaId, setorId: d.setorId, origem: d.origem, campos: d.campos }, cad.servicos);
-  const pendentes = camposPendentes(cad.campos, estado, d.campos);
-  const enviar = (e: FormEvent) => {
-    e.preventDefault();
-    setErro(null);
-    atualizar.mutate(
-      { id: d.id, patch: { ...alvo, solucaoAplicada: solucao } },
-      {
-        onSuccess: () => {
-          toast.success(`Ticket #${d.id}: ${st?.nome ?? "resolvido"}`);
-          onFechar();
-        },
-        onError: (er) => setErro(erroMsg(er, "Não foi possível resolver.")),
-      },
-    );
-  };
-  return (
-    <DetailDialog open onOpenChange={(o) => !o && onFechar()} title={`${st?.nome ?? "Resolver"} o ticket #${d.id}`} description="Registre o que resolveu: vira sugestão nos próximos tickets do mesmo serviço.">
-      <form className="tk-dlg-campos" onSubmit={enviar}>
-        {!d.servicoId && <div className="tk-aviso">Escolha o <b>serviço</b> na coluna da esquerda antes de resolver.</div>}
-        {pendentes.length > 0 && (
-          <div className="tk-aviso">
-            Preencha antes de resolver: <b>{pendentes.join(", ")}</b>.
-          </div>
-        )}
-        <label className="field">
-          <span className="field__label tk-req">Solução aplicada</span>
-          <textarea className="input" rows={5} value={solucao} onChange={(e) => setSolucao(e.target.value)} autoFocus />
-        </label>
-        {erro && (
-          <p className="cad-erro" role="alert">
-            {erro}
-          </p>
-        )}
-        <div className="tk-dlg-acoes">
-          <button type="button" className="btn btn--outline" onClick={onFechar}>
-            Cancelar
-          </button>
-          <button type="submit" className="btn btn--primary" disabled={atualizar.isPending || !solucao.trim()}>
-            {st?.nome ?? "Resolver"}
-          </button>
-        </div>
-      </form>
-    </DetailDialog>
-  );
-}
 
 function DialogoPrazo({ d, onFechar }: { d: TicketDetalhe; onFechar: () => void }) {
   const atualizar = useAtualizarDetalhe();

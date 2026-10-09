@@ -27,6 +27,12 @@ describe("fila do dashboard", () => {
     expect(kpis({ ...inicial, scope: "mine" })).toEqual({ all: 20, late: 7, today: 2, unassigned: 0, active: 11, waiting: 9, opened: 4 });
   });
 
+  it("ticket sem equipe (aberto por e-mail) entra em Minhas equipes", () => {
+    const semEquipe = { ...tickets[0], id: 9999, team: "", owner: null };
+    expect(baseTickets([semEquipe], inicial).map((t) => t.id)).toEqual([9999]);
+    expect(baseTickets([semEquipe], { ...inicial, team: "Infraestrutura" })).toEqual([]);
+  });
+
   it("equipe e origem combinam com o escopo", () => {
     expect(kpis({ ...inicial, team: "Infraestrutura" })).toMatchObject({ all: 34, late: 0, today: 1, waiting: 27 });
     expect(kpis({ ...inicial, origin: "E-mail" })).toMatchObject({ all: 32, late: 13, today: 3, opened: 9 });

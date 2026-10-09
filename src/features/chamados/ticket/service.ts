@@ -12,7 +12,10 @@ import { dashboardMock } from "../../dashboard/mock";
 import { ticketsMock } from "../../dashboard/service";
 import type { DashboardTicket } from "../../dashboard/types";
 import { camposPendentes, estadoCampos } from "../cadastros/regras";
-import { CADASTROS_INICIAIS } from "../cadastros/seed";
+import { CADASTROS_INICIAIS, MACROS_INICIAIS } from "../cadastros/seed";
+import { gatilhoAtende, gatilhosDoEvento, type AutorGatilho, type ContextoGatilho } from "../gatilhos/motor";
+import { gatilhosMock, jaExecutou, notificarMock, proximoId, registrarExecucao } from "../gatilhos/store";
+import { ACOES, type Gatilho, type TipoDisparo } from "../gatilhos/types";
 import { statusFields, STATUS_INICIAIS } from "../status/seed";
 import { CATEGORIAS_ENCERRADAS } from "../status/types";
 import type { NovaAcao, PatchTicket, Responsavel, SolucaoAnterior, TicketDetalhe } from "./types";
@@ -127,6 +130,10 @@ function construir(t: DashboardTicket): TicketDetalhe {
         anexos: [],
         envioStatus: "nao_se_aplica",
         criadoEm: t.criado_em,
+        email:
+          ORIGEM[t.origin] === "email"
+            ? { de: "solicitante@calper.com.br", deNome: t.requester, para: ["chamados.ti@calper.com.br"], cc: [], assunto: t.subject, data: t.criado_em }
+            : null,
       },
     ],
     eventos: [{ tipo: "criado", descricao: `Ticket criado (${ORIGEM[t.origin] ?? "agente"})`, autorNome: "Sistema", criadoEm: t.criado_em }],
@@ -143,8 +150,11 @@ function obter(id: number): { d: TicketDetalhe; t: DashboardTicket } {
   return { d, t };
 }
 
-function evento(d: TicketDetalhe, tipo: string, descricao: string) {
-  d.eventos.unshift({ tipo, descricao, autorNome: currentActor().name, criadoEm: new Date().toISOString() });
+/** Nome do gatilho em execução: o que ele muda aparece como "Gatilho: <nome>" e não dispara outros (G2). */
+let emGatilho: string | null = null;
+
+function evento(d: TicketDetalhe, tipo: string, descricao: string, autorNome = emGatilho ? `Gatilho: ${emGatilho}` : currentActor().name) {
+  d.eventos.unshift({ tipo, descricao, autorNome, criadoEm: new Date().toISOString() });
 }
 
 function nomeUsuario(id: string) {
@@ -223,6 +233,138 @@ function aplicar(id: number, p: PatchTicket) {
   });
 }
 
+// ---------- Gatilhos no modo simulado (mesma lógica de ch_gatilhos_rodar) ----------
+export function contextoGatilho(d: TicketDetalhe, dentroExpediente = true): ContextoGatilho {
+  return {
+    statusId: d.statusId,
+    justificativaId: d.justificativaId,
+    urgenciaId: d.urgenciaId,
+    categoriaId: d.categoriaId,
+    servicoId: d.servicoId,
+    equipeId: d.equipeId,
+    responsavelId: d.responsavelId,
+    setorId: d.setorId,
+    origem: d.origem,
+    tags: d.tags,
+    textos: [d.assunto, ...[...d.acoes].sort((a, b) => b.numero - a.numero).slice(0, 3).map((a) => a.texto)],
+    campos: d.campos,
+    dentroExpediente,
+  };
+}
+
+/** Disparos de uma alteração (antes × depois), como ch_tickets_gatilho_anotar. */
+function disparosDaMudanca(antes: TicketDetalhe, depois: TicketDetalhe): TipoDisparo[] {
+  const chaves = ["statusId", "justificativaId", "equipeId", "responsavelId", "servicoId", "categoriaId", "urgenciaId", "tags", "cc", "campos", "assunto", "solucaoAplicada", "slaSolucaoAte"] as const;
+  const disparos: TipoDisparo[] = [];
+  if (chaves.some((k) => JSON.stringify(antes[k]) !== JSON.stringify(depois[k]))) disparos.push("alterado");
+  if (antes.statusId !== depois.statusId || antes.justificativaId !== depois.justificativaId) disparos.push("status");
+  return disparos;
+}
+
+function liderDa(equipeId: number | null) {
+  return equipesAtivasMock().find((e) => e.id === equipeId)?.liderId ?? null;
+}
+
+function aplicarGatilho(id: number, g: Gatilho): string {
+  const { d } = obter(id);
+  const feito: string[] = [];
+  const patch: PatchTicket = {};
+  let tags = [...d.tags];
+  for (const a of g.acoes) {
+    if (a.tipo === "status") Object.assign(patch, { statusId: a.statusId, justificativaId: a.justificativaId ?? null });
+    else if (a.tipo === "equipe") patch.equipeId = a.equipeId ?? null;
+    else if (a.tipo === "responsavel") patch.responsavelId = a.modo === "pessoa" ? (a.usuarioId ?? null) : a.modo === "lider" ? liderDa(patch.equipeId !== undefined ? patch.equipeId : d.equipeId) : null;
+    else if (a.tipo === "urgencia" && a.urgenciaId) patch.urgenciaId = a.urgenciaId;
+    else if (a.tipo === "categoria") patch.categoriaId = a.categoriaId ?? null;
+    else if (a.tipo === "servico") patch.servicoId = a.servicoId ?? null;
+    else if (a.tipo === "tags_adicionar") tags = [...new Set([...tags, ...(a.tags ?? [])])];
+    else if (a.tipo === "tags_remover") tags = tags.filter((t) => !(a.tags ?? []).includes(t));
+    else if (a.tipo === "campo" && a.chave) patch.campos = { ...patch.campos, [a.chave]: a.valor };
+    else if (a.tipo === "solucao" && !d.solucaoAplicada) patch.solucaoAplicada = a.texto ?? null;
+    else continue;
+    feito.push(ACOES.find((x) => x.tipo === a.tipo)?.label.toLowerCase() ?? a.tipo);
+  }
+  if (JSON.stringify(tags) !== JSON.stringify(d.tags)) patch.tags = tags;
+  // Valida como o agente: resolver exige serviço, obrigatórios e solução (se faltar, nada muda).
+  if (Object.keys(patch).length) aplicar(id, patch);
+  const n = obter(id).d;
+  for (const a of g.acoes) {
+    if (a.tipo === "nota_interna" || a.tipo === "responder_macro") {
+      const macro = MACROS_INICIAIS.find((m) => m.id === a.macroId);
+      if (a.tipo === "responder_macro" && !macro) throw new ServiceError("INVALID_INPUT", "A macro da resposta não existe.");
+      const texto =
+        a.tipo === "nota_interna" || !macro
+          ? (a.texto ?? g.nome)
+          : macro.texto
+              .replaceAll("{{solicitante.nome}}", n.solicitante.nome.split(/\s+/)[0] ?? "")
+              .replaceAll("{{ticket.numero}}", String(n.id))
+              .replaceAll("{{agente.nome}}", n.responsavelId ? nomeUsuario(n.responsavelId) : "Equipe de atendimento");
+      const canal = a.tipo === "nota_interna" ? "portal" : n.origem === "email" || n.origem === "whatsapp" ? n.origem : "portal";
+      n.acoes.unshift({
+        numero: Math.max(0, ...n.acoes.map((x) => x.numero)) + 1,
+        tipo: a.tipo === "nota_interna" ? "interna" : "publica",
+        canal,
+        direcao: "saida",
+        autorId: null,
+        autorNome: `Gatilho: ${g.nome}`,
+        texto,
+        html: null,
+        anexos: [],
+        envioStatus: a.tipo === "responder_macro" && canal !== "portal" ? "pendente" : "nao_se_aplica",
+        criadoEm: new Date().toISOString(),
+      });
+      feito.push(a.tipo === "nota_interna" ? "nota interna" : "resposta ao solicitante");
+    } else if (a.tipo === "avisar") {
+      const equipe = equipesAtivasMock().find((e) => e.id === n.equipeId);
+      const quem: Record<string, (string | null | undefined)[]> = {
+        responsavel: [n.responsavelId],
+        lider: [equipe?.liderId],
+        equipe: equipe?.membros ?? [],
+        pessoa: [a.usuarioId],
+        seguidores: n.seguindo ? [currentActor().id] : [],
+      };
+      notificarMock(quem[a.quem ?? ""] ?? [], n.id, `Ticket #${n.id}: ${n.assunto}`, a.texto?.trim() || g.nome);
+      feito.push(`aviso (${a.quem})`);
+    } else if (a.tipo === "seguidor") {
+      const alvo = a.modo === "lider" ? liderDa(n.equipeId) : a.modo === "responsavel" ? n.responsavelId : a.usuarioId;
+      if (alvo && alvo === currentActor().id) n.seguindo = true;
+      feito.push("seguidor");
+    }
+  }
+  return feito.join("; ");
+}
+
+/** Roda os gatilhos ativos do evento, na ordem; ação de gatilho não dispara gatilho (G2). */
+function rodarGatilhos(id: number, disparos: TipoDisparo[], autor: AutorGatilho) {
+  if (emGatilho || disparos.length === 0) return;
+  const ev = proximoId();
+  for (const g of gatilhosDoEvento(gatilhosMock(), disparos)) {
+    const { d } = obter(id);
+    if (d.mescladoEmId || d.excluidoEm) return;
+    if (!gatilhoAtende(g, contextoGatilho(d), autor, CAD.servicos)) continue;
+    const chave = g.execucao === "ticket" ? "ticket" : `ev:${ev}`;
+    if (jaExecutou(g.id, id, chave)) continue;
+    const disparo = g.disparos.find((x) => disparos.includes(x.tipo))!.tipo;
+    emGatilho = g.nome;
+    try {
+      const resumo = aplicarGatilho(id, g);
+      registrarExecucao(g, id, chave, disparo, "executado", resumo);
+      evento(obter(id).d, "gatilho", `Gatilho "${g.nome}": ${resumo || "executado"}`, "Gatilho");
+    } catch (e) {
+      const msg = e instanceof ServiceError ? e.message : String(e);
+      registrarExecucao(g, id, chave, disparo, "erro", msg);
+      evento(obter(id).d, "gatilho_erro", `Gatilho "${g.nome}" não executou: ${msg}`, "Gatilho");
+    } finally {
+      emGatilho = null;
+    }
+  }
+}
+
+/** Detalhe do ticket para a simulação dos gatilhos (modo simulado). */
+export function detalheMock(id: number): TicketDetalhe {
+  return obter(id).d;
+}
+
 const mockTicket: TicketService = {
   async detalhe(id) {
     await delay();
@@ -232,7 +374,9 @@ const mockTicket: TicketService = {
   },
   async atualizar(id, patch) {
     await delay();
+    const antes = structuredClone(obter(id).d);
     aplicar(id, patch);
+    rodarGatilhos(id, disparosDaMudanca(antes, obter(id).d), "agente");
   },
   async acao(id, a) {
     await delay();
@@ -254,9 +398,15 @@ const mockTicket: TicketService = {
       anexos: [],
       envioStatus: a.tipo === "publica" && canal !== "portal" ? "pendente" : "nao_se_aplica",
       criadoEm: new Date().toISOString(),
+      email:
+        a.tipo === "publica" && canal === "email"
+          ? { de: "chamados.ti@calper.com.br", deNome: "Chamados TI - Calper", para: [d.solicitante.contato], cc: d.cc, assunto: `Re: [#${d.id}] ${d.assunto}`, data: new Date().toISOString() }
+          : null,
     });
     if (a.tipo === "publica" && !d.primeiraRespostaEm) d.primeiraRespostaEm = new Date().toISOString();
+    const antes = structuredClone(d);
     if (a.campos || a.statusDepois) aplicar(id, { ...a.campos, ...a.statusDepois });
+    rodarGatilhos(id, ["acao_agente", ...disparosDaMudanca(antes, obter(id).d)], "agente");
     return numero;
   },
   async seguir(id, s) {

@@ -13,9 +13,17 @@ export { initialsOf } from "./initials";
 
 const PAINEL = ["chamados", "painel"] as const;
 
+// Tickets também chegam sozinhos (e-mail lido a cada 1 min, WhatsApp): o painel se atualiza a cada 30 s e ao voltar à aba.
 export function usePainel() {
   const { user } = useAccess();
-  return useQuery({ queryKey: [...PAINEL, user?.id], queryFn: () => painelService.painel(), enabled: Boolean(user), staleTime: 30_000 });
+  return useQuery({
+    queryKey: [...PAINEL, user?.id],
+    queryFn: () => painelService.painel(),
+    enabled: Boolean(user),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
 }
 
 export function useAtualizarTicket() {
