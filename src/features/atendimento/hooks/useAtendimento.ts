@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { centralService, contextoService, monitorService, zenviaService } from "../services/atendimento";
 import { emailService, type ContaEmailDados } from "../services/email";
+import { openwaService, type LinhaImportar } from "../services/openwa";
 import type { AcaoConversa, Periodo, SalvarConexao, SetorConfig, SetorSalvar } from "../services/tipos";
 
 const RAIZ = ["atendimento"] as const;
@@ -167,3 +168,48 @@ export function useSalvarAppGoogle() {
 }
 export const useTestarContaEmail = () => useMudaEmail((p: { id: number; enviarPara?: string }) => emailService.testar(p.id, p.enviarPara));
 
+
+// ---------- WhatsApp OpenWA, resumo da IA e métrica ----------
+
+const OPENWA = [...RAIZ, "openwa"] as const;
+
+export function usePainelOpenwa() {
+  return useQuery({ queryKey: OPENWA, queryFn: () => openwaService.painel() });
+}
+
+function useMudaOpenwa<T, R>(fn: (dados: T) => Promise<R>) {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => void queryClient.invalidateQueries({ queryKey: OPENWA }) });
+}
+
+export const useSalvarConexaoOpenwa = () => useMudaOpenwa((p: { url: string; chave?: string }) => openwaService.salvarConexao(p));
+export const useSalvarNumeroWhatsapp = () =>
+  useMudaOpenwa((p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }) => openwaService.salvarNumero(p));
+export const useSalvarSetorWhatsapp = () =>
+  useMudaOpenwa((p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; msgNaoCorporativo: string }) => openwaService.salvarSetor(p));
+export const useSalvarWhatsappAtendente = () => useMudaOpenwa((p: { usuarioId: string; whatsapp: string }) => openwaService.salvarWhatsappAtendente(p));
+export const useTestarOpenwa = () => useMudaOpenwa(() => openwaService.testar());
+export const useImportarLinhas = () => useMudaOpenwa((linhas: LinhaImportar[]) => openwaService.importarLinhas(linhas));
+export const useRemoverLinha = () => useMudaOpenwa((numero: string) => openwaService.removerLinha(numero));
+
+export function useLinhas(busca: string) {
+  return useQuery({ queryKey: [...OPENWA, "linhas", busca], queryFn: () => openwaService.linhas(busca) });
+}
+
+export function useGruposOpenwa(sessao: string | null) {
+  return useQuery({ queryKey: [...OPENWA, "grupos", sessao], queryFn: () => openwaService.grupos(sessao!), enabled: Boolean(sessao), retry: false });
+}
+
+export function useMembrosGrupo(sessao: string | null, grupo: string | null) {
+  return useQuery({ queryKey: [...OPENWA, "membros", sessao, grupo], queryFn: () => openwaService.membros(sessao!, grupo!), enabled: Boolean(sessao && grupo), retry: false });
+}
+
+export function useQrOpenwa(sessao: string | null, ligado: boolean) {
+  return useQuery({ queryKey: [...OPENWA, "qr", sessao], queryFn: () => openwaService.qr(sessao!), enabled: Boolean(sessao) && ligado, refetchInterval: 5_000, retry: false });
+}
+
+export const useResumirConversa = () => useMutation({ mutationFn: (ticketId: number) => openwaService.resumir(ticketId) });
+
+export function useTopSolicitantes(dias: number) {
+  return useQuery({ queryKey: ["chamados", "painel", "top-solicitantes", dias], queryFn: () => openwaService.topSolicitantes(dias) });
+}

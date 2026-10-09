@@ -11,7 +11,7 @@ import { NotFound } from "./NotFound";
 // Abas de seção (mesmo visual de Integrações).
 import "../features/configuracoes/pages/Integracoes.css";
 
-const Central = lazy(() => import("../features/atendimento/pages/Central").then((m) => ({ default: m.Central })));
+const WhatsappOpenwa = lazy(() => import("../features/atendimento/pages/WhatsappOpenwa").then((m) => ({ default: m.WhatsappOpenwa })));
 const FilaHorarios = lazy(() => import("../features/atendimento/pages/FilaHorarios").then((m) => ({ default: m.FilaHorarios })));
 const ContasEmail = lazy(() => import("../features/atendimento/pages/ContasEmail").then((m) => ({ default: m.ContasEmail })));
 const Setores = lazy(() => import("../features/atendimento/pages/Setores").then((m) => ({ default: m.Setores })));
@@ -28,9 +28,9 @@ const RegrasCadastro = lazy(() => import("../features/chamados/cadastros/RegrasC
 const page = getMenuItem("gestao_atendimento");
 
 const SECOES: { id: MenuItemId; segmento: string }[] = [
-  { id: "gestao_atendimento_central", segmento: "central" },
   { id: "gestao_atendimento_fila", segmento: "fila" },
   { id: "gestao_atendimento_setores", segmento: "setores" },
+  { id: "gestao_atendimento_openwa", segmento: "whatsapp-openwa" },
   { id: "gestao_atendimento_emails", segmento: "emails" },
   { id: "gestao_atendimento_servicos", segmento: "servicos" },
   { id: "gestao_atendimento_urgencias", segmento: "urgencias" },
@@ -79,9 +79,11 @@ export function GestaoAtendimento() {
               )
             }
           />
-          <Route path="central" element={pode("gestao_atendimento_central") ? <Central /> : <NotFound />} />
+          {/* A Central virou "Conversas" dentro da Gestão de Chamados (09/10/2026): o endereço antigo continua valendo. */}
+          <Route path="central" element={<Navigate to={getMenuItem("gestao_atendimento_central").path} replace />} />
           <Route path="fila" element={pode("gestao_atendimento_fila") ? <FilaHorarios /> : <NotFound />} />
           <Route path="setores" element={pode("gestao_atendimento_setores") ? <Setores /> : <NotFound />} />
+          <Route path="whatsapp-openwa" element={pode("gestao_atendimento_openwa") ? <WhatsappOpenwa /> : <NotFound />} />
           <Route path="emails" element={pode("gestao_atendimento_emails") ? <ContasEmail /> : <NotFound />} />
           <Route path="servicos" element={pode("gestao_atendimento_servicos") ? <ServicosCadastro /> : <NotFound />} />
           <Route path="urgencias" element={pode("gestao_atendimento_urgencias") ? <UrgenciasCadastro /> : <NotFound />} />

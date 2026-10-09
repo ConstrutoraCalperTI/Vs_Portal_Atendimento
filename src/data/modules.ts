@@ -26,12 +26,12 @@ export interface ModuleCardData {
 export const modules: ModuleCardData[] = [
   {
     title: "Administração",
-    description: "Conversas do WhatsApp atendidas pela equipe de cada setor.",
+    description: "Canais de atendimento de cada setor: WhatsApp, e-mail, fila e horários.",
     icon: MessagesSquare,
     accent: "brand",
     to: "/gestao-atendimento",
-    permission: "gestao_atendimento_central",
-    shortcuts: ["gestao_atendimento_central", "gestao_atendimento_fila", "gestao_atendimento_setores", "gestao_atendimento_emails"],
+    permission: "gestao_atendimento_fila",
+    shortcuts: ["gestao_atendimento_fila", "gestao_atendimento_setores", "gestao_atendimento_openwa", "gestao_atendimento_emails"],
     section: "Atendimento",
     highlighted: true,
   },

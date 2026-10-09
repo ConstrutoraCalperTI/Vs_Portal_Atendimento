@@ -16,16 +16,19 @@ const Dashboard = lazy(() => import("./Dashboard").then((m) => ({ default: m.Das
 const Tickets = lazy(() => import("../features/chamados/pages/Tickets").then((m) => ({ default: m.Tickets })));
 const ConfigurarVisoes = lazy(() => import("../features/chamados/pages/ConfigurarVisoes").then((m) => ({ default: m.ConfigurarVisoes })));
 const TicketTela = lazy(() => import("../features/chamados/ticket/TicketTela").then((m) => ({ default: m.TicketTela })));
+const Central = lazy(() => import("../features/atendimento/pages/Central").then((m) => ({ default: m.Central })));
 const StatusCadastro = lazy(() => import("../features/chamados/pages/StatusCadastro").then((m) => ({ default: m.StatusCadastro })));
 
-// Gestão de Chamados: item `gestao_chamados` do menuRegistry, com as seções Visão geral, Tickets e Status
-// (`parent: "gestao_chamados"`). Configurar visões não é seção: abre pelo botão da tela Tickets, só para
+// Gestão de Chamados: item `gestao_chamados` do menuRegistry, com as seções Visão geral, Tickets, Conversas
+// (WhatsApp ao vivo), Monitor de atendimento e Status (`parent: "gestao_chamados"`). Configurar visões não é seção: abre pelo botão da tela Tickets, só para
 // Admin e Super admin (docs/PLANO-tickets-visoes.md, D1).
 const page = getMenuItem("gestao_chamados");
 
 const SECOES: { id: MenuItemId; segmento: string }[] = [
   { id: "gestao_chamados_visao_geral", segmento: "visao-geral" },
   { id: "gestao_chamados_tickets", segmento: "tickets" },
+  { id: "gestao_atendimento_central", segmento: "conversas" },
+  { id: "gestao_chamados_monitor", segmento: "monitor" },
   { id: "gestao_chamados_status", segmento: "status" },
 ];
 
@@ -74,6 +77,8 @@ export function GestaoChamados() {
           <Route path="tickets" element={pode("gestao_chamados_tickets") ? <Tickets /> : <NotFound />} />
           <Route path="tickets/visoes" element={pode("gestao_chamados_tickets") && podeConfigurar ? <ConfigurarVisoes /> : <NotFound />} />
           <Route path="tickets/:numero" element={pode("gestao_chamados_tickets") ? <TicketTela /> : <NotFound />} />
+          <Route path="conversas" element={pode("gestao_atendimento_central") ? <Central modo="conversas" /> : <NotFound />} />
+          <Route path="monitor" element={pode("gestao_chamados_monitor") ? <Central modo="monitor" /> : <NotFound />} />
           <Route path="status" element={pode("gestao_chamados_status") ? <StatusCadastro /> : <NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -66,58 +66,68 @@ Decisões no Cerebro: `vs-portal-atendimento-gestao-atendimento-plano` (rodadas 
 - Opção "Só domínio" na conta de e-mail.
 - Bloco "Quem mais abre chamados" na Visão geral.
 
-## 3. Fases (checklist binário)
+## 3. Fases (checklist binário) — implementado em 09/10/2026
+
+Migrations (renomeadas para depois das de segurança do login, que vieram no merge de `6d3ca25`):
+`20261009150000_forma_atendimento_canal`, `…150100_email_so_dominio`, `…150200_whatsapp_motor`, `…150300_openwa`,
+`…150400_conversas_menu_metricas`.
 
 ### Fase 1: e-mail só domínio
-- [ ] Migration: `abrir_tickets` aceita `dominio` e a conta ganha a coluna `dominios_permitidos` (padrão `{calper.com.br}`); `ch_email_processar` passa a recusar remetentes de fora.
-- [ ] Tela Central Email: opção "Só domínio" com a lista de domínios.
+- [x] Migration `…150100`: regra `dominio` + `dominios_permitidos` (padrão `{calper.com.br}`); `ch_email_processar` recusa remetente de fora com o motivo.
+- [x] Central Email: opção "Só domínio" com a lista de domínios.
 
 ### Fase 2: motor do chat (Zenvia e OpenWA)
-- [ ] Migration: `at_numeros.canal` (`zenvia`/`openwa`), `openwa_sessao` e `grupo_interno`; `at_atendentes.whatsapp`; regras por setor (`wa_identificar`, `wa_so_corporativo`, `msg_nao_corporativo`); `at_linhas`; `at_repasses`; `at_atendimentos.ticket_id`; `at_conversas.ident`.
-- [ ] `at_whatsapp_receber`: identificação, fila, ticket, ações do ticket e repasse.
-- [ ] `at_conversa_acao`: assumir, devolver, transferir, enviar e encerrar (resolvido ou não).
-- [ ] Ação pública no ticket de WhatsApp vira mensagem pendente, e o status volta para a ação.
-- [ ] `at_whatsapp_ciclo`: roleta, fora do horário, inatividade e identificação parada; pg_cron a cada 1 min.
-- [ ] Edge `portal_atendimento-whatsapp`: despachar (Zenvia e OpenWA) e ciclo.
-- [ ] Zenvia webhook processando as mensagens de entrada.
-- [ ] Central: ações chamando a RPC e despachando na hora.
+- [x] Migration `…150200`: canal/sessão/grupo do número, WhatsApp do atendente, regras do setor, `at_linhas`, `at_repasses`, ticket do atendimento, estado da identificação.
+- [x] `at_whatsapp_receber`: identificação (confirmar 1/2, nome, e-mail @domínio), só corporativo, fila, ticket (novo ou continua), ações do ticket, repasse, "novo".
+- [x] `at_conversa_acao`: assumir, devolver, transferir (só gestão), enviar, encerrar (resolvido valida como o botão Resolver do ticket).
+- [x] Ação pública no ticket de WhatsApp → mensagem pendente; status do envio volta para a ação.
+- [x] `at_whatsapp_ciclo` (roleta, inatividade, identificação parada) + pg_cron `portal-atendimento-whatsapp-1min`.
+- [x] Edge `portal_atendimento-whatsapp` (despachar, ciclo, administração do OpenWA) + `_shared/atendimento/despacho.ts`.
+- [x] Zenvia webhook processando a entrada e respondendo na hora.
+- [x] Central: ações pela RPC + envio imediato.
 
 ### Fase 3: OpenWA
-- [ ] Credenciais no Vault: URL base, API key e segredo do webhook (só super admin).
-- [ ] Edge `portal_atendimento-openwa-webhook`: HMAC, privado → receber, grupo interno → resposta citando.
-- [ ] `at_grupo_receber`: identifica o atendente pelo número e manda a resposta ao colaborador como "Nome (Setor): …". Sem citação, uma dica a cada 30 min.
-- [ ] Tela WhatsApp OpenWA:
-  - conexão e teste;
-  - sessão com QR;
-  - número → canal, sessão e grupo interno;
-  - regras por setor;
-  - WhatsApp dos atendentes e membros do grupo;
-  - linhas corporativas, com importação de planilha.
+- [x] Migration `…150300`: URL/API key no Vault (super admin), segredo do webhook, `at_grupo_receber`, linhas corporativas, tela.
+- [x] Edge `portal_atendimento-openwa-webhook` (HMAC, privado → receber, grupo → resposta citando) + `_shared/atendimento/openwa.ts`.
+- [x] Tela Administração › WhatsApp OpenWA (conexão, sessões, QR, webhook, número → canal/sessão/grupo, regras do setor, WhatsApp dos atendentes × membros do grupo, linhas corporativas com importação).
 
 ### Fase 4: telas na Gestão de Chamados
-- [ ] Conversas e Monitor de atendimento como seções da Gestão de Chamados; redirecionamento do caminho antigo.
-- [ ] Diálogo de encerramento "Foi resolvido?", com a solução sugerida pela IA (`resumir`) e serviço e categoria.
-- [ ] Painel "Conversa ao vivo" na tela do ticket de WhatsApp.
+- [x] Conversas e Monitor de atendimento como seções da Gestão de Chamados; `/gestao-atendimento/central` redireciona.
+- [x] Diálogo "Foi resolvido?" com solução sugerida pela IA (`portal_atendimento-ia` › `resumir`), serviço e categoria.
+- [x] Painel "Conversa ao vivo" na tela do ticket de WhatsApp.
 
 ### Fase 5: métrica
-- [ ] RPC `ch_top_solicitantes(dias)` e bloco "Quem mais abre chamados" na Visão geral.
+- [x] `ch_top_solicitantes(dias)` (migration `…150400`) + bloco "Quem mais abre chamados" na Visão geral.
 
 ### Fase 6: verificação
-- [ ] `npm run typecheck`, `npm run lint`, `npm test` e `npm run build` sem erro.
-- [ ] Testes Vitest das partes puras: leitura do webhook OpenWA, HMAC e formatação dos repasses.
-- [ ] Migrations ensaiadas (local ou com rollback) — **depende de acesso ao banco**.
-- [ ] Migrations aplicadas e Edge Functions publicadas — **Wagner** (`npx supabase db push`, `functions deploy`).
-- [ ] OpenWA no ar com túnel, sessão pareada e webhook cadastrado — **Wagner**.
+- [x] `tsc -b`, `npm run lint` (sem aviso nos arquivos novos), `npm test` (134 testes; 14 novos em `tests/atendimento-openwa.test.ts`) e `npm run build`.
+- [x] `deno check` das Edge Functions novas e alteradas.
+- [x] Migrations ensaiadas num Supabase local do zero (as 45 do repositório, incluindo as de segurança), com 2 roteiros em transação desfeita:
+      identificação, só corporativo, fila, ticket, repasse, resposta pelo grupo (com e sem citação, autor estranho), permissões
+      (outro atendente, transferir só gestão), encerrar sem/com resolver (regra do serviço), ticket que continua × novo, "novo",
+      ação pelo ticket, ciclo, métrica, tela OpenWA, importação de linhas e e-mail só domínio.
+- [ ] Migrations aplicadas na produção — **Wagner** (`npx supabase db push`).
+- [ ] Edge Functions publicadas — **Wagner**.
+- [ ] OpenWA no ar, sessão pareada, webhook cadastrado e teste ponta a ponta com um celular — **Wagner**.
 
-## 4. Configuração do OpenWA (Wagner, na validação)
+## 4. Como ativar (Wagner)
 
-1. **Subir o OpenWA** na sua máquina com `npm run dev` ou Docker. No `.env`:
-   - `RESOLVE_LID_TO_PHONE=true`, porque sem isso remetentes `@lid` chegam sem o número;
-   - `SSRF_ALLOWED_HOSTS` não é preciso: o webhook vai para o Supabase, que é público.
-2. **Abrir o túnel:** `cloudflared tunnel --url http://localhost:2785`. A URL `https://….trycloudflare.com` vai na tela WhatsApp OpenWA.
-3. **Criar a sessão e parear** com o chip do sistema do setor, pelo QR da tela.
-4. **Criar o grupo interno** "Atendimento TI · interno" com o número do sistema e os atendentes, e escolhê-lo na tela.
-5. **Cadastrar o WhatsApp de cada atendente** e as linhas corporativas (planilha da operadora).
+1. **Banco:** `npx supabase db push`. Se o `20261009100000_…forma_atendimento_canal` já tinha sido aplicado com o nome antigo,
+   rode antes `npx supabase migration repair --status reverted 20261009100000` (o `…150000` é o mesmo conteúdo e pode rodar de novo).
+2. **Edge Functions:**
+   `npx supabase functions deploy portal_atendimento-whatsapp portal_atendimento-openwa-webhook portal_atendimento-zenvia-webhook portal_atendimento-ia --project-ref cjofyxgcuvpeeslkfawu --use-api`
+3. **OpenWA na sua máquina:** `npm run dev` na pasta do OpenWA, com `RESOLVE_LID_TO_PHONE=true` no `.env` (sem isso, remetentes `@lid` chegam sem número e são ignorados).
+4. **Túnel:** `cloudflared tunnel --url http://localhost:2785` → copie a URL `https://….trycloudflare.com`.
+5. **Portal › Administração › WhatsApp OpenWA:**
+   - salve a URL e a API key (`data\.api-key` do OpenWA) e clique em **Testar conexão**;
+   - no número do setor: canal **OpenWA**, escolha a sessão e salve; **Parear (QR)** com o celular do chip do sistema; **Cadastrar webhook**;
+   - crie no celular o grupo "Atendimento TI · interno" (chip do sistema + atendentes), escolha-o como **grupo interno** e salve;
+   - informe o **WhatsApp pessoal** de cada atendente (a coluna "No grupo interno?" confere);
+   - ligue **Identificar no 1º contato** e **Só linhas corporativas** no setor e importe a planilha das linhas.
+6. **Respostas automáticas:** em Integrações › Zenvia WhatsApp, ligue as respostas automáticas. Para validar só com o seu celular, mantenha
+   a **trava do piloto** com o seu número; depois, desligue a trava.
+7. **Teste ponta a ponta:** do seu celular (linha cadastrada), mande "a impressora não imprime" para o chip do sistema → confirme 1 →
+   veja o 🆕 no grupo interno → responda citando → a resposta chega no privado → encerre em Conversas com "Sim, resolvida".
 
 ## 5. Riscos
 - O OpenWA não é a API oficial, então o número pode ser bloqueado. Volume baixo, só conversas de suporte.

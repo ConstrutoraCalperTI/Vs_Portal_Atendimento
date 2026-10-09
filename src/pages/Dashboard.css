@@ -92,3 +92,63 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Quem mais abre chamados (09/10/2026) ---------- */
+.ds-top {
+  margin-top: 20px;
+}
+.ds-top__periodo select {
+  width: auto;
+}
+.ds-top__vazio {
+  padding: 0 21px 20px;
+  color: var(--ds-muted, #6b7280);
+}
+.ds-top__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 21px 16px;
+}
+.ds-top__kpis > div {
+  padding: 10px 12px;
+  border: 1px solid var(--ds-line);
+  border-radius: 10px;
+}
+.ds-top__kpis small {
+  display: block;
+  color: var(--ds-muted, #6b7280);
+  font-size: 12px;
+}
+.ds-top__kpis b {
+  font-size: 22px;
+}
+.ds-top__grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 0 21px 20px;
+}
+.ds-top__barra {
+  width: 30%;
+}
+.ds-top__barra span {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--brand, #d6293b);
+  opacity: 0.8;
+}
+.ds-top__nota {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ds-muted, #6b7280);
+}
+@media (max-width: 900px) {
+  .ds-top__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ds-top__grade {
+    grid-template-columns: 1fr;
+  }
+}

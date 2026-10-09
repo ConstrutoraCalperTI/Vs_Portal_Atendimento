@@ -1691,3 +1691,152 @@ div.em-novo-setor {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* ---------- Encerrar conversa: "Foi resolvido?" (09/10/2026) ---------- */
+.at-encerrar {
+  width: min(600px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.at-enc__escolha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+.at-enc__escolha legend {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+}
+.at-enc__op {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.at-enc__op--on {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+.at-enc__op b {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.at-enc__op small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.at-enc__campos {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.at-enc__rot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.at-enc__ia {
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 600;
+}
+@media (max-width: 560px) {
+  .at-enc__escolha {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Conversa ao vivo na tela do ticket ---------- */
+.at-ao-vivo {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  max-height: 640px;
+  overflow: hidden;
+}
+.at-ao-vivo .at-chat {
+  flex: 1;
+  min-height: 0;
+}
+.at-ao-vivo__rodape {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- Administração › WhatsApp OpenWA (09/10/2026) ---------- */
+.ow {
+  display: grid;
+  gap: 16px;
+}
+.ow-mudo {
+  color: var(--muted);
+  font-size: 12px;
+}
+.ow-sub {
+  margin: 18px 0 6px;
+  font-size: 14px;
+}
+.ow-regras {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+.ow-chave {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ow-chave small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ow-numero {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.ow-numero__linha,
+.ow-numero__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ow-numero__linha .input {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.ow-qr {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+.ow-qr img {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.ow-import {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}

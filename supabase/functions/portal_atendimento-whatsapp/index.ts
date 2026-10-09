@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       case "openwa_membros": {
         const s = sessaoValida(corpo.sessao);
         const g = String(corpo.grupo ?? "");
-        if (!/@g\.us$/.test(g)) throw new PortalError("INVALID_INPUT", "Grupo inválido.", 400, "grupo");
+        if (!g.endsWith("@g.us")) throw new PortalError("INVALID_INPUT", "Grupo inválido.", 400, "grupo");
         const info = exigirOk<{ participants?: { id: string; number?: string; name?: string; isAdmin?: boolean }[] }>(
           await chamarOpenwa(fetch, ow.url, ow.chave, "GET", `/sessions/${s}/groups/${encodeURIComponent(g)}`),
         );

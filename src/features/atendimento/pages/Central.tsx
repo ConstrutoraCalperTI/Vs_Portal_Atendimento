@@ -1,9 +1,10 @@
 import * as Switch from "@radix-ui/react-switch";
 import { ArrowLeftRight, CheckCircle2, FileText, Gauge, Kanban, List, MessagesSquare, Pencil, RotateCcw, Send, UserCheck } from "lucide-react";
 import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { getMenuItem } from "../../../config/menuRegistry";
 import { PageSkeleton } from "../../../components/PageSkeleton";
-import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
@@ -21,11 +22,13 @@ import {
 } from "../hooks/useAtendimento";
 import type { AcaoConversa, Contexto, Conversa, Mensagem, Setor } from "../services/tipos";
 import { gerencia, gravar, hora, iniciais, ler, rotuloSituacao, situacao, SITUACAO_SELO, telefone, type Situacao } from "./util";
+import { EncerrarConversa } from "./EncerrarConversa";
 import "./Atendimento.css";
 
 const Monitor = lazy(() => import("./Monitor").then((m) => ({ default: m.Monitor })));
 
-type Visao = "lista" | "kanban" | "monitor";
+type Visao = "lista" | "kanban";
+type Modo = "conversas" | "monitor";
 type Filtro = "todas" | Situacao;
 const FILTROS: { id: Filtro; rotulo: string }[] = [
   { id: "todas", rotulo: "Todas" },
@@ -37,8 +40,8 @@ const FILTROS: { id: Filtro; rotulo: string }[] = [
 
 export const msgErro = (e: unknown, padrao: string) => (e instanceof ServiceError ? e.message : padrao);
 
-/** Gestão de Atendimento › Central de atendimento. */
-export function Central() {
+/** Gestão de Chamados › Conversas (lista e Kanban) e › Monitor de atendimento (o mesmo dado, visão do gestor). */
+export function Central({ modo = "conversas" }: { modo?: Modo }) {
   const contexto = useContexto();
   if (contexto.isPending) return <PageSkeleton />;
   if (contexto.isError) return <ErrorState message="Não foi possível carregar o atendimento." onRetry={() => void contexto.refetch()} />;
@@ -53,10 +56,10 @@ export function Central() {
       </div>
     );
   }
-  return <CentralSetores ctx={contexto.data} />;
+  return <CentralSetores ctx={contexto.data} modo={modo} />;
 }
 
-function CentralSetores({ ctx }: { ctx: Contexto }) {
+function CentralSetores({ ctx, modo }: { ctx: Contexto; modo: Modo }) {
   const conversas = useConversas();
   useTempoReal();
   usePresenca(ctx.souAtendente);
@@ -65,17 +68,24 @@ function CentralSetores({ ctx }: { ctx: Contexto }) {
   const podeMonitor = ctx.setores.some(gerencia);
   const variosSetores = ctx.setores.length > 1;
 
-  const [visao, setVisao] = useState<Visao>(() => {
-    const v = ler("central-visao");
-    return v === "kanban" || (v === "monitor" && podeMonitor) ? v : "lista";
-  });
+  const navigate = useNavigate();
+  const [busca_, setBusca_] = useSearchParams();
+  const [visao, setVisao] = useState<Visao>(() => (ler("central-visao") === "kanban" ? "kanban" : "lista"));
   const [setorId, setSetorId] = useState<number | null>(() => {
     const v = Number(ler("central-setor"));
     return ctx.setores.some((s) => s.id === v) ? v : null;
   });
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [busca, setBusca] = useState("");
-  const [aberta, setAberta] = useState<number | null>(null);
+  // ?conversa=ID (vindo do Monitor ou do ticket) abre a conversa direto.
+  const [aberta, setAberta] = useState<number | null>(() => Number(busca_.get("conversa")) || null);
+  useEffect(() => {
+    const id = Number(busca_.get("conversa"));
+    if (!id) return;
+    setAberta(id);
+    setVisao("lista");
+    setBusca_({}, { replace: true });
+  }, [busca_, setBusca_]);
 
   const setorDe = useMemo(() => new Map(ctx.setores.map((s) => [s.id, s])), [ctx.setores]);
   const todas = conversas.data ?? [];
@@ -97,6 +107,10 @@ function CentralSetores({ ctx }: { ctx: Contexto }) {
     gravar("central-setor", v);
   };
   const abrir = (id: number) => {
+    if (modo === "monitor") {
+      navigate(`${getMenuItem("gestao_atendimento_central").path}?conversa=${id}`);
+      return;
+    }
     setAberta(id);
     trocarVisao("lista");
   };
@@ -107,6 +121,7 @@ function CentralSetores({ ctx }: { ctx: Contexto }) {
   return (
     <div>
       <div className="at-barra">
+        {modo === "conversas" && (
         <div className="at-visoes" role="group" aria-label="Visão">
           <button type="button" className={`at-visao${visao === "lista" ? " at-visao--on" : ""}`} aria-pressed={visao === "lista"} onClick={() => trocarVisao("lista")}>
             <List size={16} aria-hidden="true" />
@@ -116,13 +131,8 @@ function CentralSetores({ ctx }: { ctx: Contexto }) {
             <Kanban size={16} aria-hidden="true" />
             Kanban por situação
           </button>
-          {podeMonitor && (
-            <button type="button" className={`at-visao${visao === "monitor" ? " at-visao--on" : ""}`} aria-pressed={visao === "monitor"} onClick={() => trocarVisao("monitor")}>
-              <Gauge size={16} aria-hidden="true" />
-              Monitor
-            </button>
-          )}
         </div>
+        )}
         {variosSetores ? (
           <div className="field">
             <label className="field__label" htmlFor={`${ids}-setor`}>Setor</label>
@@ -141,14 +151,20 @@ function CentralSetores({ ctx }: { ctx: Contexto }) {
         )}
         <div className="at-barra__dir">
           {eu_ && <MinhaPausa pausa={eu_.pausa} />}
-          {visao !== "monitor" && <span className="at-setor-chip" role="status">{naFila > 0 ? `${naFila} na fila` : "Fila vazia"}</span>}
+          {modo === "conversas" && <span className="at-setor-chip" role="status">{naFila > 0 ? `${naFila} na fila` : "Fila vazia"}</span>}
         </div>
       </div>
 
-      {visao === "monitor" && podeMonitor ? (
-        <Suspense fallback={<PageSkeleton />}>
-          <Monitor ctx={ctx} setorId={setorId} onAbrir={abrir} />
-        </Suspense>
+      {modo === "monitor" ? (
+        podeMonitor ? (
+          <Suspense fallback={<PageSkeleton />}>
+            <Monitor ctx={ctx} setorId={setorId} onAbrir={abrir} />
+          </Suspense>
+        ) : (
+          <div className="card">
+            <EmptyState icon={Gauge} title="Monitor só para a gestão" description="O Monitor mostra os setores em que você é gestor (Setores e números) ou todos, para a supervisão geral." />
+          </div>
+        )
       ) : visao === "kanban" ? (
         <KanbanSituacao conversas={visiveis} eu={eu} setorDe={setorDe} mostrarSetor={variosSetores && setorId === null} onAbrir={abrir} carregando={conversas.isPending} />
       ) : (
@@ -450,7 +466,8 @@ function Contato({ c, eu, setor }: { c: Conversa; eu: string | null; setor: Seto
         <dt>Número</dt><dd>{telefone(c.numero)}</dd>
         <dt>Situação</dt><dd><span className={`at-selo ${SITUACAO_SELO[s]}`}>{rotuloSituacao(c, eu)}</span></dd>
         <dt>Atendente</dt><dd>{c.atendenteNome ?? "—"}</dd>
-        <dt>Ticket</dt><dd>{c.ticket ? `#${c.ticket}` : "—"}</dd>
+        <dt>Ticket</dt>
+        <dd>{c.ticket ? <Link to={`${getMenuItem("gestao_chamados_tickets").path}/${c.ticket}`}>#{c.ticket} · abrir</Link> : "—"}</dd>
       </dl>
 
       <h4>Nota interna</h4>
@@ -489,16 +506,7 @@ function Contato({ c, eu, setor }: { c: Conversa; eu: string | null; setor: Seto
           </button>
         )}
       </div>
-      <ConfirmDialog
-        open={encerrar}
-        onOpenChange={setEncerrar}
-        title="Encerrar a conversa?"
-        description={`O cliente recebe a mensagem de encerramento do setor${setor ? ` (${setor.nome})` : ""}. Se ele escrever de novo, a conversa volta para a fila.`}
-        confirmLabel="Encerrar"
-        tone="warning"
-        isPending={acao.isPending}
-        onConfirm={() => executar({ acao: "encerrar" }, "Conversa encerrada")}
-      />
+      <EncerrarConversa c={c} setor={setor} open={encerrar} onOpenChange={setEncerrar} />
     </aside>
   );
 }

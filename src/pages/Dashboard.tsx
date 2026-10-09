@@ -34,6 +34,7 @@ import { baseTickets, clampPage, isClosed, metricPredicates, QUEUE_PAGE_SIZE, qu
 import type { DashboardMetric, DashboardScope } from "../features/dashboard/types";
 import { ComPainel, useAtualizarTicket, useCriarTicket } from "../features/dashboard/useDashboardData";
 import type { DashboardPayload } from "../features/dashboard/types";
+import { TopSolicitantes } from "../features/dashboard/TopSolicitantes";
 import { ServiceError } from "../features/configuracoes/services/types";
 
 // Gestão de Chamados › Visão geral (seção `gestao_chamados_visao_geral`), recriada da referência 02-dashboard.html
@@ -281,6 +282,8 @@ function DashboardConteudo({ data }: { data: DashboardPayload }) {
           <InboundChart subtitle="Tickets por hora · exemplo global" data={data.inbound} max={6} />
           <TeamDistribution teams={teams} grandTotal={backlog.length} onSelect={filterTeam} />
         </div>
+
+        <TopSolicitantes />
 
         <p className="ds-footnote ds-page__footnote">
           Ambiente demonstrativo. Filtros e indicadores da fila usam a mesma amostra. “Minha equipe” reúne Sistemas e Infraestrutura neste exemplo.

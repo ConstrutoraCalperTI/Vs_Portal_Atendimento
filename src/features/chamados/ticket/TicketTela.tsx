@@ -1,5 +1,5 @@
 import { ArrowLeft, Bell, BellOff, CheckCircle2, Copy, GitMerge, History, Lightbulb, Lock, MoreVertical, Printer, RotateCcw, Timer, Trash2, Zap } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
@@ -29,6 +29,8 @@ import { ORIGENS, type PatchTicket, type Responsavel, type TicketDetalhe } from 
 import "../pages/Chamados.css";
 import "../cadastros/Cadastros.css";
 import { LinhaDoTempo } from "./LinhaDoTempo";
+
+const ConversaAoVivo = lazy(() => import("../../atendimento/pages/ConversaAoVivo").then((m) => ({ default: m.ConversaAoVivo })));
 import { ServicoBusca } from "./ServicoBusca";
 import "./Ticket.css";
 
@@ -269,6 +271,11 @@ function TicketConteudo({ d, cad, status, responsaveis, macros }: ConteudoProps)
             Ticket aberto via {ORIGENS[d.origem].toLowerCase()} pelo solicitante <b>{d.solicitante.nome}</b> em {fmt(d.criadoEm)} · equipe{" "}
             <b>{cad.equipes.find((e) => e.id === d.equipeId)?.nome ?? "sem equipe"}</b> · status <b>{rotuloStatus(statusAtual?.nome ?? "?", justAtual?.nome)}</b>
           </p>
+          {d.origem === "whatsapp" && !d.encerradoEm && (
+            <Suspense fallback={null}>
+              <ConversaAoVivo ticketId={d.id} />
+            </Suspense>
+          )}
           {!d.encerradoEm && (
             <p className="tk-limite">
               {d.primeiraRespostaEm ? `Primeira resposta em ${fmt(d.primeiraRespostaEm)}.` : `Limite para a primeira resposta: ${d.slaRespostaAte ? DIA_HORA.format(new Date(d.slaRespostaAte)) : "—"}.`}

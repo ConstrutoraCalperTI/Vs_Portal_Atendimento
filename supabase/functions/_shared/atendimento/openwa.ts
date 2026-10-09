@@ -60,7 +60,7 @@ export type EventoOpenwa =
 /** Telefone (só dígitos) de um JID "5521…@c.us" / "@s.whatsapp.net"; @lid usa o senderPhone resolvido. */
 export function telefoneDoJid(jid: string | null | undefined, senderPhone?: string | null): string | null {
   const j = String(jid ?? "");
-  if (/@lid$/.test(j)) {
+  if (j.endsWith("@lid")) {
     const d = String(senderPhone ?? "").replace(/\D/g, "");
     return d.length >= 10 ? d : null;
   }
