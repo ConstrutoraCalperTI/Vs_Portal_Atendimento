@@ -133,7 +133,7 @@ LOGOUT .................... PASS  sessão apagada no Auth corta o acesso na hora
 
 1. ~~**IP confiável.**~~ **Validado em 2026-10-09:** uma requisição com `X-Forwarded-For: 203.0.113.7` foi registrada com o IP real (`ip_prefix` do cliente), então o 1º item de `x-forwarded-for` é posto pela plataforma e não é forjável. Padrão `AUTH_IP_HEADER` mantido.
 2. **Limite nativo do Auth.** Todas as chamadas do gateway chegam ao Auth vindas da Edge Function. Confira se o limite "sign-ins por 5 min por IP" do Auth não estrangula logins legítimos em horário de pico.
-3. **Fluxos reais.** Login, "esqueci a senha" pelo link, troca de senha, sair e "encerrar sessão" de outro usuário.
+3. **Fluxos reais.** Login validado em produção. Faltam "esqueci a senha" pelo link, troca de senha, sair e "encerrar sessão" de outro usuário.
 
 ## Limite que continua existindo
 
@@ -155,7 +155,7 @@ Outras recomendações para o Auth compartilhado (fora do escopo deste repositó
 
 ## Implantação (ordem)
 
-**Andamento (2026-10-09):** passos 1, 2 (origens: portalatendimento.calperservicos.com.br, a URL de deploy da Vercel e localhost) e 3 (só `portal_atendimento-auth`) feitos. Gateway testado em produção com conta inexistente: 401 uniforme, origem estranha recusada, IP real registrado. Faltam o teste de login real, as demais Edge Functions e a etapa 2.
+**Concluída em 2026-10-09:** etapa 1, secret (portalatendimento.calperservicos.com.br, URL de deploy da Vercel e localhost), as 8 Edge Functions (auth + as 7 que usam portalContext) e etapa 2 aplicadas. Antes do commit da etapa 2, uma trava na mesma transação confirmou que a sessão real emitida pelo gateway mantinha o acesso e que uma sessão de senha não vinculada era negada. Login real testado com sucesso em produção.
 
 1. **Migration etapa 1:** `20261009120000_portal_atendimento_seguranca_login.sql`. Não muda o acesso de ninguém.
 2. **Secret da função:** `AUTH_ALLOWED_ORIGINS=https://<domínio de produção>,https://<domínio de preview>,http://localhost:5173`. Opcionais: `AUTH_IP_HEADER` e `AUTH_MIN_RESPONSE_MS`.
