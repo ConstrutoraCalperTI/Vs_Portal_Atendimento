@@ -26,6 +26,11 @@ verify_jwt = false
 [functions.portal_atendimento-email]
 verify_jwt = true
 
+# Security Gateway do login: chamado ANTES de existir sessão, então sem JWT. A função valida
+# origem, payload, limites e bloqueio antes de chamar o Supabase Auth (docs/SEGURANCA-LOGIN.md).
+[functions.portal_atendimento-auth]
+verify_jwt = false
+
 # Retorno do "Autorizar com Gmail": quem chama é o Google (sem JWT); a segurança é o state de uso único.
 [functions.portal_atendimento-google-oauth]
 verify_jwt = false

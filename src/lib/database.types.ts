@@ -1920,6 +1920,8 @@ export type Database = {
         Returns: string
       }
       registrar_acesso: { Args: never; Returns: undefined }
+      security_apos_troca_senha: { Args: never; Returns: undefined }
+      sessao_atual_confiavel: { Args: never; Returns: boolean }
       registrar_auditoria: {
         Args: {
           p_acao: string

@@ -75,7 +75,29 @@ export async function portalContext(req: Request): Promise<PortalContext> {
   if (!email.endsWith("@calper.com.br")) {
     throw new PortalError("FORBIDDEN", "Somente e-mails @calper.com.br podem acessar o portal.", 403);
   }
+
+  // service_role ignora a RLS: a regra "sessão de senha só vale se veio do gateway de login" (e
+  // "sessão encerrada não vale") é conferida aqui, com a mesma função que a RLS usa.
+  const claims = jwtPayload(token);
+  const { data: valida, error: sessaoError } = await admin.rpc("security_sessao_valida", {
+    p_user_id: data.user.id,
+    p_session_id: typeof claims.session_id === "string" ? claims.session_id : null,
+    p_amr: Array.isArray(claims.amr) ? claims.amr : [],
+  });
+  if (sessaoError || valida !== true) throw new PortalError("UNAUTHENTICATED", "Sessão inválida. Faça login novamente.", 401);
+
   return { caller: data.user, admin };
+}
+
+/** Payload do JWT (a assinatura já foi conferida pelo auth.getUser acima). */
+function jwtPayload(token: string): Record<string, unknown> {
+  try {
+    const part = token.split(".")[1] ?? "";
+    const base64 = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
+    return JSON.parse(atob(base64)) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
 }
 
 export async function readJson<T>(req: Request): Promise<T> {

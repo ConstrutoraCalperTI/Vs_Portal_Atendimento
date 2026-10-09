@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Navigate } from "react-router";
 import { z } from "zod";
 import { STORAGE_PREFIX, CORPORATE_DOMAIN } from "../../../config/app";
+import { RECOVER_SENT_MESSAGE } from "../../../lib/authGateway";
 import { AuthShell } from "../AuthShell";
 import { AuthFailure } from "../authErrors";
 import { useAuthSession } from "../useAuthSession";
@@ -224,7 +225,7 @@ function ResetForm({ onBack }: { onBack: () => void }) {
 
       {sent && (
         <p className="auth-card__alert auth-card__alert--success" role="status">
-          Se o e-mail estiver cadastrado, o link chega em alguns minutos. Confira também a caixa de spam.
+          {RECOVER_SENT_MESSAGE} Confira também a caixa de spam.
         </p>
       )}
       {failure && (

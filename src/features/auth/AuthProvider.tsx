@@ -2,7 +2,8 @@ import type { Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { isAllowedLoginEmail, STORAGE_PREFIX } from "../../config/app";
-import { SUPABASE_CONFIGURED, SUPABASE_KEY_HINT, supabase } from "../../lib/supabase";
+import { LOGIN_FAILED_MESSAGE, OFFLINE_MESSAGE, requestResetThroughGateway, signInThroughGateway } from "../../lib/authGateway";
+import { SUPABASE_CONFIGURED, supabase } from "../../lib/supabase";
 import { authService } from "../configuracoes/services";
 import { AuthContext, type AuthContextValue, type AuthStatus } from "./AuthContext";
 import { AuthFailure, DOMAIN_NOT_ALLOWED, toAuthFailure } from "./authErrors";
@@ -81,6 +82,12 @@ function SimulatedAuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** A sessão salva ainda vale no portal? Falha de rede não derruba ninguém (a RLS nega de qualquer forma). */
+async function sessionTrusted(): Promise<boolean> {
+  const { data, error } = await supabase.rpc("sessao_atual_confiavel");
+  return error ? true : data === true;
+}
+
 function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<AuthStatus>("loading");
@@ -97,6 +104,13 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         if (active) setNotice(DOMAIN_NOT_ALLOWED);
         await supabase.auth.signOut();
         return; // o SIGNED_OUT que vem em seguida chama apply(null)
+      }
+      if (session && !(await sessionTrusted())) {
+        // Sessão que o portal não aceita mais (aberta direto no Auth, encerrada por um admin ou
+        // anterior ao gateway de login): descarta e pede login de novo.
+        if (active) setNotice("Sua sessão expirou. Entre novamente.");
+        await supabase.auth.signOut({ scope: "local" });
+        return;
       }
       await authService.bindSession(sessionEmail);
       if (!active) return;
@@ -125,17 +139,11 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       clearNotice: () => setNotice(null),
       signIn: async (loginEmail, password) => {
         const normalized = loginEmail.trim().toLowerCase();
-        // Nem chega ao Supabase: evita criar sessão de conta de fora do domínio.
+        // Só ajuda quem digitou o domínio errado; o gateway recusa de novo no servidor.
         if (!isAllowedLoginEmail(normalized)) throw new AuthFailure(DOMAIN_NOT_ALLOWED);
-        const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
-        if (error) {
-          // 401 no login = a chave pública deste build foi recusada (senha errada dá 400 invalid_credentials).
-          if (error.status === 401) {
-            console.error("[auth] chave pública recusada pelo Supabase:", SUPABASE_KEY_HINT);
-            throw new AuthFailure("O servidor de login recusou a chave do aplicativo (HTTP 401). Avise o administrador: confira VITE_SUPABASE_ANON_KEY na hospedagem e publique de novo.");
-          }
-          throw toAuthFailure(error, "Não foi possível entrar. Tente novamente.");
-        }
+        // Limites, bloqueio e risco são decididos no servidor (gateway). Resposta única para qualquer motivo.
+        const result = await signInThroughGateway(normalized, password);
+        if (!result.ok) throw new AuthFailure(result.offline ? OFFLINE_MESSAGE : LOGIN_FAILED_MESSAGE);
       },
       signOut: async () => {
         await authService.endSession();
@@ -145,10 +153,9 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       requestPasswordReset: async (resetEmail) => {
         const normalized = resetEmail.trim().toLowerCase();
         if (!isAllowedLoginEmail(normalized)) throw new AuthFailure(DOMAIN_NOT_ALLOWED);
-        const { error } = await supabase.auth.resetPasswordForEmail(normalized, {
-          redirectTo: `${window.location.origin}/redefinir-senha`,
-        });
-        if (error) throw toAuthFailure(error, "Não foi possível enviar o link. Tente novamente.");
+        // O gateway devolve sempre a mesma resposta (exista ou não a conta) e monta o link de volta.
+        const result = await requestResetThroughGateway(normalized);
+        if (!result.ok && result.offline) throw new AuthFailure(OFFLINE_MESSAGE);
       },
     }),
     [status, email, notice],

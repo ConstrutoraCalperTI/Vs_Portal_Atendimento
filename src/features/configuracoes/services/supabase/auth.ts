@@ -1,4 +1,5 @@
 import { AuthError } from "@supabase/supabase-js";
+import { OFFLINE_MESSAGE, signInThroughGateway } from "../../../../lib/authGateway";
 import { supabase } from "../../../../lib/supabase";
 import type { AuthService } from "../contracts";
 import { ServiceError } from "../types";
@@ -30,21 +31,23 @@ export const supabaseAuthService: AuthService = {
       // Redefinição de uma conta Calper que não usa o portal: a senha mudou, não há o que concluir aqui.
       if (serviceError.code !== "NO_PORTAL_ACCESS") throw serviceError;
     }
+    // Quem provou ser dono da conta sai do bloqueio de tentativas, e as outras sessões caem
+    // (no portal, pela RPC; no Auth, pelo signOut oficial). Falha aqui não desfaz a troca.
+    const after = await supabase.rpc("security_apos_troca_senha");
+    if (after.error) console.error("[auth] pós-troca de senha não concluída", after.error.code);
+    await supabase.auth.signOut({ scope: "others" }).catch(() => {});
   },
 
   async verifyCurrentPassword(password) {
-    // Reautentica com a senha informada: prova que é o próprio usuário e atende à "troca segura de senha" do Auth.
+    // Reautentica pelo gateway (mesmos limites e bloqueio do login): prova que é o próprio usuário,
+    // atende à "troca segura de senha" do Auth e já deixa a sessão nova registrada no portal.
     const { data } = await supabase.auth.getUser();
     const email = data.user?.email;
     if (!email) throw new ServiceError("UNAUTHENTICATED", "Sua sessão expirou. Entre novamente.");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      const code = error instanceof AuthError ? error.code : undefined;
-      if (code === "invalid_credentials" || error.status === 400) {
-        throw new ServiceError("INVALID_PASSWORD", "A senha atual está incorreta.", "currentPassword");
-      }
-      if (error.status === 429) throw new ServiceError("INTERNAL", "Muitas tentativas. Aguarde alguns minutos.");
-      throw new ServiceError("INTERNAL", "Não foi possível conferir a senha atual. Tente novamente.");
+    const result = await signInThroughGateway(email, password);
+    if (!result.ok) {
+      if (result.offline) throw new ServiceError("INTERNAL", OFFLINE_MESSAGE);
+      throw new ServiceError("INVALID_PASSWORD", "Não foi possível confirmar a senha atual. Verifique e tente novamente mais tarde.", "currentPassword");
     }
   },
 

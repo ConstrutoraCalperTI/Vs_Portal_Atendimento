@@ -1,4 +1,5 @@
 import { edgeFunction } from "../../../../config/app";
+import { OFFLINE_MESSAGE, requestResetThroughGateway } from "../../../../lib/authGateway";
 import { supabase } from "../../../../lib/supabase";
 import type { UsersService } from "../contracts";
 import { ServiceError, type User, type UserTab } from "../types";
@@ -95,14 +96,8 @@ export const supabaseUsersService: UsersService = {
   async sendPasswordReset(id) {
     // A RPC confere a permissão e registra na auditoria; o e-mail sai pelo Supabase Auth.
     const email = required(await supabase.rpc("registrar_redefinicao_senha", { p_id: id }));
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: resetRedirect() });
-    if (error) {
-      throw new ServiceError(
-        "INTERNAL",
-        error.status === 429
-          ? "Muitos e-mails enviados em pouco tempo. Aguarde alguns minutos."
-          : "Não foi possível enviar o e-mail de redefinição.",
-      );
-    }
+    // Mesmo caminho do "Esqueci minha senha": passa pelo limite de pedidos por conta e por IP do gateway.
+    const result = await requestResetThroughGateway(email);
+    if (!result.ok) throw new ServiceError("INTERNAL", result.offline ? OFFLINE_MESSAGE : "Não foi possível enviar o e-mail de redefinição.");
   },
 };
