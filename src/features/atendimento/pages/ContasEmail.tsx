@@ -43,6 +43,7 @@ const ABRIR: { id: AbrirTickets; rotulo: string }[] = [
   { id: "qualquer", rotulo: "De qualquer remetente" },
   { id: "cliente", rotulo: "Somente se o remetente estiver cadastrado como cliente (Pessoas)" },
   { id: "cliente_ou_dominio", rotulo: "Somente se o remetente estiver cadastrado como cliente ou o seu domínio estiver relacionado a uma empresa cadastrada" },
+  { id: "dominio", rotulo: "Só domínio: somente remetentes dos domínios abaixo (ex.: calper.com.br), mesmo que outra pessoa esteja cadastrada" },
   { id: "nao", rotulo: "Não habilitar" },
 ];
 
@@ -271,7 +272,8 @@ function FormConta({
   const autorizar = useAutorizarGoogle();
   const queryClient = useQueryClient();
   const [aba, setAba] = useState<Aba>("principal");
-  const [d, setD] = useState<ContaEmailDados>(() => (conta ? { ...conta } : contaNova(null)));
+  const [d, setD] = useState<ContaEmailDados>(() => (conta ? { ...conta, dominiosPermitidos: conta.dominiosPermitidos ?? ["calper.com.br"] } : contaNova(null)));
+  const [dominiosTxt, setDominiosTxt] = useState(() => (conta?.dominiosPermitidos ?? contaNova(null).dominiosPermitidos).join(", "));
   const [senha, setSenha] = useState("");
   const ignorar = (conta?.ignorarRemetentes ?? contaNova(null).ignorarRemetentes).join(", ");
   const [erro, setErro] = useState<{ campo?: string; mensagem: string } | null>(null);
@@ -316,6 +318,7 @@ function FormConta({
         id: conta?.id,
         usuario: d.usuario || d.email,
         ignorarRemetentes: ignorar.split(/\n|,|;/).map((x) => x.trim()).filter(Boolean),
+        dominiosPermitidos: dominiosTxt.split(/[\s,;]+/).map((x) => x.trim().replace(/^@/, "").toLowerCase()).filter(Boolean),
       });
       if (senha && !viaGoogle) await salvarSenha.mutateAsync({ id, senha });
       setSenha("");
@@ -323,7 +326,7 @@ function FormConta({
     } catch (e) {
       if (e instanceof ServiceError) {
         setErro({ campo: e.field, mensagem: e.message });
-        if (e.field && ["imapHost", "smtpPorta", "modo"].includes(e.field)) setAba(e.field === "smtpPorta" ? "envio" : "receb");
+        if (e.field && ["imapHost", "smtpPorta", "modo", "dominiosPermitidos"].includes(e.field)) setAba(e.field === "smtpPorta" ? "envio" : "receb");
         else if (e.field) setAba("principal");
       } else toast.error("Não foi possível salvar a conta.");
       return null;
@@ -553,6 +556,14 @@ function FormConta({
                   </label>
                 ))}
               </div>
+              {d.abrirTickets === "dominio" && (
+                <div className="field em-campo-medio">
+                  <label className="field__label" htmlFor={`${ids}-dom`}>Domínios aceitos</label>
+                  <input id={`${ids}-dom`} className="input" value={dominiosTxt} onChange={(e) => setDominiosTxt(e.target.value)} placeholder="calper.com.br" disabled={somenteLeitura} />
+                  <span className="em-nota em-nota--p"><Info size={13} aria-hidden="true" />Separe por vírgula. E-mail de outro domínio fica como ignorado, com o motivo. Respostas a tickets já existentes continuam entrando.</span>
+                  {erroDe("dominiosPermitidos")}
+                </div>
+              )}
               <span className="em-nota em-nota--p"><Info size={13} aria-hidden="true" />Este parâmetro define se o sistema deve transformar e-mails em tickets ou se deve ignorar novas mensagens. Você pode aceitar e-mails somente se o remetente estiver cadastrado, somente se o domínio do e-mail estiver relacionado a uma empresa cadastrada em Pessoas ou pode aceitar e-mails de qualquer remetente.</span>
             </div>
           </div>

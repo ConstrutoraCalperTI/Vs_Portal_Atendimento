@@ -125,9 +125,11 @@ export interface Mensagem {
 }
 
 export type AcaoConversa =
-  | { acao: "assumir" | "devolver" | "encerrar" }
+  | { acao: "assumir" | "devolver" }
   | { acao: "enviar"; texto: string }
-  | { acao: "transferir"; para: string };
+  | { acao: "transferir"; para: string }
+  /** Encerrar: resolvido → ticket Resolvido (exige solução e serviço); senão o ticket fica "Em atendimento". */
+  | { acao: "encerrar"; resolvido?: boolean; solucao?: string; servicoId?: number | null; categoriaId?: number | null };
 
 // ---------- Monitor ----------
 

@@ -12,7 +12,7 @@ import { esperar, mockContexto } from "./mock";
 
 export type ProvedorEmail = "google" | "outlook" | "exchange" | "yahoo" | "uol" | "bol" | "terra" | "ig" | "ibest" | "manual";
 export type ModoEmail = "oauth_google" | "api_google" | "imap_smtp";
-export type AbrirTickets = "qualquer" | "cliente" | "cliente_ou_dominio" | "nao";
+export type AbrirTickets = "qualquer" | "cliente" | "cliente_ou_dominio" | "dominio" | "nao";
 
 export interface PassoTeste {
   passo: string;
@@ -56,6 +56,8 @@ export interface ContaEmailDados {
   receberHabilitado: boolean;
   apagarAposDias: number | null;
   abrirTickets: AbrirTickets;
+  /** Regra "Só domínio": domínios aceitos para ticket novo (sem @). */
+  dominiosPermitidos: string[];
 }
 
 export interface ContaEmail extends ContaEmailDados {
@@ -92,7 +94,7 @@ export function contaNova(setorId: number | null): ContaEmailDados {
     provedor: "google", modo: "oauth_google", imapHost: "imap.gmail.com", imapPorta: 993, imapSeguranca: "ssl", smtpHost: "smtp.gmail.com", smtpPorta: 465,
     usuario: "", pasta: "INBOX", intervaloMin: 1, lerDesde: new Date().toISOString().slice(0, 10), marcarLido: true, moverPara: "",
     juntarRespostas: true, ignorarRemetentes: ["mailer-daemon@", "noreply@", "no-reply@"], responderPara: "", copiaOculta: "", assinatura: "",
-    receberHabilitado: true, apagarAposDias: null, abrirTickets: "qualquer",
+    receberHabilitado: true, apagarAposDias: null, abrirTickets: "qualquer", dominiosPermitidos: ["calper.com.br"],
   };
 }
 

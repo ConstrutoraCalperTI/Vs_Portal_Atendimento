@@ -3,7 +3,6 @@ import type { Json } from "../../../lib/database.types";
 import { supabase } from "../../../lib/supabase";
 import { DATA_SOURCE } from "../../configuracoes/services";
 import { fromFunction, fromPostgrest } from "../../configuracoes/services/supabase/errors";
-import { ServiceError } from "../../configuracoes/services/types";
 import { mockCentral, mockContexto, mockMonitor, mockZenvia } from "./mock";
 import type {
   AcaoConversa,
@@ -146,10 +145,11 @@ const supabaseCentral: CentralService = {
   },
 
   async acao(conversaId, a) {
-    // As ações mexem na fila e na Zenvia: chegam com a fase do chat (Edge Function <schema>-atendimento).
-    void conversaId;
-    void a;
-    throw new ServiceError("INTEGRATION_NOT_CONFIGURED", "Responder, assumir e encerrar pelo portal chegam na fase do chat.");
+    // A regra (quem pode, fila, ticket) é do banco; o envio sai pela Edge na hora (o cron cobre se ela falhar).
+    await rpc<unknown>("at_conversa_acao", { p_conversa: conversaId, p: a as unknown as Json });
+    if (a.acao === "enviar" || a.acao === "encerrar") {
+      await funcao("whatsapp", { acao: "despachar", conversaId }).catch(() => undefined);
+    }
   },
 
   marcarLida: (conversaId) => rpc<void>("at_marcar_lida", { p_conversa: conversaId }),

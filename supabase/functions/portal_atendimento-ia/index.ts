@@ -3,6 +3,8 @@
 // x-atendimento-chave (chave no Vault). Também aceita a supervisão geral logada (rodar agora).
 //
 //   {acao: "triagem"}  classifica até 10 tickets sem equipe de setores com IA ligada (ch_ia_pendentes)
+//   {acao: "resumir", ticketId}  pessoa logada que vê o ticket: sugere a "Solução aplicada" a partir da conversa
+//                                 (diálogo "Foi resolvido?" ao encerrar o WhatsApp; o atendente revisa)
 //
 // Para cada ticket: limpa e mascara o texto, pede ao Gemini a equipe e o serviço SÓ entre os do setor, valida a
 // resposta e grava em ch_ia_registrar (que aplica sozinho no modo automático com confiança ≥ limiar).
@@ -20,6 +22,7 @@ import {
   type EquipeCandidata,
   type ServicoCandidato,
 } from "../_shared/ia/triagem.ts";
+import { ESQUEMA_RESUMO, montarConversa, REGRAS_RESUMO, validarResumo, type AcaoParaResumo } from "../_shared/ia/resumo.ts";
 
 interface Pendente {
   ticketId: number;
@@ -44,6 +47,34 @@ Deno.serve(async (req) => {
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !key) throw new PortalError("INTERNAL", "Função sem configuração do Supabase.", 500);
     let db: AdminClient = createClient(url, key, { db: { schema: "portal_atendimento" }, auth: { persistSession: false, autoRefreshToken: false } });
+    const corpo = (await req.clone().json().catch(() => ({}))) as { acao?: string; ticketId?: number };
+
+    // ---------- resumir: quem vê o ticket (o banco confere pela RPC chamada com o token da pessoa) ----------
+    if (corpo.acao === "resumir") {
+      await portalContext(req);
+      const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const comoUsuario = createClient(url, anon, {
+        db: { schema: "portal_atendimento" },
+        global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const det = await comoUsuario.rpc("ch_ticket_detalhe", { p_id: Number(corpo.ticketId) });
+      if (det.error) throw new PortalError("NOT_FOUND", "Ticket não encontrado.", 404);
+      const t = det.data as { assunto: string; acoes: AcaoParaResumo[] };
+      const chaveIa = Deno.env.get("GEMINI_API_KEY") ?? "";
+      if (!chaveIa) throw new PortalError("AI_NOT_CONFIGURED", "Falta o secret GEMINI_API_KEY nas Edge Functions.");
+      const r = await classificarComGemini(fetch, {
+        chave: chaveIa,
+        modelo: Deno.env.get("APP_PORTAL_ATENDIMENTO_IA_MODELO") || "gemini-3.6-flash",
+        reserva: Deno.env.get("APP_PORTAL_ATENDIMENTO_IA_RESERVA") || "gemini-flash-latest",
+        sistema: REGRAS_RESUMO,
+        pedido: montarConversa(t.assunto, t.acoes ?? []),
+        esquema: ESQUEMA_RESUMO,
+      });
+      const resumo = validarResumo(r.json);
+      if (!resumo) throw new PortalError("AI_LIMIT", "A IA não conseguiu resumir esta conversa. Escreva a solução.");
+      return json({ ...resumo, modelo: r.modelo });
+    }
 
     const chave = await db.rpc("at_ia_cron_chave");
     if (!iguais(req.headers.get("x-atendimento-chave") ?? "", (chave.data as string | null) ?? "")) {

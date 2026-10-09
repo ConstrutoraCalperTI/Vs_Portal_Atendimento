@@ -2,10 +2,11 @@
 // Chamado pela Zenvia, sem JWT: a autenticação é o cabeçalho x-atendimento-chave (chave no Vault).
 //
 // F3 (06/10/2026): grava o evento cru em at_eventos_zenvia (idempotente por tipo + id da Zenvia) e atualiza
-// o status das mensagens enviadas. Abrir a conversa no setor do número de destino, pôr na fila e mandar a
-// mensagem automática é a fase do chat.
+// o status das mensagens enviadas. Fase 2 do chat (09/10/2026): a mensagem recebida vai para at_whatsapp_receber
+// (identificação, fila, ticket) e o que ficou pendente (resposta automática) sai na hora pelo despachante.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { despachar } from "../_shared/atendimento/despacho.ts";
 import { lerEvento } from "../_shared/atendimento/zenvia.ts";
 
 const resposta = (status: number, corpo: Record<string, unknown>) =>
@@ -53,6 +54,29 @@ Deno.serve(async (req) => {
 
   if (evento.tipo === "status") {
     await db.from("at_mensagens").update({ status: evento.status, erro: evento.erro }).eq("zenvia_id", evento.zenviaId);
+  }
+  if (evento.tipo === "mensagem" && !ins.error) {
+    const arquivo = evento.arquivos[0] ?? null;
+    const tipo = !arquivo ? "texto" : arquivo.mime.startsWith("image/") ? "imagem" : arquivo.mime.startsWith("audio/") ? "audio" : arquivo.mime.startsWith("video/") ? "video" : "arquivo";
+    const r = await db.rpc("at_whatsapp_receber", {
+      p: {
+        canal: "zenvia",
+        para: evento.para,
+        de: evento.de,
+        nome: evento.nome,
+        texto: evento.textos.join("\n"), // a legenda do arquivo já vem em textos
+        tipo,
+        arquivo: arquivo ? { nome: arquivo.nome ?? `[${tipo}]`, url: arquivo.url, mime: arquivo.mime } : null,
+        externoId: evento.zenviaId,
+      },
+    });
+    await db.from("at_eventos_zenvia").update({ processado: !r.error, erro: r.error ? r.error.message.slice(0, 500) : null })
+      .eq("tipo", String(p.type ?? "?")).eq("zenvia_id", zenviaId);
+    const conversaId = (r.data as { conversaId?: number } | null)?.conversaId ?? null;
+    if (conversaId) {
+      await despachar(db, { conversaId, limite: 10 }).catch((err) =>
+        console.error(JSON.stringify({ evento: "atendimento.despacho_falhou", erro: String(err).slice(0, 300) })));
+    }
   }
   return resposta(200, { ok: true, duplicado: ins.error?.code === "23505" });
 });

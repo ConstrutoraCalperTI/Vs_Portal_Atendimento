@@ -38,3 +38,12 @@ verify_jwt = false
 # Retorno do "Autorizar com Gmail": quem chama é o Google (sem JWT); a segurança é o state de uso único.
 [functions.portal_atendimento-google-oauth]
 verify_jwt = false
+
+# WhatsApp (Zenvia + OpenWA): ciclo do pg_cron (x-atendimento-chave) e "enviar agora"/administração do OpenWA
+# por pessoa logada (a função confere o token e a permissão).
+[functions.portal_atendimento-whatsapp]
+verify_jwt = false
+
+# Chamado pelo OpenWA (sem JWT): a função confere a assinatura X-OpenWA-Signature (segredo no Vault).
+[functions.portal_atendimento-openwa-webhook]
+verify_jwt = false
