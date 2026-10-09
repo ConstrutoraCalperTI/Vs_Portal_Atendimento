@@ -104,7 +104,7 @@ Correções encontradas pelos testes e incluídas nas migrations:
 | Service role (JWT/`sb_secret_`) | Histórico Git (todas as refs + stash) | Nenhum encontrado | — |
 | Service role | Bundle de produção (`dist/`) | Valor real do `.env` **não encontrado**. Sem source maps. | — |
 | `SUPABASE_SERVICE_ROLE_KEY` | `.env` local da máquina de desenvolvimento (fora do Git, ignorado) | Baixo: só local | Manter fora do `.env` do projeto se não for usada. As Edge Functions já recebem a chave do Supabase. |
-| Service role exposta na Vercel em 2026-09-28 (registrado no código) | Variável `VITE_*` na Vercel (incidente anterior) | Alto, se não foi trocada | **Confirmar que a chave secreta foi rotacionada** depois do incidente e que nenhuma variável `VITE_*` na Vercel (Production/Preview/Development) contém chave secreta. |
+| Service role exposta na Vercel em 2026-09-28 (registrado no código) | Variável `VITE_*` na Vercel (incidente anterior) | Encerrado | **Chave secreta rotacionada** (confirmado pelo responsável em 2026-10-09). A chave antiga não vale mais. |
 | "BEGIN PRIVATE KEY" | 4 arquivos (validação de formato e fixture de teste) | Nenhum: não há material de chave | — |
 
 ## Testes
