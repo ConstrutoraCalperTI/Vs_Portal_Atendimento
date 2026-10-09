@@ -1,14 +1,9 @@
-<<<<<<< HEAD
-import { AlertTriangle, Bell, CheckCircle2, Info, Send } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Bell, CheckCircle2, Info } from "lucide-react";
 import { Link } from "react-router";
-import { ADMIN_ROLE } from "../../../config/app";
 import { getMenuItem } from "../../../config/menuRegistry";
-import { useAccess } from "../../configuracoes/access/useAccess";
-import { ServiceError } from "../../configuracoes/services/types";
 import { KpiGer, Secao, Semaforo } from "../componentes";
 import { fmtNum } from "../graficos";
-import { useEnviarAlertas, useVisao } from "../hooks";
+import { useVisao } from "../hooks";
 import type { Alerta } from "../types";
 
 const NIVEIS: Record<Alerta["nivel"], { label: string; descricao: string; tom: "vermelho" | "amarelo" | "verde"; icone: typeof Bell }> = {
@@ -20,26 +15,28 @@ const NIVEIS: Record<Alerta["nivel"], { label: string; descricao: string; tom: "
 const sufixo = (unidade: string) => (unidade === "%" ? "%" : unidade === "h" ? " h" : ` ${unidade}`);
 const fmtComUnidade = (valor: number, unidade: string) => `${fmtNum(valor, unidade === "h" ? 1 : 0)}${sufixo(unidade)}`;
 
-/** Alertas: limites ultrapassados no recorte atual e os avisos automáticos no sino (dias úteis, 8h). */
+/** Alertas: antecipar problemas (vencimentos, atrasos, desvios e limites ultrapassados no recorte atual). */
 export function Alertas() {
   const v = useVisao();
-  const { role, isSuperAdmin } = useAccess();
-  const podeDisparar = isSuperAdmin || role === ADMIN_ROLE;
-  const enviar = useEnviarAlertas();
-  const [erro, setErro] = useState<string | null>(null);
   const base = getMenuItem("gestao_chamados_gerencial").path;
   const porNivel = (n: Alerta["nivel"]) => v.alertas.filter((a) => a.nivel === n);
   const criticos = porNivel("critico");
   const atencao = porNivel("atencao");
   const tomDe = (id: string) => (criticos.some((a) => a.id === id) ? "vermelho" : atencao.some((a) => a.id === id) ? "amarelo" : "verde");
+  const agora = v.agora.getTime();
+  const vencem24h = v.backlog.filter((t) => {
+    if (!t.slaSolucaoAte || t.slaPausadoDesde) return false;
+    const resta = Date.parse(t.slaSolucaoAte) - agora;
+    return resta > 0 && resta < 24 * 3_600_000;
+  }).length;
 
   return (
     <>
       <div className="ds-kpis">
         <KpiGer label="Alertas críticos" valor={fmtNum(criticos.length)} tom={criticos.length ? "vermelho" : "verde"} hint={criticos.length ? "Limite ultrapassado em mais de 10%" : "Nenhum limite ultrapassado"} />
         <KpiGer label="Em atenção" valor={fmtNum(atencao.length)} tom={atencao.length ? "amarelo" : "verde"} hint="Perto do limite" />
-        <KpiGer label="Regras verificadas" valor={fmtNum(v.alertas.length)} hint={`${porNivel("ok").length} dentro do limite`} />
         <KpiGer label="SLA vencido" valor={fmtNum(v.kpis.vencidos)} unidade="abertos" tom={tomDe("vencidos")} hint={`Limite: ${v.metas.vencidos_max}`} />
+        <KpiGer label="Vencem nas próximas 24 h" valor={fmtNum(vencem24h)} unidade="abertos" tom={vencem24h ? "amarelo" : "verde"} hint="Prazo de solução perto de estourar" />
         <KpiGer label="Sem responsável" valor={fmtNum(v.kpis.semResponsavel)} unidade="abertos" tom={tomDe("sem_responsavel")} hint={`Limite: ${v.metas.sem_responsavel_max}`} />
         <KpiGer label="Parados" valor={fmtNum(v.kpis.parados)} unidade="abertos" tom={v.kpis.parados ? "vermelho" : "verde"} hint={`Mais de ${v.metas.parado_dias} dias sem ação`} />
       </div>
@@ -72,68 +69,9 @@ export function Alertas() {
         );
       })}
 
-      <div className="ger-grid ger-grid--2">
-        <Secao titulo="Avisos no sino" subtitulo="O que chega como notificação, sem ninguém precisar abrir esta tela.">
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.6 }}>
-            <li>
-              <b>Quando:</b> dias úteis às 8h (horário de São Paulo), de forma automática.
-            </li>
-            <li>
-              <b>Para quem:</b> Admin, Super admin e quem tem acesso à visão gerencial, cada um só com os tickets que pode ver.
-            </li>
-            <li>
-              <b>Regras:</b> SLA vencido acima do limite, tickets sem responsável, backlog acima do limite e tickets parados.
-            </li>
-            <li>
-              <b>Sem repetição:</b> um aviso por regra, por pessoa e por dia; se já foi enviado hoje, não vai de novo.
-            </li>
-            <li>
-              <b>Limites:</b> os mesmos de <Link to={{ pathname: `${base}/indicadores`, search: location.search }}>Indicadores › Metas e limites</Link>.
-            </li>
-          </ul>
-          <p className="ger-nota">Os avisos olham a situação de agora, do backlog inteiro; os alertas acima usam o período e os filtros escolhidos.</p>
-        </Secao>
-        <Secao titulo="Enviar alertas agora" subtitulo={podeDisparar ? "Dispara a mesma rotina das 8h sem esperar o horário. Só Admin e Super admin." : "Só Admin e Super admin disparam os avisos fora do horário."}>
-          <div className="ger-acoes">
-            <button
-              type="button"
-              className="btn btn--primary"
-              disabled={!podeDisparar || enviar.isPending}
-              onClick={() => {
-                setErro(null);
-                enviar.mutate(undefined, { onError: (err) => setErro(err instanceof ServiceError ? err.message : "Não foi possível enviar os alertas. Tente de novo.") });
-              }}
-            >
-              <Send size={16} aria-hidden="true" /> {enviar.isPending ? "Enviando…" : "Enviar alertas agora"}
-            </button>
-            {enviar.isSuccess && (
-              <span className="ds-muted" style={{ fontSize: 13 }}>
-                {enviar.data === 0 ? "Nada novo para avisar: ou está tudo dentro dos limites, ou os avisos de hoje já foram enviados." : `${enviar.data} ${enviar.data === 1 ? "aviso criado" : "avisos criados"} no sino.`}
-              </span>
-            )}
-          </div>
-          {erro && (
-            <p className="ger-nota" role="alert">
-              {erro}
-            </p>
-          )}
-        </Secao>
-      </div>
+      <p className="ger-nota">
+        Os limites são os de <Link to={{ pathname: `${base}/indicadores`, search: location.search }}>Indicadores › Metas e limites</Link>. Para receber estes alertas sem abrir a tela (sino, dias úteis às 8h) e para disparar agora, veja <Link to={{ pathname: `${base}/notificacoes`, search: location.search }}>Notificações</Link>.
+      </p>
     </>
-=======
-import { Construction } from "lucide-react";
-import { EmptyState } from "../../configuracoes/components/EmptyState";
-import { Secao } from "../componentes";
-
-// Provisório (09/10/2026): o Gerencial.tsx já importava esta tela, mas o arquivo não foi enviado ao repositório e o
-// build (tsc -b) quebrava. Fica como "em construção" até a frente do menu gerencial entregar a versão real.
-
-/** Alertas: limites ultrapassados e avisos no sino (em construção). */
-export function Alertas() {
-  return (
-    <Secao titulo="Alertas" subtitulo="Limites ultrapassados e avisos no sino.">
-      <EmptyState icon={Construction} title="Página em construção" description="Os alertas de limites ultrapassados chegam em breve. Enquanto isso, veja a Visão Geral e a Gestão." />
-    </Secao>
->>>>>>> 222ae8ca0d00e1eb811d446617f4b74be8ac28e0
   );
 }

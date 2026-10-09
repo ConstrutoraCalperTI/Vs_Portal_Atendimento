@@ -17,11 +17,10 @@
 
 .ger-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 2px;
-  overflow-x: auto;
   border-bottom: 1px solid var(--line);
   margin: 4px 0 18px;
-  scrollbar-width: thin;
 }
 
 .ger-tabs__link {
