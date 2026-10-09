@@ -88,6 +88,21 @@ $$;
 grant execute on function storage.foldername(text) to anon, authenticated, service_role;
 
 create publication supabase_realtime;
+
+-- pg_cron e pg_net: só a assinatura (os testes não executam agendamentos nem HTTP).
+create schema cron;
+create table cron.job (jobid bigserial primary key, jobname text unique, schedule text, command text);
+create function cron.schedule(job_name text, schedule text, command text) returns bigint language sql as $$
+  insert into cron.job (jobname, schedule, command) values (job_name, schedule, command)
+  on conflict (jobname) do update set schedule = excluded.schedule, command = excluded.command
+  returning jobid
+$$;
+create function cron.unschedule(job_name text) returns boolean language sql as $$
+  with d as (delete from cron.job where jobname = job_name returning 1) select exists (select 1 from d)
+$$;
+create schema net;
+create function net.http_post(url text, body jsonb default '{}'::jsonb, params jsonb default '{}'::jsonb,
+  headers jsonb default '{}'::jsonb, timeout_milliseconds integer default 5000) returns bigint language sql as $$ select 1::bigint $$;
 `;
 
 export interface TestDb {

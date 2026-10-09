@@ -868,3 +868,6 @@ begin
   end loop;
 end;
 $$;
+
+-- Helpers internos dos gatilhos (20261007210000_..._gatilhos.sql) ficaram com EXECUTE para PUBLIC/anon.
+revoke execute on function portal_atendimento.ch_gatilho_em_execucao(), portal_atendimento.ch_gatilho_exigir_admin() from public, anon;
