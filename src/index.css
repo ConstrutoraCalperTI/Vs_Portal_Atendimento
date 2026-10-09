@@ -6,6 +6,9 @@
   --ink: #17181c;
   --muted: #6b7280;
   --line: #e9eaee;
+  /* Borda de campo de formulário: contraste ~3:1 com o branco (WCAG 1.4.11), para cada campo se destacar do card. */
+  --input-border: #8d939e;
+  --input-border-hover: #5f6672;
   --page: #f5f6f8;
   --surface: #ffffff;
   --table-head: #fafafa;
@@ -250,7 +253,7 @@ html [data-sonner-toaster][data-sonner-theme="light"] {
 .input {
   height: 44px;
   padding: 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
@@ -260,6 +263,15 @@ html [data-sonner-toaster][data-sonner-theme="light"] {
 
 .input--sm {
   height: 40px;
+}
+
+.input:hover:not(:disabled):not(:focus-visible) {
+  border-color: var(--input-border-hover);
+}
+
+.input:disabled {
+  border-color: var(--line);
+  background: var(--page);
 }
 
 .input:focus-visible {
