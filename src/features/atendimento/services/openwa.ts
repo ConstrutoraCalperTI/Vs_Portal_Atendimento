@@ -23,6 +23,8 @@ export interface SetorWhatsapp {
   nome: string;
   waIdentificar: boolean;
   waSoCorporativo: boolean;
+  /** Respostas automáticas (boas-vindas, identificação, encerramento) nos números OpenWA do setor. */
+  waRespostasAuto: boolean;
   msgNaoCorporativo: string;
   gestor: boolean;
   numeros: NumeroWhatsapp[];
@@ -90,7 +92,7 @@ export interface OpenwaService {
   painel(): Promise<PainelOpenwa>;
   salvarConexao(p: { url: string; chave?: string }): Promise<void>;
   salvarNumero(p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }): Promise<void>;
-  salvarSetor(p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; msgNaoCorporativo: string }): Promise<void>;
+  salvarSetor(p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; msgNaoCorporativo: string }): Promise<void>;
   salvarWhatsappAtendente(p: { usuarioId: string; whatsapp: string }): Promise<void>;
   linhas(busca: string): Promise<Linha[]>;
   importarLinhas(linhas: LinhaImportar[]): Promise<{ salvas: number; invalidas: string[] }>;
@@ -157,6 +159,7 @@ const mockPainel: PainelOpenwa = {
       nome: "TI",
       waIdentificar: true,
       waSoCorporativo: true,
+      waRespostasAuto: true,
       msgNaoCorporativo: "Este canal atende apenas linhas corporativas da Calper. Envie sua solicitação por e-mail.",
       gestor: true,
       numeros: [{ id: 1, numero: "5521900000001", canal: "openwa", sessao: null, grupo: null, grupoNome: null }],

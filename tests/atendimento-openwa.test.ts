@@ -69,8 +69,16 @@ describe("lerEventoOpenwa", () => {
     expect(e).toMatchObject({ tipo: "grupo", grupo: "120363000@g.us", autor: "5521977770000", texto: "Limpei a fila", citadoId: "true_120363000@g.us_3EBNOVO_5521900000001@c.us" });
   });
 
-  it("ignora as próprias mensagens, status, outros eventos e remetente @lid sem telefone", () => {
-    expect(lerEventoOpenwa(envelope({ id: "a", from: "5521@c.us", body: "x", fromMe: true })).tipo).toBe("ignorado");
+  it("message.sent no privado = resposta digitada no celular do número (para quem foi)", () => {
+    const e = lerEventoOpenwa(
+      envelope({ id: "true_5521967337314@c.us_3EBME", from: "5521969740876@c.us", to: "5521967337314@c.us", chatId: "5521967337314@c.us", body: "RESOLVIDO", fromMe: true, isGroup: false }, { event: "message.sent" }),
+    );
+    expect(e).toMatchObject({ tipo: "propria", para: "5521967337314", texto: "RESOLVIDO", externoId: "true_5521967337314@c.us_3EBME" });
+    const grupo = lerEventoOpenwa(envelope({ id: "b", chatId: "120363000@g.us", body: "oi", fromMe: true, isGroup: true }, { event: "message.sent" }));
+    expect(grupo.tipo).toBe("ignorado");
+  });
+
+  it("ignora status, outros eventos e remetente @lid sem telefone", () => {
     expect(lerEventoOpenwa(envelope({ id: "a", from: "status@broadcast", body: "x" })).tipo).toBe("ignorado");
     expect(lerEventoOpenwa(envelope({ id: "a" }, { event: "session.status" })).tipo).toBe("ignorado");
     const lid = lerEventoOpenwa(envelope({ id: "a", from: "1234567890123@lid", chatId: "1234567890123@lid", body: "oi", isGroup: false, isLidSender: true }));

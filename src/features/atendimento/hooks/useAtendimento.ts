@@ -186,7 +186,7 @@ export const useSalvarConexaoOpenwa = () => useMudaOpenwa((p: { url: string; cha
 export const useSalvarNumeroWhatsapp = () =>
   useMudaOpenwa((p: { numeroId: number; canal: "zenvia" | "openwa"; sessao: string | null; grupo: string | null; grupoNome: string | null }) => openwaService.salvarNumero(p));
 export const useSalvarSetorWhatsapp = () =>
-  useMudaOpenwa((p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; msgNaoCorporativo: string }) => openwaService.salvarSetor(p));
+  useMudaOpenwa((p: { setorId: number; waIdentificar: boolean; waSoCorporativo: boolean; waRespostasAuto: boolean; msgNaoCorporativo: string }) => openwaService.salvarSetor(p));
 export const useSalvarWhatsappAtendente = () => useMudaOpenwa((p: { usuarioId: string; whatsapp: string }) => openwaService.salvarWhatsappAtendente(p));
 export const useTestarOpenwa = () => useMudaOpenwa(() => openwaService.testar());
 export const useImportarLinhas = () => useMudaOpenwa((linhas: LinhaImportar[]) => openwaService.importarLinhas(linhas));

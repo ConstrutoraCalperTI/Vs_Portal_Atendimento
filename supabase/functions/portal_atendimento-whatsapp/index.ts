@@ -124,15 +124,22 @@ Deno.serve(async (req) => {
         return json((info.participants ?? []).map((p) => ({ id: p.id, numero: (p.number ?? p.id.split("@")[0] ?? "").replace(/\D/g, ""), nome: p.name ?? null, admin: Boolean(p.isAdmin) })));
       }
       case "openwa_webhook": {
-        // Cadastra (uma vez) o webhook desta sessão apontando para o portal, com o segredo do Vault.
+        // Cadastra (ou atualiza) o webhook desta sessão apontando para o portal, com o segredo do Vault.
+        // message.received: o que chega; message.sent: o que o dono do número digita no próprio celular.
         const s = sessaoValida(corpo.sessao);
         const destino = `${Deno.env.get("SUPABASE_URL")}/functions/v1/${WEBHOOK}`;
+        const eventos = ["message.received", "message.sent"];
         const lista = await chamarOpenwa(fetch, ow.url, ow.chave, "GET", `/sessions/${s}/webhooks`);
-        const existentes = Array.isArray(lista.corpo) ? (lista.corpo as { url?: string }[]) : [];
-        if (existentes.some((w) => w.url === destino)) return json({ criado: false, url: destino });
+        const existentes = Array.isArray(lista.corpo) ? (lista.corpo as { id?: string; url?: string; events?: string[] }[]) : [];
+        const atual = existentes.find((w) => w.url === destino);
+        if (atual?.id) {
+          if (eventos.every((x) => atual.events?.includes(x))) return json({ criado: false, url: destino });
+          exigirOk(await chamarOpenwa(fetch, ow.url, ow.chave, "PUT", `/sessions/${s}/webhooks/${encodeURIComponent(atual.id)}`, { events: eventos, secret: ow.segredo }));
+          return json({ criado: false, atualizado: true, url: destino });
+        }
         exigirOk(await chamarOpenwa(fetch, ow.url, ow.chave, "POST", `/sessions/${s}/webhooks`, {
           url: destino,
-          events: ["message.received"],
+          events: eventos,
           secret: ow.segredo,
           retryCount: 3,
         }));

@@ -55,6 +55,8 @@ export type EventoOpenwa =
       midia: { tipo: "imagem" | "audio" | "video" | "arquivo"; nome: string | null; mime: string } | null;
     }
   | { tipo: "grupo"; chave: string | null; sessao: string; externoId: string; grupo: string; autor: string; texto: string; citadoId: string | null }
+  /** Digitada no próprio celular do número do sistema (message.sent) para um colaborador, no privado. */
+  | { tipo: "propria"; chave: string | null; sessao: string; externoId: string; para: string; texto: string }
   | { tipo: "ignorado"; chave: string | null; sessao: string | null; motivo: string };
 
 /** Telefone (só dígitos) de um JID "5521…@c.us" / "@s.whatsapp.net"; @lid usa o senderPhone resolvido. */
@@ -79,20 +81,30 @@ const MIDIA: Record<string, "imagem" | "audio" | "video" | "arquivo"> = {
   document: "arquivo",
 };
 
-/** Lê o envelope do webhook. Só mensagens recebidas; as próprias (fromMe) e status/broadcast são ignoradas. */
+/**
+ * Lê o envelope do webhook. message.received: privada ou do grupo interno. message.sent (fromMe) no privado: o que o
+ * dono do número digitou no celular (o eco do que o sistema enviou é descartado no banco). Status/broadcast: ignorados.
+ */
 export function lerEventoOpenwa(envelope: unknown): EventoOpenwa {
   const e = (envelope ?? {}) as Record<string, unknown>;
   const chave = (e.idempotencyKey as string | undefined) ?? (e.deliveryId as string | undefined) ?? null;
   const sessao = (e.sessionId as string | undefined) ?? null;
   const ign = (motivo: string): EventoOpenwa => ({ tipo: "ignorado", chave, sessao, motivo });
   if (!sessao) return ign("sem sessão");
-  if (e.event !== "message.received") return ign(`evento ${String(e.event ?? "?")}`);
+  if (e.event !== "message.received" && e.event !== "message.sent") return ign(`evento ${String(e.event ?? "?")}`);
   const d = (e.data ?? {}) as Record<string, unknown>;
-  if (d.fromMe === true) return ign("mensagem própria");
-  if (d.isStatusBroadcast === true || /status@broadcast/.test(String(d.from ?? ""))) return ign("status");
+  if (d.isStatusBroadcast === true || /status@broadcast/.test(String(d.from ?? "") + String(d.to ?? ""))) return ign("status");
   const externoId = String(d.id ?? "");
   if (!externoId) return ign("sem id");
   const texto = String(d.body ?? "").trim();
+
+  if (e.event === "message.sent" || d.fromMe === true) {
+    if (d.isGroup === true) return ign("mensagem própria no grupo");
+    const para = telefoneDoJid((d.chatId as string) ?? (d.to as string)) ?? telefoneDoJid(d.to as string);
+    if (!para) return ign("destino sem telefone");
+    if (!texto) return ign("mensagem própria sem texto");
+    return { tipo: "propria", chave, sessao, externoId, para, texto };
+  }
 
   if (d.isGroup === true) {
     const grupo = String(d.chatId ?? d.from ?? "");

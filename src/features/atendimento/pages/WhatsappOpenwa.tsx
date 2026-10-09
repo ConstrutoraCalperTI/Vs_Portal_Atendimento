@@ -65,8 +65,8 @@ export function WhatsappOpenwa() {
     <div className="ow">
       <Notice icon={Info}>
         O colaborador manda mensagem no <b>privado</b> para o número do sistema do setor. Cada pedido vira ticket e é repassado ao <b>grupo interno</b> dos
-        atendentes; quem responde <b>citando</b> o pedido (no celular ou pelo portal) fala com o colaborador. As respostas automáticas seguem a chave de Integrações ›
-        Zenvia WhatsApp (hoje: <b>{p.conexao.autoLigado ? "ligadas" : "desligadas"}</b>{p.conexao.travaPiloto ? ", só para os telefones do piloto" : ""}).
+        atendentes; quem responde <b>citando</b> o pedido (no celular ou pelo portal) fala com o colaborador. Escrever <b>RESOLVIDO</b> (no portal, no grupo ou no
+        celular do número) resolve o ticket e avisa o colaborador com o número do chamado. As respostas automáticas do OpenWA são ligadas em cada setor, abaixo.
       </Notice>
       <Conexao p={p} />
       {p.setores.length === 0 && (
@@ -171,14 +171,24 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
   const salvar = useSalvarSetorWhatsapp();
   const [ident, setIdent] = useState(s.waIdentificar);
   const [soCorp, setSoCorp] = useState(s.waSoCorporativo);
+  const [auto, setAuto] = useState(s.waRespostasAuto);
   const [msg, setMsg] = useState(s.msgNaoCorporativo);
-  const mudou = ident !== s.waIdentificar || soCorp !== s.waSoCorporativo || msg !== s.msgNaoCorporativo;
+  const mudou = ident !== s.waIdentificar || soCorp !== s.waSoCorporativo || auto !== s.waRespostasAuto || msg !== s.msgNaoCorporativo;
 
   return (
     <section className="card at-sec" aria-labelledby={`${ids}-t`}>
       <h2 id={`${ids}-t`}>Setor {s.nome}</h2>
 
       <div className="ow-regras">
+        <label className="ow-chave">
+          <Switch.Root className="switch" checked={auto} disabled={!s.gestor} onCheckedChange={setAuto}>
+            <Switch.Thumb className="switch__thumb" />
+          </Switch.Root>
+          <span>
+            <b>Respostas automáticas</b>
+            <small>Boas-vindas, perguntas de identificação e a mensagem final com o número do chamado. Vale para os números OpenWA do setor (a Zenvia segue a chave dela).</small>
+          </span>
+        </label>
         <label className="ow-chave">
           <Switch.Root className="switch" checked={ident} disabled={!s.gestor} onCheckedChange={setIdent}>
             <Switch.Thumb className="switch__thumb" />
@@ -207,7 +217,7 @@ function SetorCard({ s, p }: { s: SetorWhatsapp; p: PainelOpenwa }) {
               type="button"
               className="btn btn--primary btn--sm"
               disabled={salvar.isPending}
-              onClick={() => salvar.mutate({ setorId: s.id, waIdentificar: ident, waSoCorporativo: soCorp, msgNaoCorporativo: msg }, { onSuccess: () => toast.success("Regras salvas"), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar.")) })}
+              onClick={() => salvar.mutate({ setorId: s.id, waIdentificar: ident, waSoCorporativo: soCorp, waRespostasAuto: auto, msgNaoCorporativo: msg }, { onSuccess: () => toast.success("Regras salvas"), onError: (e) => toast.error(erroMsg(e, "Não foi possível salvar.")) })}
             >
               Salvar regras
             </button>

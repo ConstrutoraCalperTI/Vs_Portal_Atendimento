@@ -2,6 +2,7 @@
 // X-OpenWA-Signature (HMAC-SHA256 do corpo bruto com o segredo do Vault, cadastrado pela ação openwa_webhook).
 //   privado com o número do sistema → at_whatsapp_receber (identificação, fila, ticket, repasse)
 //   grupo interno de atendentes     → at_grupo_receber (resposta citando o pedido vai ao colaborador)
+//   digitada no celular do número   → at_whatsapp_propria (resposta do atendente; "RESOLVIDO" encerra resolvendo)
 // Depois envia na hora o que ficou pendente (resposta automática, repasse). Idempotente pelo idempotencyKey.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -72,11 +73,19 @@ Deno.serve(async (req) => {
       resultado = r.data;
       // Resposta ao colaborador + confirmação/dica no grupo (a dica não tem conversa).
       await despachar(db, { limite: 10 });
+    } else if (ev.tipo === "propria") {
+      const r = await db.rpc("at_whatsapp_propria", { p: { sessao: ev.sessao, para: ev.para, texto: ev.texto, externoId: ev.externoId } });
+      if (r.error) throw new Error(r.error.message);
+      resultado = r.data;
+      const conversaId = (r.data as { conversaId?: number } | null)?.conversaId ?? null;
+      if (conversaId) await despachar(db, { conversaId, limite: 10 });
     }
   } catch (err) {
     resultado = { estado: "erro", erro: String(err instanceof Error ? err.message : err).slice(0, 500) };
     console.error(JSON.stringify({ evento: "openwa.processar_falhou", ...(resultado as Record<string, unknown>) }));
   }
-  await db.from("at_eventos_openwa").update({ resultado }).eq("id", ins.data.id);
+  // Evento que não é atendimento (ex.: conversa pessoal do dono do número) não guarda o conteúdo.
+  const ignorado = ev.tipo === "ignorado" || ["ignorado", "eco"].includes(String((resultado as { estado?: string } | null)?.estado ?? ""));
+  await db.from("at_eventos_openwa").update({ resultado, ...(ignorado ? { payload: {} } : {}) }).eq("id", ins.data.id);
   return resposta(200, { ok: true });
 });

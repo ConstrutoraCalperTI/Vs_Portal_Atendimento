@@ -110,6 +110,13 @@ Migrations (renomeadas para depois das de segurança do login, que vieram no mer
 - [x] Edge Functions publicadas (09/10/2026, Wagner): whatsapp, openwa-webhook, zenvia-webhook, ia.
 - [ ] OpenWA no ar, sessão pareada, webhook cadastrado e teste ponta a ponta com um celular — **Wagner**.
 
+### Ajustes do 1º teste real (09/10/2026, tarde)
+- [x] `20261009160000`: lista de Conversas falhava para usuário logado (subselect em `at_pessoas` sem SELECT) e o ticket vinha vazio (RLS de `at_atendimentos`): funções auxiliares `at_nome_pessoa` e `at_ticket_do_atendimento`.
+- [x] `20261009170000`: respostas automáticas do OpenWA por setor (`wa_respostas_auto`, ligada por padrão; a Zenvia segue a chave dela); identificação procura também em **Pessoas**; pessoa com e-mail @domínio conta como colaborador; **RESOLVIDO** (portal, grupo interno ou celular do número) resolve o ticket; mensagem final sempre com o número do chamado; resposta digitada no próprio celular entra na conversa e no ticket (`at_whatsapp_propria`, evento `message.sent`).
+- [x] Edge: `message.sent` no webhook (o "Cadastrar webhook" atualiza o existente) e conteúdo de evento ignorado não fica guardado.
+- [x] Ensaio local (4 roteiros, inclusive como usuário logado), 135 testes, `deno check`.
+- [ ] Aplicar `…160000` e `…170000` (`db query`), publicar `portal_atendimento-whatsapp` e `portal_atendimento-openwa-webhook`, clicar de novo em **Cadastrar webhook** — **Wagner**.
+
 ## 4. Como ativar (Wagner)
 
 1. **Banco:** `npx supabase link --project-ref cjofyxgcuvpeeslkfawu` e, para cada migration nova, na ordem,
