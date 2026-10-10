@@ -92,10 +92,12 @@
 }
 
 /* ---------- Kanban ---------- */
+/* Colunas como faixas com borda (pedido do Wagner, 10/10/2026): a linha separa as colunas mesmo vazias,
+   e todas têm a mesma altura (stretch + altura mínima). */
 .ch-board {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: stretch;
   overflow-x: auto;
   padding-bottom: 10px;
 }
@@ -106,15 +108,17 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px;
+  min-height: 60vh;
   max-height: 72vh;
   overflow-y: auto;
   border-radius: 12px;
   background: var(--neutral-bg);
-  border: 2px solid transparent;
+  border: 1px solid var(--input-border);
 }
 
 .ch-col--over {
   border-color: var(--brand);
+  outline: 1px solid var(--brand);
   background: var(--brand-soft);
 }
 
