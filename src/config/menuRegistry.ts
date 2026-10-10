@@ -157,6 +157,15 @@ const definitions = [
     parent: "gestao_atendimento",
   },
   {
+    id: "gestao_atendimento_calperdesk",
+    label: "CalperDESK",
+    path: "/gestao-atendimento/calperdesk",
+    icon: Ticket,
+    group: "principal",
+    description: "App do solicitante: departamentos no app, quadros, avisos do carrossel, soluções publicadas e simular solicitante.",
+    parent: "gestao_atendimento",
+  },
+  {
     id: "gestao_atendimento_fila",
     label: "Fila e horários",
     path: "/gestao-atendimento/fila",

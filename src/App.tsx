@@ -31,6 +31,8 @@ const RedefinirSenha = lazy(() =>
   import("./features/auth/pages/RedefinirSenha").then((m) => ({ default: m.RedefinirSenha })),
 );
 const OAuthRetorno = lazy(() => import("./features/atendimento/pages/OAuthRetorno").then((m) => ({ default: m.OAuthRetorno })));
+// CalperDESK: app do solicitante em /app (fora do layout; tem o próprio login).
+const CalperDeskApp = lazy(() => import("./features/calperdesk/CalperDeskApp").then((m) => ({ default: m.CalperDeskApp })));
 const TrocarSenha = lazy(() =>
   import("./features/configuracoes/pages/TrocarSenha").then((m) => ({ default: m.TrocarSenha })),
 );
@@ -69,6 +71,8 @@ function App() {
       <Route path="/redefinir-senha" element={<Standalone><RedefinirSenha /></Standalone>} />
       {/* Fim do "Autorizar com Gmail" (janela aberta pela tela da conta de e-mail). */}
       <Route path="/oauth/google" element={<Standalone><OAuthRetorno /></Standalone>} />
+      {/* CalperDESK: sem sessão mostra o login do app; com sessão, o app (perfil Solicitante no 1º acesso). */}
+      <Route path="/app/*" element={<Standalone><CalperDeskApp /></Standalone>} />
 
       {DesignSystem && <Route path="/design-system" element={<Standalone><DesignSystem /></Standalone>} />}
 

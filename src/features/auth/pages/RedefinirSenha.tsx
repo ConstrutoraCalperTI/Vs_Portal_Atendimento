@@ -8,6 +8,16 @@ import { LOGIN_PATH } from "../RequireSession";
 import { useAuthSession } from "../useAuthSession";
 import "../authCard.css";
 
+function voltarParaApp(): boolean {
+  try {
+    const sim = localStorage.getItem("calperdesk-voltar") === "1";
+    localStorage.removeItem("calperdesk-voltar");
+    return sim;
+  } catch {
+    return false;
+  }
+}
+
 /** Destino do link de "Esqueci minha senha": o Supabase abre uma sessão de recuperação e aqui se define a nova senha. */
 export function RedefinirSenha() {
   const { status, signOut } = useAuthSession();
@@ -37,7 +47,8 @@ export function RedefinirSenha() {
                 // Encerra a sessão aberta pelo link: a pessoa entra de novo, já com a senha nova.
                 await signOut();
                 toast.success("Senha alterada com sucesso. Entre com a nova senha.");
-                navigate(LOGIN_PATH, { replace: true });
+                // Quem pediu o link pelo CalperDESK volta para o login do app.
+                navigate(voltarParaApp() ? "/app" : LOGIN_PATH, { replace: true });
               }}
             />
           </>

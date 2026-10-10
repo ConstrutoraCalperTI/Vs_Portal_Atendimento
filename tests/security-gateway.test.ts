@@ -273,6 +273,27 @@ describe("recuperação de senha", () => {
     await send({ body: { action: "recover", email: "quem@calper.com.br" } });
     expect(auth.resetPasswordForEmail).toHaveBeenCalledWith("quem@calper.com.br", `${ORIGIN}/redefinir-senha`);
   });
+
+  it("primeiro acesso (CalperDESK): cria a conta corporativa antes de mandar o link, com a mesma resposta", async () => {
+    const { send, auth } = setup();
+    const ensureAccount = vi.fn(async () => ({ created: true }));
+    auth.ensureAccount = ensureAccount;
+    const response = await send({ body: { action: "recover", email: "novo@calper.com.br" } });
+    expect(ensureAccount).toHaveBeenCalledWith("novo@calper.com.br");
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledWith("novo@calper.com.br", `${ORIGIN}/redefinir-senha`);
+    expect(response.json).toEqual({ success: true, message: PUBLIC_RECOVER_MESSAGE });
+    expect(response.elapsed).toBe(900);
+  });
+
+  it("primeiro acesso: nunca cria conta fora do domínio nem com o limite atingido", async () => {
+    for (const [email, scenario] of [["fora@gmail.com", {}], ["quem@calper.com.br", { begin: { allowed: false, reason: "SEC_AUTH_020", risk: 0 } }]] as const) {
+      const { send, auth } = setup(scenario as Scenario);
+      const ensureAccount = vi.fn(async () => ({ created: true }));
+      auth.ensureAccount = ensureAccount;
+      await send({ body: { action: "recover", email } });
+      expect(ensureAccount).not.toHaveBeenCalled();
+    }
+  });
 });
 
 describe("classificação do erro do Auth", () => {

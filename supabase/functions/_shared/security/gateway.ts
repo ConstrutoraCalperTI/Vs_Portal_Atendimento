@@ -46,6 +46,11 @@ export interface AuthBackend {
   resetPasswordForEmail(email: string, redirectTo: string): Promise<{ ok: boolean; code?: string; status?: number }>;
   /** Derruba uma sessão recém-criada que não pôde ser registrada (fail closed). */
   revokeSession(accessToken: string): Promise<void>;
+  /**
+   * Primeiro acesso (CalperDESK): cria a conta, sem senha, quando o e-mail corporativo ainda não existe no Auth.
+   * O link de "redefinir senha" enviado em seguida é o que cria a senha. Só é chamada para o domínio corporativo.
+   */
+  ensureAccount?(email: string): Promise<{ created: boolean }>;
 }
 
 export interface GatewayConfig {
@@ -241,6 +246,10 @@ export async function handleAuthRequest(req: Request, deps: GatewayDeps): Promis
       entry.outcome = gate.allowed ? "allowed" : "denied";
       entry.reason = gate.reason;
       if (gate.allowed && gate.attemptId) {
+        if (domainAllowed && auth.ensureAccount) {
+          const account = await auth.ensureAccount(email);
+          entry.account_created = account.created;
+        }
         const redirectBase = origin ?? config.allowedOrigins[0];
         const sent = await auth.resetPasswordForEmail(email, `${redirectBase}${config.resetPath}`);
         entry.auth_status = sent.status;

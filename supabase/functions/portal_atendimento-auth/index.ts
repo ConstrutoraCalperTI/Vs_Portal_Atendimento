@@ -83,6 +83,11 @@ const auth: AuthBackend = {
   async revokeSession(accessToken) {
     await admin.auth.admin.signOut(accessToken, "local");
   },
+  // Primeiro acesso do CalperDESK: conta sem senha, e-mail já confirmado (o link de redefinir prova a caixa).
+  async ensureAccount(email) {
+    const { error } = await admin.auth.admin.createUser({ email, email_confirm: true });
+    return { created: !error };
+  },
 };
 
 // Log estruturado: request id, ação, resultado e código interno. Nunca e-mail, senha ou token.
