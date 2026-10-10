@@ -284,7 +284,9 @@ button.cd-tile { font: inherit; cursor: pointer; }
 .cd-emps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 20px 24px; }
 .cd-emp { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 1px solid var(--cd-borda); background: var(--cd-vidro); color: #fff; text-decoration: none; }
 .cd-emp:hover { border-color: var(--cd-ouro-b); }
-.cd-emp img, .cd-emp__sem { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: grid; place-items: center; font-size: 32px; background: #11152c; }
+.cd-emp__foto { position: relative; display: block; aspect-ratio: 4 / 3; background: #11152c; }
+.cd-emp__sem { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; }
+.cd-emp__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cd-emp__txt { padding: 8px 10px 10px; display: grid; gap: 2px; }
 .cd-emp__txt b { font-size: 13px; }
 .cd-emp__txt small { font-size: 11px; color: var(--cd-txt-3); }

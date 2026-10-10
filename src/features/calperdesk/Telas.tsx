@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent, type SyntheticEvent } from "react"
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { Cabecalho, Carregando, SubCabecalho, useCd } from "./CalperDeskApp";
-import { calperdesk, formatarTelefone, iniciais, type Aviso, type ChamadoResumo, type Departamento } from "./service";
+import { calperdesk, formatarTelefone, iniciais, type Aviso, type ChamadoResumo, type Departamento, type Empreendimento } from "./service";
 
 // ---------- utilitários de exibição ----------
 
@@ -145,10 +145,21 @@ function SeletorSetor({ setores, atual, motivo, onEscolher, onFechar }: { setore
 // Fotos do www.calper.com.br: o site recusa (403) foto pedida com o endereço de outro site no Referer (proteção contra
 // hotlink); sem Referer, entrega. Por isso as <img> dos empreendimentos usam referrerPolicy="no-referrer".
 
-/** Foto do site que não carregou: some (fica o fundo do cartão), sem o ícone de imagem quebrada. */
-const esconderFoto = (e: SyntheticEvent<HTMLImageElement>) => {
-  e.currentTarget.style.visibility = "hidden";
-};
+/**
+ * Foto do empreendimento: primeiro a cópia reduzida do app (public/empreendimentos/<slug>.webp, ~100 KB, gerada por
+ * `npm run fotos:empreendimentos`); sem cópia, a foto do site (pesada: 0,5 a 7 MB); sem as duas, some.
+ */
+function FotoEmpreendimento({ e, className }: { e: Empreendimento; className?: string }) {
+  const slug = e.link.replace(/\/+$/, "").split("/").pop() ?? "";
+  const fontes = [/^[a-z0-9-]+$/.test(slug) ? `/empreendimentos/${slug}.webp` : null, e.imagem].filter((x): x is string => Boolean(x));
+  const [i, setI] = useState(0);
+  const proxima = (ev: SyntheticEvent<HTMLImageElement>) => {
+    if (i + 1 < fontes.length) setI(i + 1);
+    else ev.currentTarget.style.visibility = "hidden";
+  };
+  if (fontes.length === 0) return null;
+  return <img className={className} src={fontes[i]} alt="" referrerPolicy="no-referrer" onError={proxima} />;
+}
 
 /** Carrossel do topo: avisos (do setor escolhido ou gerais); sem aviso, os empreendimentos do site da Calper. */
 function Carrossel({ avisos, setor }: { avisos: Aviso[]; setor: Departamento | null }) {
@@ -189,7 +200,7 @@ function Carrossel({ avisos, setor }: { avisos: Aviso[]; setor: Departamento | n
   if (s.tipo === "emp") {
     return (
       <section className="cd-hero cd-hero--foto" aria-roledescription="carrossel" aria-label="Empreendimentos Calper">
-        {s.e.imagem && <img key={s.e.imagem} className="cd-hero__img" src={s.e.imagem} alt="" referrerPolicy="no-referrer" onError={esconderFoto} />}
+        <FotoEmpreendimento key={s.e.link} e={s.e} className="cd-hero__img" />
         <div className="cd-hero__txt" aria-live="polite">
           <small>Empreendimento</small>
           <h2>Empreendimentos Calper</h2>
@@ -406,7 +417,10 @@ export function Avisos() {
             <div className="cd-emps">
               {emp.data!.map((e) => (
                 <a key={e.link} className="cd-emp" href={e.link} target="_blank" rel="noreferrer noopener">
-                  {e.imagem ? <img src={e.imagem} alt="" loading="lazy" referrerPolicy="no-referrer" onError={esconderFoto} /> : <span className="cd-emp__sem" aria-hidden="true">🏢</span>}
+                  <span className="cd-emp__foto">
+                    <span className="cd-emp__sem" aria-hidden="true">🏢</span>
+                    <FotoEmpreendimento e={e} />
+                  </span>
                   <span className="cd-emp__txt">
                     <b>{e.nome}</b>
                     {e.info && <small>{e.info}</small>}
