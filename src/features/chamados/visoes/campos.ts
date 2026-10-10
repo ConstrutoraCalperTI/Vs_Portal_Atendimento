@@ -1,4 +1,4 @@
-import type { CampoAgrupamento, CampoId, ColunaLista, Operador, Ordenacao } from "./types";
+import type { CampoAgrupamento, CampoColuna, CampoId, ColunaLista, ColunaPadrao, Operador, Ordenacao } from "./types";
 
 // Lista fechada de campos das condições (D3). A RPC ch_visao_salvar valida contra a mesma lista; a tela
 // monta o seletor de valores conforme `valores`.
@@ -71,7 +71,7 @@ export const AGRUPAMENTOS: Record<CampoAgrupamento, string> = {
   prioridade: "Prioridade",
 };
 
-export const COLUNAS_LISTA: Record<ColunaLista, string> = {
+export const COLUNAS_LISTA: Record<ColunaPadrao, string> = {
   solicitante: "Solicitante",
   status: "Status",
   responsavel: "Responsável",
@@ -81,6 +81,64 @@ export const COLUNAS_LISTA: Record<ColunaLista, string> = {
   equipe: "Equipe",
   prioridade: "Prioridade",
   criado: "Criado em",
+  tags: "Tags",
+  recebido_em: "Recebido em",
+  categoria: "Categoria",
+  setor: "Departamento",
+  contato: "Contato do solicitante",
+  criado_por: "Criado por",
+  atualizado: "Atualizado em",
+  primeira_resposta: "1ª resposta",
+  prazo_resposta: "Prazo de 1ª resposta",
+  prazo_solucao: "Prazo de solução",
+  encerrado: "Encerrado em",
 };
+
+/** Colunas que dependem de ch_lista_extras (a Lista só busca quando a visão usa alguma). */
+export const COLUNAS_COM_EXTRAS: ReadonlySet<ColunaLista> = new Set<ColunaLista>([
+  "categoria", "setor", "contato", "criado_por", "atualizado", "primeira_resposta", "prazo_resposta", "prazo_solucao", "encerrado",
+]);
+
+export const ehCampoAdicional = (c: ColunaLista): c is `campo:${string}` => c.startsWith("campo:");
+export const precisaExtras = (colunas: readonly ColunaLista[]) => colunas.some((c) => COLUNAS_COM_EXTRAS.has(c) || ehCampoAdicional(c));
+
+/** Rótulo de qualquer coluna (campo adicional sem cadastro: a própria chave). */
+export function rotuloColuna(c: ColunaLista, campos: readonly CampoColuna[] = []): string {
+  if (ehCampoAdicional(c)) {
+    const chave = c.slice(6);
+    return campos.find((x) => x.chave === chave)?.rotulo ?? chave;
+  }
+  return COLUNAS_LISTA[c] ?? c;
+}
+
+const FMT_DATA = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
+const FMT_DATA_HORA = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+
+/** Valor de um campo adicional como texto da célula ("" = vazio). */
+export function formatarCampo(tipo: CampoColuna["tipo"] | undefined, valor: unknown): string {
+  if (valor === null || valor === undefined || valor === "") return "";
+  if (Array.isArray(valor)) return valor.map((v) => String(v)).filter(Boolean).join(", ");
+  switch (tipo) {
+    case "sim_nao":
+      return valor === true || valor === "true" || valor === "sim" ? "Sim" : valor === false || valor === "false" || valor === "nao" ? "Não" : String(valor);
+    case "data": {
+      // "2026-10-10" é data sem fuso: mostra o dia como está.
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(valor));
+      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+      const d = new Date(String(valor));
+      return Number.isNaN(d.getTime()) ? String(valor) : FMT_DATA.format(d);
+    }
+    case "data_hora": {
+      const d = new Date(String(valor));
+      return Number.isNaN(d.getTime()) ? String(valor) : FMT_DATA_HORA.format(d);
+    }
+    case "numero": {
+      const n = Number(valor);
+      return Number.isFinite(n) ? n.toLocaleString("pt-BR") : String(valor);
+    }
+    default:
+      return typeof valor === "object" ? JSON.stringify(valor) : String(valor);
+  }
+}
 
 export const PRIORIDADES = ["Urgente", "Alta", "Normal", "Baixa"] as const;

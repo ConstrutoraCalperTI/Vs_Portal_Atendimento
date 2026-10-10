@@ -66,7 +66,37 @@ export interface ConfigKanban {
 }
 
 export type CampoAgrupamento = "equipe" | "responsavel" | "status" | "servico" | "origem" | "prioridade";
-export type ColunaLista = "solicitante" | "status" | "responsavel" | "sla" | "origem" | "servico" | "equipe" | "prioridade" | "criado";
+/** Colunas padrão da Lista. As do segundo grupo vêm de ch_lista_extras (docs/PLANO-visoes-colunas.md, Fase 2). */
+export type ColunaPadrao =
+  | "solicitante" | "status" | "responsavel" | "sla" | "origem" | "servico" | "equipe" | "prioridade" | "criado"
+  | "tags" | "recebido_em" | "categoria" | "setor" | "contato" | "criado_por" | "atualizado" | "primeira_resposta"
+  | "prazo_resposta" | "prazo_solucao" | "encerrado";
+/** Coluna da Lista: padrão ou campo adicional ("campo:<chave>" do cadastro de Campos adicionais). */
+export type ColunaLista = ColunaPadrao | `campo:${string}`;
+
+/** Dados extras das colunas novas (RPC ch_lista_extras). */
+export interface CampoColuna {
+  chave: string;
+  rotulo: string;
+  tipo: "texto" | "texto_longo" | "numero" | "data" | "data_hora" | "lista" | "multipla" | "sim_nao" | "usuario";
+  interno: boolean;
+}
+export interface ExtrasTicket {
+  categoria: string | null;
+  setor: string | null;
+  contato: string | null;
+  criado_por: string | null;
+  atualizado_em: string | null;
+  primeira_resposta_em: string | null;
+  sla_resposta_ate: string | null;
+  sla_solucao_ate: string | null;
+  encerrado_em: string | null;
+  campos: Record<string, unknown>;
+}
+export interface ListaExtras {
+  campos: CampoColuna[];
+  tickets: Record<string, ExtrasTicket>;
+}
 
 export interface ConfigAgrupamento {
   por: CampoAgrupamento | null;

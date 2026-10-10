@@ -23,13 +23,15 @@ import type { DashboardTicket } from "../../dashboard/types";
 import { ComPainel, useAtualizarTicket } from "../../dashboard/useDashboardData";
 import type { DashboardPayload } from "../../dashboard/types";
 import { ServiceError } from "../../configuracoes/services/types";
-import { useStatusTickets, useVisoesDisponiveis } from "../hooks";
+import { useListaExtras, useSalvarVisao, useStatusTickets, useVisoesDisponiveis } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import { atendeCondicoes, colunaDoTicket, ordenarTickets } from "../visoes/avaliar";
-import { AGRUPAMENTOS, COLUNAS_LISTA } from "../visoes/campos";
+import { AGRUPAMENTOS, ehCampoAdicional, formatarCampo, precisaExtras, rotuloColuna } from "../visoes/campos";
 import { usePermissoesVisoes } from "../visoes/permissoes";
-import type { ColunaKanban, ColunaLista, StatusRef, Visao } from "../visoes/types";
+import type { CampoColuna, ColunaKanban, ColunaLista, ConfigAgrupamento, ListaExtras, StatusRef, Visao } from "../visoes/types";
 import { coordenadasPorColuna } from "../dnd";
+import { ColunasLista } from "./ColunasLista";
+import { DialogoColuna, NovaColunaBotao, TituloColuna } from "./KanbanEdicao";
 import "./Chamados.css";
 
 // Gestão de Chamados › Tickets: os tickets na visão escolhida (Kanban ou Lista). As visões vêm de
@@ -77,6 +79,7 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
   const abrir = (id: number) => navigate(`${getMenuItem("gestao_chamados_tickets").path}/${id}`);
   const [escolha, setEscolha] = useState<{ ticketId: number; coluna: ColunaKanban } | null>(null);
   const toast = useToast();
+  const salvarVisao = useSalvarVisao();
   const now = useMemo(() => new Date(data.generated_at), [data.generated_at]);
 
   const lista = visoes.data ?? [];
@@ -118,6 +121,26 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
     );
   }
 
+  /** Edição do Kanban no quadro (Admin/Super admin): grava as colunas na própria visão. */
+  function salvarColunas(v: Visao, colunas: ColunaKanban[], mensagem: string, aoSalvar?: () => void) {
+    gravar(v, { kanban: { ...v.kanban, colunas } }, mensagem, aoSalvar);
+  }
+
+  /** Grava a visão com o que mudou (colunas do Kanban ou da Lista); Admin e Super admin. */
+  function gravar(v: Visao, mudanca: { kanban?: Visao["kanban"]; agrupamento?: ConfigAgrupamento }, mensagem: string, aoSalvar?: () => void) {
+    const { id, nome, habilitada, tipo, padrao, equipes, condicoes, kanban, agrupamento } = v;
+    salvarVisao.mutate(
+      { id, nome, habilitada, tipo, padrao, equipes, condicoes, kanban: mudanca.kanban ?? kanban, agrupamento: mudanca.agrupamento ?? agrupamento },
+      {
+        onSuccess: () => {
+          toast.show(`${mensagem} Salvo para todos que usam esta visão.`);
+          aoSalvar?.();
+        },
+        onError: (e) => toast.show(e instanceof ServiceError ? e.message : "Não foi possível salvar."),
+      },
+    );
+  }
+
   function soltarNaColuna(ticketId: number, coluna: ColunaKanban) {
     if (coluna.status.length === 0) {
       toast.show(`A coluna "${coluna.nome}" não tem status. Peça ao administrador para configurá-la.`);
@@ -152,6 +175,14 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
         <input className="input ch-search" type="search" aria-label="Buscar tickets" placeholder="Buscar nº, assunto ou solicitante..." value={busca} onChange={(e) => setBusca(e.target.value)} />
         {visao && <span className="ch-count" aria-live="polite">{daVisao.length} tickets nesta visão</span>}
         <span className="ch-toolbar__spacer" />
+        {perm.podeConfigurar && visao?.tipo === "lista" && (
+          <ColunasLista
+            key={visao.id}
+            visao={visao}
+            salvando={salvarVisao.isPending}
+            onSalvar={(colunas, aoSalvar) => gravar(visao, { agrupamento: { ...visao.agrupamento, colunas } }, "Colunas da lista atualizadas.", aoSalvar)}
+          />
+        )}
         {perm.podeConfigurar && (
           <Link className="btn btn--outline" to={configurarPath}>
             <Settings2 size={16} aria-hidden="true" />
@@ -177,6 +208,9 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
           podeMover={podeMover}
           onAbrir={abrir}
           onSoltar={soltarNaColuna}
+          editavel={perm.podeConfigurar}
+          salvando={salvarVisao.isPending}
+          onSalvarColunas={(colunas, mensagem, aoSalvar) => salvarColunas(visao, colunas, mensagem, aoSalvar)}
         />
       ) : (
         <Listagem visao={visao} tickets={daVisao} meuId={me.id} servicoNome={ctx.servicoNome} onAbrir={abrir} />
@@ -223,13 +257,24 @@ interface QuadroProps {
   podeMover: (t: DashboardTicket) => boolean;
   onAbrir: (id: number) => void;
   onSoltar: (ticketId: number, coluna: ColunaKanban) => void;
+  /** Admin/Super admin: renomear, escolher status, mover, remover e "+ Coluna" no próprio quadro. */
+  editavel: boolean;
+  salvando: boolean;
+  onSalvarColunas: (colunas: ColunaKanban[], mensagem: string, aoSalvar?: () => void) => void;
 }
 
-function Quadro({ visao, tickets, statusCadastro, meuId, podeMover, onAbrir, onSoltar }: QuadroProps) {
+function Quadro({ visao, tickets, statusCadastro, meuId, podeMover, onAbrir, onSoltar, editavel, salvando, onSalvarColunas }: QuadroProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: coordenadasPorColuna }));
   const [arrastando, setArrastando] = useState<DashboardTicket | null>(null);
   const arrastavel = visao.kanban.arrastar === "mudar_status";
   const colunas = visao.kanban.colunas;
+  /** Diálogo de coluna: "nova" ou a coluna cujo status está sendo escolhido. */
+  const [dialogo, setDialogo] = useState<ColunaKanban | "nova" | null>(null);
+  const mover = (i: number, d: -1 | 1) => {
+    const c = [...colunas];
+    [c[i], c[i + d]] = [c[i + d], c[i]];
+    onSalvarColunas(c, `Coluna "${colunas[i].nome}" movida.`);
+  };
 
   const porColuna = useMemo(() => {
     const mapa = new Map<string, DashboardTicket[]>(colunas.map((c) => [c.id, []]));
@@ -260,27 +305,55 @@ function Quadro({ visao, tickets, statusCadastro, meuId, podeMover, onAbrir, onS
       }}
     >
       <div className="ch-board">
-        {colunas.map((c) => (
-          <Coluna key={c.id} coluna={c} tickets={porColuna.get(c.id) ?? []} statusCadastro={statusCadastro}>
+        {colunas.map((c, i) => (
+          <Coluna
+            key={c.id}
+            coluna={c}
+            tickets={porColuna.get(c.id) ?? []}
+            statusCadastro={statusCadastro}
+            titulo={
+              <TituloColuna
+                key={c.nome}
+                coluna={c}
+                total={porColuna.get(c.id)?.length ?? 0}
+                editavel={editavel}
+                primeira={i === 0}
+                ultima={i === colunas.length - 1}
+                salvando={salvando}
+                onRenomear={(nome) => onSalvarColunas(colunas.map((x) => (x.id === c.id ? { ...x, nome } : x)), `Coluna renomeada para "${nome}".`)}
+                onStatus={() => setDialogo(c)}
+                onMover={(d) => mover(i, d)}
+                onRemover={() => onSalvarColunas(colunas.filter((x) => x.id !== c.id), `Coluna "${c.nome}" removida.`)}
+              />
+            }
+          >
             {(porColuna.get(c.id) ?? []).map((t) => (
               <Cartao key={t.id} t={t} meuId={meuId} arrastavel={arrastavel && podeMover(t)} onAbrir={onAbrir} />
             ))}
           </Coluna>
         ))}
+        {editavel && <NovaColunaBotao onClick={() => setDialogo("nova")} disabled={salvando} />}
       </div>
+      {dialogo && (
+        <DialogoColuna
+          coluna={dialogo === "nova" ? null : dialogo}
+          colunas={colunas}
+          status={statusCadastro}
+          salvando={salvando}
+          onFechar={() => setDialogo(null)}
+          onSalvar={(lista, mensagem) => onSalvarColunas(lista, mensagem, () => setDialogo(null))}
+        />
+      )}
       <DragOverlay>{arrastando && <CartaoConteudo t={arrastando} meuId={meuId} overlay onAbrir={() => undefined} />}</DragOverlay>
     </DndContext>
   );
 }
 
-function Coluna({ coluna, tickets, statusCadastro, children }: { coluna: ColunaKanban; tickets: DashboardTicket[]; statusCadastro: StatusTicket[]; children: ReactNode }) {
+function Coluna({ coluna, tickets, statusCadastro, titulo, children }: { coluna: ColunaKanban; tickets: DashboardTicket[]; statusCadastro: StatusTicket[]; titulo: ReactNode; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: coluna.id });
   return (
     <section ref={setNodeRef} className={`ch-col${isOver ? " ch-col--over" : ""}`} aria-label={`${coluna.nome}: ${tickets.length} tickets`}>
-      <div className="ch-col__head">
-        {coluna.nome}
-        <span className="ch-col__count">{tickets.length}</span>
-      </div>
+      {titulo}
       {coluna.status.length > 0 && <div className="ch-col__sub">{coluna.status.map((r) => rotuloRef(r, statusCadastro)).join(" · ")}</div>}
       {children}
     </section>
@@ -338,7 +411,21 @@ function valorGrupo(t: DashboardTicket, por: NonNullable<Visao["agrupamento"]["p
 
 const DATA = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
 
-function Celula({ coluna, t, meuId, servicoNome }: { coluna: ColunaLista; t: DashboardTicket; meuId: string; servicoNome: (id: number) => string }) {
+type Extras = ListaExtras["tickets"][string] | undefined;
+
+/** Data em ISO formatada; vazio = "—". */
+function Data({ iso }: { iso: string | null | undefined }) {
+  return iso ? <>{DATA.format(new Date(iso))}</> : <span className="ch-vazio">—</span>;
+}
+
+const vazio = <span className="ch-vazio">—</span>;
+
+function Celula({ coluna, t, x, campos, meuId, servicoNome }: { coluna: ColunaLista; t: DashboardTicket; x: Extras; campos: CampoColuna[]; meuId: string; servicoNome: (id: number) => string }) {
+  if (ehCampoAdicional(coluna)) {
+    const chave = coluna.slice(6);
+    const texto = formatarCampo(campos.find((c) => c.chave === chave)?.tipo, x?.campos[chave]);
+    return texto ? <>{texto}</> : vazio;
+  }
   switch (coluna) {
     case "solicitante":
       return <>{t.requester}</>;
@@ -358,13 +445,93 @@ function Celula({ coluna, t, meuId, servicoNome }: { coluna: ColunaLista; t: Das
       return <>{t.prioridade}</>;
     case "criado":
       return <>{DATA.format(new Date(t.criado_em))}</>;
+    case "tags":
+      return t.tags.length ? <>{t.tags.join(", ")}</> : vazio;
+    case "recebido_em":
+      return <>{t.recebido_em}</>;
+    case "categoria":
+      return x?.categoria ? <>{x.categoria}</> : vazio;
+    case "setor":
+      return x?.setor ? <>{x.setor}</> : vazio;
+    case "contato":
+      return x?.contato ? <>{x.contato}</> : vazio;
+    case "criado_por":
+      return x?.criado_por ? <>{x.criado_por}</> : vazio;
+    case "atualizado":
+      return <Data iso={x?.atualizado_em} />;
+    case "primeira_resposta":
+      return <Data iso={x?.primeira_resposta_em} />;
+    case "prazo_resposta":
+      return <Data iso={x?.sla_resposta_ate} />;
+    case "prazo_solucao":
+      return <Data iso={x?.sla_solucao_ate} />;
+    case "encerrado":
+      return <Data iso={x?.encerrado_em ?? t.closed_at} />;
+  }
+}
+
+const ORDEM_PRIORIDADE = ["Urgente", "Alta", "Normal", "Baixa"];
+
+/** Valor para ordenar pelo cabeçalho: número e data viram número; o resto, texto. Vazio vai para o fim. */
+function valorOrdem(coluna: ColunaLista, t: DashboardTicket, x: Extras, campos: CampoColuna[], meuId: string, servicoNome: (id: number) => string): string | number | null {
+  const data = (iso: string | null | undefined) => (iso ? Date.parse(iso) : null);
+  const texto = (v: string | null | undefined) => (v ? v.toLowerCase() : null);
+  if (ehCampoAdicional(coluna)) {
+    const chave = coluna.slice(6);
+    const tipo = campos.find((c) => c.chave === chave)?.tipo;
+    const v = x?.campos[chave];
+    if (v === undefined || v === null || v === "") return null;
+    if (tipo === "numero") return Number(v);
+    if (tipo === "data" || tipo === "data_hora") return Date.parse(String(v));
+    return formatarCampo(tipo, v).toLowerCase();
+  }
+  switch (coluna) {
+    case "solicitante": return texto(t.requester);
+    case "status": return rotuloStatus(t.status, t.justificativa).toLowerCase();
+    case "responsavel": return t.owner ? (t.owner.id === meuId ? "você" : t.owner.name.toLowerCase()) : null;
+    case "sla": return t.sla_due_minutes;
+    case "origem": return t.origin;
+    case "servico": return texto(servicoNome(t.service_id));
+    case "equipe": return texto(t.team);
+    case "prioridade": return ORDEM_PRIORIDADE.indexOf(t.prioridade);
+    case "criado": return Date.parse(t.criado_em);
+    case "tags": return texto(t.tags.join(", "));
+    case "recebido_em": return texto(t.recebido_em);
+    case "categoria": return texto(x?.categoria);
+    case "setor": return texto(x?.setor);
+    case "contato": return texto(x?.contato);
+    case "criado_por": return texto(x?.criado_por);
+    case "atualizado": return data(x?.atualizado_em);
+    case "primeira_resposta": return data(x?.primeira_resposta_em);
+    case "prazo_resposta": return data(x?.sla_resposta_ate);
+    case "prazo_solucao": return data(x?.sla_solucao_ate);
+    case "encerrado": return data(x?.encerrado_em ?? t.closed_at);
   }
 }
 
 function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visao; tickets: DashboardTicket[]; meuId: string; servicoNome: (id: number) => string; onAbrir: (id: number) => void }) {
   const [pagina, setPagina] = useState(0);
+  /** Ordenação pelo cabeçalho: só nesta tela, não salva na visão. */
+  const [ordem, setOrdem] = useState<{ coluna: ColunaLista; asc: boolean } | null>(null);
   const { por, ordemGrupos, ordenar, porPagina, colunas } = visao.agrupamento;
-  const ordenados = ordenarTickets(tickets, ordenar);
+  const extras = useListaExtras(precisaExtras(colunas));
+  const campos = useMemo(() => extras.data?.campos ?? [], [extras.data]);
+  const extrasDe = (t: DashboardTicket): Extras => extras.data?.tickets[String(t.id)];
+
+  const ordenados = useMemo(() => {
+    const base = ordenarTickets(tickets, ordenar);
+    if (!ordem) return base;
+    const chave = new Map(base.map((t) => [t.id, valorOrdem(ordem.coluna, t, extras.data?.tickets[String(t.id)], campos, meuId, servicoNome)]));
+    return [...base].sort((a, b) => {
+      const va = chave.get(a.id) ?? null;
+      const vb = chave.get(b.id) ?? null;
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      const r = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
+      return ordem.asc ? r : -r;
+    });
+  }, [tickets, ordenar, ordem, extras.data, campos, meuId, servicoNome]);
 
   const grupos = useMemo(() => {
     if (!por) return [{ nome: "", itens: ordenados }];
@@ -393,9 +560,25 @@ function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visa
           <thead>
             <tr>
               <th scope="col">Ticket</th>
-              {colunas.map((c) => (
-                <th key={c} scope="col">{COLUNAS_LISTA[c]}</th>
-              ))}
+              {colunas.map((c) => {
+                const ativa = ordem?.coluna === c;
+                return (
+                  <th key={c} scope="col" aria-sort={ativa ? (ordem.asc ? "ascending" : "descending") : "none"}>
+                    <button
+                      type="button"
+                      className="ch-th-ordem"
+                      title="Ordenar (só para você)"
+                      onClick={() => {
+                        setPagina(0);
+                        setOrdem(ativa ? (ordem.asc ? { coluna: c, asc: false } : null) : { coluna: c, asc: true });
+                      }}
+                    >
+                      {rotuloColuna(c, campos)}
+                      {ativa && <span className="ch-th-ordem__seta" aria-hidden="true">{ordem.asc ? "▲" : "▼"}</span>}
+                    </button>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -409,7 +592,7 @@ function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visa
                   </td>
                   {colunas.map((c) => (
                     <td key={c}>
-                      <Celula coluna={c} t={t} meuId={meuId} servicoNome={servicoNome} />
+                      <Celula coluna={c} t={t} x={extrasDe(t)} campos={campos} meuId={meuId} servicoNome={servicoNome} />
                     </td>
                   ))}
                 </tr>

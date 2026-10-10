@@ -46,6 +46,11 @@ export function useKanbanPadrao() {
   return useQuery({ queryKey: [...VISOES, "kanban-padrao"], queryFn: () => visoesService.kanbanPadrao() });
 }
 
+/** Colunas novas da Lista (ch_lista_extras): só busca quando a visão usa alguma ou o seletor de colunas abre. */
+export function useListaExtras(enabled: boolean) {
+  return useQuery({ queryKey: [...VISOES, "lista-extras"], queryFn: () => visoesService.listaExtras(), enabled, staleTime: 30_000 });
+}
+
 export function useEquipesVisoes() {
   return useQuery({ queryKey: [...VISOES, "equipes"], queryFn: () => visoesService.equipes(), staleTime: 60_000 });
 }
