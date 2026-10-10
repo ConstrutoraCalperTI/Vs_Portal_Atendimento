@@ -1,6 +1,11 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
-import { Panel, PanelHeader } from "../../components/ds/Panel";
+import { Panel } from "../../components/ds/Panel";
+import { iconeDe, type Tema } from "./icones";
+// O Panel vem direto do arquivo (sem o índice do design system), então os estilos .ds-* precisam ser carregados
+// aqui; sem isso, abrir o Gerencial antes da Visão geral deixava os cards de KPI um embaixo do outro.
+import "../../components/ds/ds.css";
+import "../../components/ds/components.css";
 import { fmtNum, fmtPct, Sparkline } from "./graficos";
 import type { Semaforo as Tom } from "./types";
 
@@ -26,6 +31,15 @@ export function Variacao({ pct, maiorMelhor, sufixo = "vs. anterior" }: { pct: n
   );
 }
 
+/** Ícone num quadradinho colorido (o tema vem do assunto, ver icones.ts). */
+export function IconeTema({ icone: Icone, tema, tamanho = 15 }: { icone: LucideIcon; tema: Tema; tamanho?: number }) {
+  return (
+    <span className={`ger-ico ger-ico--${tema}`} aria-hidden="true">
+      <Icone size={tamanho} strokeWidth={2.2} />
+    </span>
+  );
+}
+
 interface KpiGerProps {
   label: string;
   valor: string;
@@ -35,13 +49,19 @@ interface KpiGerProps {
   variacao?: number | null;
   maiorMelhor?: boolean;
   spark?: number[];
+  /** Ícone do card; sem ele, vem do assunto do rótulo. */
+  icone?: LucideIcon;
 }
 
-export function KpiGer({ label, valor, unidade, hint, tom, variacao, maiorMelhor = true, spark }: KpiGerProps) {
+export function KpiGer({ label, valor, unidade, hint, tom, variacao, maiorMelhor = true, spark, icone }: KpiGerProps) {
+  const auto = iconeDe(label);
   return (
-    <div className="ger-kpi">
+    <div className={`ger-kpi${tom ? ` ger-kpi--${tom}` : ""}`} title={hint && variacao !== undefined ? hint : undefined}>
       <div className="ger-kpi__topo">
-        <span>{label}</span>
+        <span className="ger-kpi__rotulo">
+          <IconeTema icone={icone ?? auto.icone} tema={auto.tema} tamanho={13} />
+          <span>{label}</span>
+        </span>
         {tom && <Semaforo tom={tom} />}
       </div>
       <strong className="ger-kpi__valor">
@@ -56,11 +76,31 @@ export function KpiGer({ label, valor, unidade, hint, tom, variacao, maiorMelhor
   );
 }
 
-export function Secao({ titulo, subtitulo, aside, children, className }: { titulo: string; subtitulo?: ReactNode; aside?: ReactNode; children: ReactNode; className?: string }) {
+interface SecaoProps {
+  titulo: string;
+  subtitulo?: ReactNode;
+  aside?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  /** Ícone do título; sem ele, vem do assunto do título. */
+  icone?: LucideIcon;
+}
+
+export function Secao({ titulo, subtitulo, aside, children, className, icone }: SecaoProps) {
   const id = useId();
+  const auto = iconeDe(titulo);
   return (
     <Panel aria-labelledby={id} className={["ger-panel", className].filter(Boolean).join(" ")}>
-      <PanelHeader title={titulo} titleId={id} subtitle={subtitulo} aside={aside} inset={false} />
+      <div className="ger-panel__head">
+        <IconeTema icone={icone ?? auto.icone} tema={auto.tema} tamanho={16} />
+        <div className="ger-panel__textos">
+          <h2 className="ds-h2" id={id}>
+            {titulo}
+          </h2>
+          {subtitulo && <p className="ds-subtitle">{subtitulo}</p>}
+        </div>
+        {aside && <div className="ger-panel__aside">{aside}</div>}
+      </div>
       {children}
     </Panel>
   );

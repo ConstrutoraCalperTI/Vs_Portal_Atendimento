@@ -21,8 +21,8 @@ const StatusCadastro = lazy(() => import("../features/chamados/pages/StatusCadas
 const Gerencial = lazy(() => import("../features/gerencial/pages/Gerencial").then((m) => ({ default: m.Gerencial })));
 
 // Gestão de Chamados: item `gestao_chamados` do menuRegistry, com as seções Visão geral, Tickets, Conversas
-// (WhatsApp ao vivo), Monitor de atendimento e Status (`parent: "gestao_chamados"`). Configurar visões não é seção: abre pelo botão da tela Tickets, só para
-// Admin e Super admin (docs/PLANO-tickets-visoes.md, D1).
+// (WhatsApp ao vivo), Monitor de atendimento, Status e Gerencial (`parent: "gestao_chamados"`, nesta ordem). Configurar
+// visões não é seção: abre pelo botão da tela Tickets, só para Admin e Super admin (docs/PLANO-tickets-visoes.md, D1).
 const page = getMenuItem("gestao_chamados");
 
 const SECOES: { id: MenuItemId; segmento: string }[] = [
@@ -30,14 +30,16 @@ const SECOES: { id: MenuItemId; segmento: string }[] = [
   { id: "gestao_chamados_tickets", segmento: "tickets" },
   { id: "gestao_atendimento_central", segmento: "conversas" },
   { id: "gestao_chamados_monitor", segmento: "monitor" },
-  { id: "gestao_chamados_gerencial", segmento: "gerencial" },
   { id: "gestao_chamados_status", segmento: "status" },
+  { id: "gestao_chamados_gerencial", segmento: "gerencial" },
 ];
 
 export function GestaoChamados() {
   const { hasPermission } = useAccess();
   const { podeConfigurar } = usePermissoesVisoes();
-  const { search } = useLocation();
+  const { search, pathname } = useLocation();
+  // Dentro do Gerencial as abas próprias (Dashboard Gerencial, KPIs…) substituem a barra de seções.
+  const noGerencial = pathname.startsWith(getMenuItem("gestao_chamados_gerencial").path);
   const liberadas = SECOES.filter((s) => hasPermission(s.id)).map((s) => ({ ...s, item: getMenuItem(s.id) }));
   const pode = (id: MenuItemId) => hasPermission(id);
 
@@ -46,7 +48,7 @@ export function GestaoChamados() {
       <Breadcrumb items={[{ label: "Início", to: "/home" }, { label: page.label }]} />
       <PageHeader title={page.label} description={page.description} />
 
-      {liberadas.length > 1 && (
+      {liberadas.length > 1 && !noGerencial && (
         <nav className="section-nav" aria-label={`Seções de ${page.label}`}>
           {liberadas.map(({ id, item }) => {
             const Icone = item.icon;

@@ -28,12 +28,13 @@ import type { Indicador, Produtividade } from "./calculos";
 
 const GERENCIAL = ["chamados", "gerencial"] as const;
 
-export function useGerencialDados() {
+/** `ativo = false` não carrega (o sino do topo só carrega para quem tem acesso ao Gerencial). */
+export function useGerencialDados(ativo = true) {
   const { user } = useAccess();
   return useQuery({
     queryKey: [...GERENCIAL, user?.id],
     queryFn: () => gerencialService.carregar(),
-    enabled: Boolean(user),
+    enabled: Boolean(user) && ativo,
     staleTime: 60_000,
     refetchInterval: 120_000,
     refetchOnWindowFocus: true,
@@ -207,4 +208,21 @@ export function useVisao(): Visao {
   const v = useContext(VisaoContext);
   if (!v) throw new Error("useVisao precisa estar dentro de <VisaoProvider>.");
   return v;
+}
+
+// ---------- Alertas para o sino do topo ----------
+
+/**
+ * Alertas do Gerencial para o sino: os mesmos limites da tela Alertas, sobre os últimos 30 dias e sem filtros.
+ * Só carrega para quem tem acesso ao Gerencial; reaproveita o cache da tela (mesma consulta).
+ */
+export function useAlertasGerenciais(ativo: boolean): { alertas: Alerta[]; carregando: boolean; erro: boolean } {
+  const dados = useGerencialDados(ativo);
+  const alertasAtivos = useMemo(() => {
+    if (!dados.data) return [];
+    const hoje = dia(dados.data.generated_at);
+    const filtros: Filtros = { ...periodoDoPreset("30d", hoje), setor: "", equipe: "", origem: "" };
+    return montarVisao(dados.data, filtros).alertas.filter((a) => a.nivel !== "ok");
+  }, [dados.data]);
+  return { alertas: alertasAtivos, carregando: ativo && dados.isPending, erro: dados.isError };
 }

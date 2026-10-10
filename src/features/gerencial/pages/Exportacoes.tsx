@@ -36,7 +36,7 @@ export function Exportacoes() {
               <Printer size={16} aria-hidden="true" /> Esta tela em PDF
             </button>
           </div>
-          <p className="ger-nota">O PDF usa a impressão do navegador: escolha "Salvar como PDF". Para o relatório executivo, imprima a tela Estratégico.</p>
+          <p className="ger-nota">O PDF usa a impressão do navegador: escolha "Salvar como PDF". Para o relatório executivo, imprima a tela Relatórios Executivos.</p>
         </Secao>
         <Secao titulo="Dados brutos (JSON)" subtitulo="Os tickets do recorte, no mesmo formato da API, para outras ferramentas.">
           <div className="ger-acoes">

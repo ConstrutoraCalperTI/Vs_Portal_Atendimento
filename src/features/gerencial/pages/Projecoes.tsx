@@ -80,7 +80,7 @@ export function Projecoes() {
           <Tabela colunas={colunas} linhas={linhas} chave={(l) => l.equipe} ordemInicial={{ chave: "previstas", desc: true }} />
         </Secao>
         <Secao titulo="Como a projeção é feita" subtitulo="Método simples e explicável.">
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.6 }}>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.55 }}>
             <li><b>Entradas:</b> tendência linear dos últimos 56 dias × fator do dia da semana (segunda costuma ter mais).</li>
             <li><b>Capacidade:</b> média de resolvidos por dia útil no mesmo intervalo; zero nos fins de semana.</li>
             <li><b>Backlog:</b> dia a dia, backlog + entradas previstas − capacidade.</li>

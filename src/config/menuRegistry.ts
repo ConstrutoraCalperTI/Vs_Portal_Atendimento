@@ -121,15 +121,6 @@ const definitions = [
     parent: "gestao_chamados",
   },
   {
-    id: "gestao_chamados_gerencial",
-    label: "Gerencial",
-    path: "/gestao-chamados/gerencial",
-    icon: BarChart3,
-    group: "principal",
-    description: "Visão gerencial e estratégica: KPIs, metas, relatórios, análises, projeções, alertas e insights sobre os chamados.",
-    parent: "gestao_chamados",
-  },
-  {
     id: "gestao_chamados_status",
     label: "Status",
     path: "/gestao-chamados/status",
@@ -138,6 +129,15 @@ const definitions = [
     description: "Cadastro dos status de ticket e das justificativas de cada um.",
     parent: "gestao_chamados",
     adminOnly: true,
+  },
+  {
+    id: "gestao_chamados_gerencial",
+    label: "Gerencial",
+    path: "/gestao-chamados/gerencial",
+    icon: BarChart3,
+    group: "principal",
+    description: "Visão gerencial e estratégica dos chamados: dashboards, KPIs, relatórios, indicadores, gráficos, alertas, notificações, projeções, comparativos, ranking, exportações, relatórios executivos, insights e recomendações por IA.",
+    parent: "gestao_chamados",
   },
   {
     id: "gestao_atendimento",
