@@ -1,7 +1,7 @@
 import type { Json } from "../../lib/database.types";
 import { central, supabase } from "../../lib/supabase";
-import { APP_SCHEMA } from "../../config/app";
-import { fromPostgrest } from "../configuracoes/services/supabase/errors";
+import { APP_SCHEMA, edgeFunction } from "../../config/app";
+import { fromFunction, fromPostgrest } from "../configuracoes/services/supabase/errors";
 import { ServiceError } from "../configuracoes/services/types";
 
 // CalperDESK: app do solicitante (docs/PLANO-calperdesk.md). Regras no banco (RPCs cd_*): só os próprios tickets,
@@ -124,6 +124,14 @@ export interface Solucao {
   servico: string | null;
 }
 
+/** Empreendimento do site www.calper.com.br (Edge portal_atendimento-calper-site, com cache). */
+export interface Empreendimento {
+  nome: string;
+  info: string;
+  imagem: string | null;
+  link: string;
+}
+
 export interface NovoChamado {
   setorId: number;
   servicoId: number | null;
@@ -206,6 +214,12 @@ export const calperdesk = {
   responder: (id: number, p: { texto: string; anexos: Anexo[] }) => rpc<void>("cd_chamado_responder", { p_id: id, p: json(p) }),
   confirmar: (id: number, resolveu: boolean, comentario: string | null) =>
     rpc<void>("cd_chamado_confirmar", { p_id: id, p_resolveu: resolveu, p_comentario: comentario }),
+
+  async empreendimentos(): Promise<Empreendimento[]> {
+    const { data, error } = await supabase.functions.invoke(edgeFunction("calper-site"), { body: {} });
+    if (error) throw await fromFunction(error);
+    return (data as { itens?: Empreendimento[] } | null)?.itens ?? [];
+  },
 
   /** Envia o arquivo para a pasta do usuário (o banco confere a pasta e se o arquivo existe). */
   async enviarArquivo(usuarioId: string, file: File): Promise<Anexo> {

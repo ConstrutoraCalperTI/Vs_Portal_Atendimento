@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, ChevronRight, ClipboardList, Lightbulb, Megaphone, MessageCircle, PlusCircle, User } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
-import { Link, Navigate, useParams } from "react-router";
+import { Building2, ChevronRight, ClipboardList, Lightbulb, Megaphone, MessageCircle, PlusCircle, User } from "lucide-react";
+import { useEffect, useState, type FormEvent, type SyntheticEvent } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { Cabecalho, Carregando, SubCabecalho, useCd } from "./CalperDeskApp";
 import { calperdesk, formatarTelefone, iniciais, type Aviso, type ChamadoResumo, type Departamento } from "./service";
@@ -78,91 +78,140 @@ const TIPO: Record<Aviso["tipo"], string> = { manutencao: "Manutenção", alerta
 
 // ---------- telas ----------
 
-/** 1ª tela: identificação (do login) e escolha do departamento. */
-export function Departamentos() {
-  const { entrada } = useCd();
-  const primeiro = entrada.nome.split(" ")[0];
+// ---------- setor escolhido (vale na sessão do navegador) ----------
+
+const SETOR_KEY = "calperdesk-setor";
+
+function lerSetor(): string | null {
+  try {
+    return sessionStorage.getItem(SETOR_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function guardarSetor(id: number | null) {
+  try {
+    if (id === null) sessionStorage.removeItem(SETOR_KEY);
+    else sessionStorage.setItem(SETOR_KEY, String(id));
+  } catch {
+    // navegador sem armazenamento: o setor vale só nesta tela
+  }
+}
+
+/** /app/d/:setorId (endereço antigo do início): escolhe o setor e volta para a página inicial. */
+export function EscolherSetorPelaUrl() {
+  const { setorId } = useParams();
+  guardarSetor(Number(setorId) || null);
+  return <Navigate to="/app" replace />;
+}
+
+/** Lista de setores (folha que sobe na página inicial). */
+function SeletorSetor({ setores, atual, motivo, onEscolher, onFechar }: { setores: Departamento[]; atual: number | null; motivo: string | null; onEscolher: (s: Departamento) => void; onFechar: () => void }) {
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onFechar();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onFechar]);
   return (
-    <>
-      <Cabecalho />
-      <div className="cd-bv">
-        <h1>Olá, {primeiro} 👋</h1>
-        <p>Com qual departamento você precisa falar?</p>
+    <div className="cd-folha" role="presentation" onClick={onFechar}>
+      <div className="cd-folha__caixa" role="dialog" aria-modal="true" aria-labelledby="cd-folha-t" onClick={(e) => e.stopPropagation()}>
+        <span className="cd-folha__puxador" aria-hidden="true" />
+        <h2 id="cd-folha-t">Com qual setor você precisa falar?</h2>
+        {motivo && <p className="cd-folha__motivo">{motivo}</p>}
+        {setores.length === 0 ? (
+          <p className="cd-vazio">Nenhum setor disponível no app ainda. Fale com a TI.</p>
+        ) : (
+          <div className="cd-deptos" style={{ padding: 0 }}>
+            {setores.map((s, i) => (
+              <button key={s.id} type="button" className={`cd-depto${s.id === atual ? " cd-depto--on" : ""}`} autoFocus={i === 0} onClick={() => onEscolher(s)}>
+                <span className="cd-depto__icone" aria-hidden="true">
+                  {s.icone}
+                </span>
+                <span>
+                  <b>{s.nome}</b>
+                  {s.descricao && <small>{s.descricao}</small>}
+                </span>
+                {s.id === atual ? <span className="cd-depto__seta" aria-label="escolhido">✓</span> : <ChevronRight className="cd-depto__seta" size={20} aria-hidden="true" />}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      <div className="cd-ident">
-        <span className="cd-av" aria-hidden="true">
-          {iniciais(entrada.nome)}
-        </span>
-        <div>
-          <b>{entrada.nome}</b>
-          <span>{entrada.email}</span>
-          <span>
-            {entrada.telefone ? `📱 ${formatarTelefone(entrada.telefone)} · corporativo` : <Link to="/app/perfil">📱 Cadastre seu telefone corporativo</Link>}
-          </span>
-          <em>✓ IDENTIFICADO PELO SEU LOGIN</em>
-        </div>
-      </div>
-      {entrada.setores.length === 0 ? (
-        <p className="cd-vazio">Nenhum departamento disponível no app ainda. Fale com a TI.</p>
-      ) : (
-        <nav className="cd-deptos" aria-label="Departamentos">
-          {entrada.setores.map((s) => (
-            <Link key={s.id} to={`/app/d/${s.id}`} className="cd-depto">
-              <span className="cd-depto__icone" aria-hidden="true">
-                {s.icone}
-              </span>
-              <span>
-                <b>{s.nome}</b>
-                {s.descricao && <small>{s.descricao}</small>}
-              </span>
-              <ChevronRight className="cd-depto__seta" size={20} aria-hidden="true" />
-            </Link>
-          ))}
-        </nav>
-      )}
-      <p className="cd-vazio" style={{ paddingTop: 0 }}>
-        Você pode trocar de departamento a qualquer momento no topo do app.
-        <br />
-        <Link to="/app/chamados" style={{ color: "var(--cd-ouro)" }}>
-          Ver meus chamados
-        </Link>
-      </p>
-    </>
+    </div>
   );
 }
 
-function Carrossel({ avisos, setor }: { avisos: Aviso[]; setor: Departamento }) {
+// Fotos do www.calper.com.br: o site recusa (403) foto pedida com o endereço de outro site no Referer (proteção contra
+// hotlink); sem Referer, entrega. Por isso as <img> dos empreendimentos usam referrerPolicy="no-referrer".
+
+/** Foto do site que não carregou: some (fica o fundo do cartão), sem o ícone de imagem quebrada. */
+const esconderFoto = (e: SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.style.visibility = "hidden";
+};
+
+/** Carrossel do topo: avisos (do setor escolhido ou gerais); sem aviso, os empreendimentos do site da Calper. */
+function Carrossel({ avisos, setor }: { avisos: Aviso[]; setor: Departamento | null }) {
+  const emp = useQuery({ queryKey: ["cd", "empreendimentos"], queryFn: calperdesk.empreendimentos, enabled: avisos.length === 0, staleTime: 3_600_000, retry: 1 });
+  const slides = avisos.length > 0 ? avisos.map((a) => ({ tipo: "aviso" as const, a })) : (emp.data ?? []).slice(0, 8).map((e) => ({ tipo: "emp" as const, e }));
   const [i, setI] = useState(0);
-  const total = avisos.length;
+  const total = slides.length;
   useEffect(() => {
     if (total < 2) return;
     const t = window.setInterval(() => setI((x) => (x + 1) % total), 6000);
     return () => window.clearInterval(t);
   }, [total]);
-  const a = avisos[i % Math.max(total, 1)];
-  if (!a) {
+  const s = slides[i % Math.max(total, 1)];
+
+  const pontos =
+    total > 1 ? (
+      <div className="cd-pontos">
+        {slides.map((_, n) => (
+          <button key={n} type="button" aria-label={`Slide ${n + 1} de ${total}`} aria-current={n === i % total} onClick={() => setI(n)} />
+        ))}
+      </div>
+    ) : null;
+
+  if (!s) {
     return (
       <div className="cd-hero">
         <div className="cd-hero__arte" aria-hidden="true">
-          {setor.icone}
+          {setor?.icone ?? "🏢"}
         </div>
         <div className="cd-hero__txt">
-          <small>{setor.nome}</small>
+          <small>Calper</small>
           <h2>Tudo funcionando por aqui</h2>
-          <p>Sem avisos no momento. Precisa de algo? Abra um chamado e acompanhe por aqui.</p>
+          <p>Sem avisos no momento. Precisa de algo? Escolha o setor e abra um chamado.</p>
         </div>
       </div>
     );
   }
+  if (s.tipo === "emp") {
+    return (
+      <section className="cd-hero cd-hero--foto" aria-roledescription="carrossel" aria-label="Empreendimentos Calper">
+        {s.e.imagem && <img key={s.e.imagem} className="cd-hero__img" src={s.e.imagem} alt="" referrerPolicy="no-referrer" onError={esconderFoto} />}
+        <div className="cd-hero__txt" aria-live="polite">
+          <small>Empreendimento</small>
+          <h2>Empreendimentos Calper</h2>
+          <p>{s.e.nome}</p>
+          <a className="cd-hero__mais" href={s.e.link} target="_blank" rel="noreferrer noopener">
+            Saber mais ↗
+          </a>
+        </div>
+        {pontos}
+      </section>
+    );
+  }
+  const a = s.a;
   return (
-    <section className={`cd-hero cd-hero--${a.tipo}`} aria-roledescription="carrossel" aria-label={`Avisos de ${setor.nome}`}>
+    <section className={`cd-hero cd-hero--${a.tipo}`} aria-roledescription="carrossel" aria-label="Avisos">
       <div className="cd-hero__arte" aria-hidden="true">
         {ARTE[a.tipo]}
       </div>
       <div className="cd-hero__txt" aria-live="polite">
         <small>
           Aviso · {TIPO[a.tipo]}
-          {a.setor ? "" : " · todos"}
+          {a.setor ? ` · ${a.setor}` : ""}
         </small>
         <h2>{a.titulo}</h2>
         {a.texto && <p>{a.texto}</p>}
@@ -171,73 +220,102 @@ function Carrossel({ avisos, setor }: { avisos: Aviso[]; setor: Departamento }) 
             Saber mais ↗
           </a>
         ) : (
-          <Link className="cd-hero__mais" to={`/app/d/${setor.id}/avisos`}>
+          <Link className="cd-hero__mais" to={setor ? `/app/d/${setor.id}/avisos` : "/app/avisos"}>
             Ver avisos
           </Link>
         )}
       </div>
-      {total > 1 && (
-        <div className="cd-pontos">
-          {avisos.map((x, n) => (
-            <button key={x.id} type="button" aria-label={`Aviso ${n + 1} de ${total}`} aria-current={n === i % total} onClick={() => setI(n)} />
-          ))}
-        </div>
-      )}
+      {pontos}
     </section>
   );
 }
 
-/** Início do departamento: ABRIR CHAMADO, avisos, quadrados e "em andamento". */
+/**
+ * Página inicial (igual ao "Seu Imóvel" do Superapp): Bem-vindo, carrossel e a grade. O 1º quadro escolhe o setor;
+ * "Abrir chamado" só se habilita depois disso. Os demais quadros continuam.
+ */
 export function Inicio() {
-  const setor = useDepartamento();
   const { entrada, como } = useCd();
+  const navigate = useNavigate();
+  const setores = entrada.setores;
+  const [setorId, setSetorId] = useState<number | null>(() => {
+    const salvo = Number(lerSetor());
+    return setores.some((s) => s.id === salvo) ? salvo : setores.length === 1 ? setores[0].id : null;
+  });
+  const setor = setores.find((s) => s.id === setorId) ?? null;
+  /** Folha de setores aberta; o texto diz por que abriu (ex.: tocou em Abrir chamado sem setor). */
+  const [folha, setFolha] = useState<{ motivo: string | null; depois: string | null } | null>(null);
   const meus = useQuery({ queryKey: ["cd", "meus", como, "abertos"], queryFn: () => calperdesk.meusChamados("abertos", como), refetchInterval: 60_000 });
-  const avisos = useQuery({ queryKey: ["cd", "avisos", setor?.id], queryFn: () => calperdesk.avisos(setor!.id), enabled: Boolean(setor) });
-  if (!setor) return <Navigate to="/app" replace />;
+  const avisos = useQuery({ queryKey: ["cd", "avisos", setor?.id ?? null], queryFn: () => calperdesk.avisos(setor?.id ?? null) });
   const q = entrada.config.quadros;
   const wa = entrada.config.whatsapp;
   const noAr = (avisos.data ?? []).filter((a) => !a.fim || Date.parse(a.fim) > Date.now());
 
+  const escolher = (s: Departamento) => {
+    setSetorId(s.id);
+    guardarSetor(s.id);
+    const depois = folha?.depois;
+    setFolha(null);
+    if (depois) navigate(depois.replace(":id", String(s.id)));
+  };
+  /** Quadro que precisa de setor: sem setor, abre a escolha e segue depois. */
+  const comSetor = (destino: string, motivo: string) => () => {
+    if (setor) navigate(destino.replace(":id", String(setor.id)));
+    else setFolha({ motivo, depois: destino });
+  };
+
   return (
     <>
-      <Cabecalho
-        direita={
-          <Link to="/app" className="cd-pilula cd-pilula--ouro" aria-label={`Departamento ${setor.nome}. Trocar`}>
-            <span aria-hidden="true">{setor.icone}</span> {setor.nome} ▾
-          </Link>
-        }
-      />
+      <Cabecalho />
       <div className="cd-bv">
-        <h1>Olá, {entrada.nome.split(" ")[0]}</h1>
+        <h1>Bem-vindo</h1>
         <p>
-          {setor.nome} · {entrada.config.boasVindas}
+          Olá, {entrada.nome.split(" ")[0]} · {entrada.config.boasVindas}
         </p>
       </div>
-      <Link to={`/app/d/${setor.id}/abrir`} className="cd-btn-abrir">
-        <PlusCircle size={24} aria-hidden="true" />
-        ABRIR CHAMADO
-      </Link>
-      {q.avisos !== false && <Carrossel avisos={noAr} setor={setor} />}
+      {/* Quadro "Avisos" desligado: o carrossel mostra só os empreendimentos. */}
+      <Carrossel avisos={q.avisos !== false ? noAr : []} setor={setor} />
       <nav className="cd-grade" aria-label="Atalhos">
+        <button type="button" className={`cd-tile${setor ? " cd-tile--feito" : " cd-tile--ouro"}`} onClick={() => setFolha({ motivo: null, depois: null })}>
+          {setor ? (
+            <span className="cd-tile__emoji" aria-hidden="true">
+              {setor.icone}
+            </span>
+          ) : (
+            <Building2 size={30} strokeWidth={1.5} aria-hidden="true" />
+          )}
+          <span>{setor ? setor.nome : "Setor"}</span>
+          <small>{setor ? "trocar" : "selecionar"}</small>
+        </button>
+        <button
+          type="button"
+          className={`cd-tile${setor ? " cd-tile--ouro" : " cd-tile--off"}`}
+          aria-disabled={!setor}
+          onClick={comSetor("/app/d/:id/abrir", "Primeiro escolha o setor; depois você abre o chamado.")}
+        >
+          <PlusCircle size={30} strokeWidth={1.5} aria-hidden="true" />
+          <span>Abrir chamado</span>
+          <small>{setor ? setor.nome : "escolha o setor"}</small>
+        </button>
         {q.meus !== false && (
-          <Link to="/app/chamados" className="cd-tile cd-tile--ouro">
+          <Link to="/app/chamados" className="cd-tile">
             {(meus.data?.novos ?? 0) > 0 && <span className="cd-badge" aria-label={`${meus.data?.novos} com resposta nova`}>{meus.data?.novos}</span>}
-            <ClipboardList size={30} strokeWidth={1.5} aria-hidden="true" />
+            <ClipboardList size={28} strokeWidth={1.6} aria-hidden="true" />
             <span>Meus chamados</span>
             {meus.data && <small>{meus.data.abertos} {meus.data.abertos === 1 ? "aberto" : "abertos"}</small>}
           </Link>
         )}
         {q.avisos !== false && (
-          <Link to={`/app/d/${setor.id}/avisos`} className="cd-tile">
+          <Link to={setor ? `/app/d/${setor.id}/avisos` : "/app/avisos"} className="cd-tile">
             <Megaphone size={28} strokeWidth={1.6} aria-hidden="true" />
             <span>Avisos</span>
           </Link>
         )}
         {q.solucoes !== false && (
-          <Link to={`/app/d/${setor.id}/solucoes`} className="cd-tile">
+          <button type="button" className="cd-tile" onClick={comSetor("/app/d/:id/solucoes", "As soluções são de cada setor. Escolha qual.")}>
             <Lightbulb size={28} strokeWidth={1.6} aria-hidden="true" />
             <span>Soluções</span>
-          </Link>
+          </button>
         )}
         {q.whatsapp !== false && wa && (
           <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer noopener" className="cd-tile cd-tile--wa">
@@ -251,12 +329,6 @@ export function Inicio() {
             <span>Meu perfil</span>
           </Link>
         )}
-        {entrada.setores.length > 1 && (
-          <Link to="/app" className="cd-tile">
-            <ArrowLeftRight size={28} strokeWidth={1.6} aria-hidden="true" />
-            <span>Trocar depto.</span>
-          </Link>
-        )}
       </nav>
       {meus.data && meus.data.itens.length > 0 && (
         <div className="cd-sec">
@@ -268,22 +340,25 @@ export function Inicio() {
           </div>
         </div>
       )}
+      {folha && <SeletorSetor setores={setores} atual={setorId} motivo={folha.motivo} onEscolher={escolher} onFechar={() => setFolha(null)} />}
     </>
   );
 }
 
+/** Avisos (do setor ou gerais). Sem nenhum: os empreendimentos do site www.calper.com.br. */
 export function Avisos() {
-  const setor = useDepartamento();
-  const avisos = useQuery({ queryKey: ["cd", "avisos", setor?.id], queryFn: () => calperdesk.avisos(setor!.id), enabled: Boolean(setor) });
-  if (!setor) return <Navigate to="/app" replace />;
+  const { setorId } = useParams();
+  const { entrada } = useCd();
+  const setor = entrada.setores.find((s) => String(s.id) === setorId) ?? null;
+  const avisos = useQuery({ queryKey: ["cd", "avisos", setor?.id ?? null], queryFn: () => calperdesk.avisos(setor?.id ?? null) });
+  const vazio = avisos.isSuccess && avisos.data.length === 0;
+  const emp = useQuery({ queryKey: ["cd", "empreendimentos"], queryFn: calperdesk.empreendimentos, enabled: vazio, staleTime: 3_600_000, retry: 1 });
   return (
     <>
-      <SubCabecalho titulo="Avisos" sub={`${setor.nome} e avisos gerais`} voltar={`/app/d/${setor.id}`} />
+      <SubCabecalho titulo="Avisos" sub={setor ? `${setor.nome} e avisos gerais` : "Avisos de todos os setores"} voltar="/app" />
       {avisos.isPending ? (
         <Carregando />
-      ) : (avisos.data ?? []).length === 0 ? (
-        <p className="cd-vazio">Nenhum aviso no momento.</p>
-      ) : (
+      ) : !vazio ? (
         <div className="cd-lista">
           {avisos.data!.map((a) => (
             <article key={a.id} className="cd-card">
@@ -291,6 +366,7 @@ export function Avisos() {
                 <span>
                   {quando(a.inicio)}
                   {a.fim ? ` → ${DIA_HORA.format(new Date(a.fim))}` : ""}
+                  {a.setor ? ` · ${a.setor}` : ""}
                 </span>
                 <span className={`cd-st cd-st--${a.tipo === "resolvido" ? "resolvido" : a.tipo === "comunicado" ? "novo" : "andamento"}`}>{TIPO[a.tipo]}</span>
               </div>
@@ -308,6 +384,38 @@ export function Avisos() {
             </article>
           ))}
         </div>
+      ) : (
+        <>
+          <p className="cd-vazio" style={{ paddingTop: 4 }}>
+            ✅ Nenhum aviso no momento.
+          </p>
+          <div className="cd-sec">
+            <span className="cd-rot" style={{ marginTop: 0 }}>
+              Conheça os empreendimentos Calper
+            </span>
+          </div>
+          {emp.isPending ? (
+            <Carregando />
+          ) : (emp.data ?? []).length === 0 ? (
+            <p className="cd-vazio">
+              <a href="https://www.calper.com.br/empreendimentos-2/" target="_blank" rel="noreferrer noopener" style={{ color: "var(--cd-ouro)" }}>
+                Ver os empreendimentos no site da Calper ↗
+              </a>
+            </p>
+          ) : (
+            <div className="cd-emps">
+              {emp.data!.map((e) => (
+                <a key={e.link} className="cd-emp" href={e.link} target="_blank" rel="noreferrer noopener">
+                  {e.imagem ? <img src={e.imagem} alt="" loading="lazy" referrerPolicy="no-referrer" onError={esconderFoto} /> : <span className="cd-emp__sem" aria-hidden="true">🏢</span>}
+                  <span className="cd-emp__txt">
+                    <b>{e.nome}</b>
+                    {e.info && <small>{e.info}</small>}
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </>
   );
@@ -327,7 +435,7 @@ export function Solucoes() {
   };
   return (
     <>
-      <SubCabecalho titulo="Soluções" sub="Resolva sozinho em segundos" voltar={`/app/d/${setor.id}`} />
+      <SubCabecalho titulo="Soluções" sub="Resolva sozinho em segundos" voltar="/app" />
       <div className="cd-sec">
         <input className="cd-campo" type="search" placeholder="Buscar: senha, vpn, impressora…" aria-label="Buscar solução" value={busca} onChange={(e) => setBusca(e.target.value)} />
       </div>

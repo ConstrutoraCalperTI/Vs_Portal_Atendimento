@@ -56,7 +56,7 @@ export function AbrirChamado() {
             <Link to={`/app/chamados/${r.id}`} className="cd-btn-ouro">
               Acompanhar chamado
             </Link>
-            <Link to={`/app/d/${setor.id}`} className="cd-btn-vidro">
+            <Link to="/app" className="cd-btn-vidro">
               Voltar ao início
             </Link>
           </div>
@@ -109,7 +109,7 @@ export function AbrirChamado() {
 
   return (
     <>
-      <SubCabecalho titulo="Abrir chamado" sub={<>Departamento: <b style={{ color: "var(--cd-ouro)" }}>{setor.icone} {setor.nome}</b></>} voltar={`/app/d/${setor.id}`} />
+      <SubCabecalho titulo="Abrir chamado" sub={<>Departamento: <b style={{ color: "var(--cd-ouro)" }}>{setor.icone} {setor.nome}</b></>} voltar="/app" />
       <form className="cd-sec" onSubmit={enviar} noValidate>
         {erro && !erro.campo && <p className="cd-alerta" role="alert">{erro.texto}</p>}
         <span className="cd-rot" style={{ marginTop: 0 }}>

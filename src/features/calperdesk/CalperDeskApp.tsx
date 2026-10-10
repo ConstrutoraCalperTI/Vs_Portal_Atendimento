@@ -8,7 +8,7 @@ import { useAuthSession } from "../auth/useAuthSession";
 import { AbrirChamado } from "./AbrirChamado";
 import { DetalheChamado, MeusChamados } from "./Chamados";
 import { calperdesk, type Entrada } from "./service";
-import { Avisos, Departamentos, Inicio, Perfil, Solucoes } from "./Telas";
+import { Avisos, EscolherSetorPelaUrl, Inicio, Perfil, Solucoes } from "./Telas";
 import "./calperdesk.css";
 
 // CalperDESK (docs/PLANO-calperdesk.md): app do solicitante em /app, fora do layout do portal e pensado para celular.
@@ -196,8 +196,9 @@ function AppAutenticado() {
         )}
         <div className="cd__col">
           <Routes>
-            <Route index element={<Departamentos />} />
-            <Route path="d/:setorId" element={<Inicio />} />
+            <Route index element={<Inicio />} />
+            <Route path="d/:setorId" element={<EscolherSetorPelaUrl />} />
+            <Route path="avisos" element={<Avisos />} />
             <Route path="d/:setorId/abrir" element={<AbrirChamado />} />
             <Route path="d/:setorId/avisos" element={<Avisos />} />
             <Route path="d/:setorId/solucoes" element={<Solucoes />} />

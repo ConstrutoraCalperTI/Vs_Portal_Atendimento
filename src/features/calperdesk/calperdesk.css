@@ -255,3 +255,36 @@ a.cd-card:hover, button.cd-card:hover { background: var(--cd-vidro-h); }
   .cd-grade { gap: 8px; padding: 0 14px 20px; }
   .cd-logo__nome { font-size: 18px; }
 }
+
+/* ---------- Página inicial igual ao "Seu Imóvel" (10/10/2026): setor no 1º quadro, foto no carrossel ---------- */
+button.cd-tile { font: inherit; cursor: pointer; }
+.cd-tile--off { opacity: 0.5; }
+.cd-tile--off:hover { opacity: 0.7; }
+.cd-tile--feito { border-color: rgba(52, 211, 153, 0.35); }
+.cd-tile > .cd-tile__emoji { font-size: 28px; line-height: 1; letter-spacing: 0; }
+.cd-tile--ouro > small { color: rgba(252, 211, 77, 0.8); }
+
+.cd-hero--foto { background: #11152c; }
+.cd-hero__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cd-hero--foto .cd-hero__txt p { -webkit-line-clamp: 1; line-clamp: 1; }
+
+/* Folha de escolha do setor (sobe de baixo, como no celular). */
+.cd-folha { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; background: rgba(5, 8, 20, 0.6); backdrop-filter: blur(2px); }
+.cd-folha__caixa { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; padding: 10px 20px 24px; border-radius: 22px 22px 0 0;
+  background: linear-gradient(160deg, var(--cd-1) 0%, var(--cd-2) 60%, var(--cd-3) 100%); border: 1px solid var(--cd-borda); border-bottom: 0;
+  animation: cd-sobe 0.2s ease-out; }
+.cd-folha__puxador { display: block; width: 44px; height: 5px; margin: 0 auto 12px; border-radius: 99px; background: rgba(255, 255, 255, 0.25); }
+.cd-folha h2 { margin: 0 0 12px; font-size: 18px; }
+.cd-folha__motivo { margin: -4px 0 12px; font-size: 13px; color: var(--cd-ouro); }
+.cd-depto--on { border-color: var(--cd-ouro-b); background: linear-gradient(135deg, var(--cd-ouro-bg1), var(--cd-ouro-bg2)); }
+@keyframes cd-sobe { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cd-folha__caixa { animation: none; } }
+
+/* Empreendimentos do site (tela Avisos sem aviso). */
+.cd-emps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 20px 24px; }
+.cd-emp { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 1px solid var(--cd-borda); background: var(--cd-vidro); color: #fff; text-decoration: none; }
+.cd-emp:hover { border-color: var(--cd-ouro-b); }
+.cd-emp img, .cd-emp__sem { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: grid; place-items: center; font-size: 32px; background: #11152c; }
+.cd-emp__txt { padding: 8px 10px 10px; display: grid; gap: 2px; }
+.cd-emp__txt b { font-size: 13px; }
+.cd-emp__txt small { font-size: 11px; color: var(--cd-txt-3); }
