@@ -295,3 +295,12 @@ button.cd-tile { font: inherit; cursor: pointer; }
 .cd-senha__olho { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; border-radius: 10px;
   background: none; color: var(--cd-txt-2); display: grid; place-items: center; }
 .cd-senha__olho:hover { color: #fff; background: var(--cd-vidro); }
+
+/* Logo da Calper ao lado do nome (pedido de 10/10/2026): public/calper-logo-branco.webp é a logo do portal com o
+   texto em branco e o círculo no vermelho original (para o fundo escuro). */
+.cd-logo__calper { height: 30px; width: auto; flex: none; }
+.cd-logo__sep { width: 1px; height: 26px; flex: none; background: rgba(255, 255, 255, 0.25); }
+@media (max-width: 380px) {
+  .cd-logo__calper { height: 24px; }
+  .cd-logo { gap: 8px; }
+}

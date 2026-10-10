@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Eye, EyeOff, LogOut, Ticket } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LogOut } from "lucide-react";
 import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from "react-router";
 import { CORPORATE_DOMAIN } from "../../config/app";
@@ -59,13 +59,12 @@ export function Carregando() {
   );
 }
 
-/** Logo "CalperDESK" no visual do "Seu Imóvel" (caixa dourada + nome leve/forte). */
+/** Logo da Calper (a mesma do portal, com o texto em branco no fundo escuro) ao lado do nome "CalperDESK". */
 export function Logo({ para = "/app" }: { para?: string }) {
   return (
     <Link to={para} className="cd-logo" aria-label="CalperDESK, início">
-      <span className="cd-logo__icone">
-        <Ticket size={20} aria-hidden="true" />
-      </span>
+      <img className="cd-logo__calper" src="/calper-logo-branco.webp" alt="Calper" width={124} height={38} />
+      <span className="cd-logo__sep" aria-hidden="true" />
       <span className="cd-logo__nome">
         <span>Calper</span>
         <b>DESK</b>

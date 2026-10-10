@@ -215,10 +215,22 @@ export const calperdesk = {
   confirmar: (id: number, resolveu: boolean, comentario: string | null) =>
     rpc<void>("cd_chamado_confirmar", { p_id: id, p_resolveu: resolveu, p_comentario: comentario }),
 
+  /**
+   * Empreendimentos do site: lê o cache pela RPC (mesma sessão do resto do app). Só se o cache estiver vazio ou com
+   * mais de 6 h pede à Edge para ler o site de novo; se a Edge falhar, fica com o que o cache tem.
+   */
   async empreendimentos(): Promise<Empreendimento[]> {
+    const cache = await rpc<{ itens: Empreendimento[]; atualizadoEm: string | null } | null>("cd_empreendimentos");
+    const itens = cache?.itens ?? [];
+    const velho = !cache?.atualizadoEm || Date.now() - Date.parse(cache.atualizadoEm) > 6 * 3_600_000;
+    if (itens.length > 0 && !velho) return itens;
     const { data, error } = await supabase.functions.invoke(edgeFunction("calper-site"), { body: {} });
-    if (error) throw await fromFunction(error);
-    return (data as { itens?: Empreendimento[] } | null)?.itens ?? [];
+    if (error) {
+      console.warn("[calperdesk] empreendimentos: Edge indisponível, usando o cache", await fromFunction(error).then((e) => e.message));
+      return itens;
+    }
+    const novos = (data as { itens?: Empreendimento[] } | null)?.itens ?? [];
+    return novos.length > 0 ? novos : itens;
   },
 
   /** Envia o arquivo para a pasta do usuário (o banco confere a pasta e se o arquivo existe). */
