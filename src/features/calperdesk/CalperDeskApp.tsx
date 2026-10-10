@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, LogOut, Ticket } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LogOut, Ticket } from "lucide-react";
 import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from "react-router";
 import { CORPORATE_DOMAIN } from "../../config/app";
@@ -234,6 +234,7 @@ function AppLogin() {
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [verSenha, setVerSenha] = useState(false);
 
   const emailValido = new RegExp(`^[^\\s@]+@${CORPORATE_DOMAIN.replace(".", "\\.")}$`, "i").test(email.trim());
 
@@ -298,6 +299,9 @@ function AppLogin() {
               type="email"
               inputMode="email"
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder={`nome@${CORPORATE_DOMAIN}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -307,14 +311,24 @@ function AppLogin() {
                 <label className="cd-rot" htmlFor="cd-senha" style={{ margin: "4px 0 0" }}>
                   Senha
                 </label>
-                <input
-                  id="cd-senha"
-                  className="cd-campo"
-                  type="password"
-                  autoComplete="current-password"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                />
+                {/* Celular: o teclado e o gerenciador de senhas mudam o que vai; o olho deixa conferir antes de entrar. */}
+                <div className="cd-senha">
+                  <input
+                    id="cd-senha"
+                    className="cd-campo"
+                    type={verSenha ? "text" : "password"}
+                    autoComplete="current-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                  />
+                  <button type="button" className="cd-senha__olho" aria-label={verSenha ? "Esconder a senha" : "Mostrar a senha"} aria-pressed={verSenha} onClick={() => setVerSenha((v) => !v)}>
+                    {verSenha ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                  </button>
+                </div>
+                {/\s$|^\s/.test(senha) && <span className="cd-erro">A senha começa ou termina com espaço. Confira se o teclado não acrescentou.</span>}
               </>
             )}
             <button type="submit" className="cd-btn-ouro" disabled={enviando} style={{ marginTop: 8 }}>

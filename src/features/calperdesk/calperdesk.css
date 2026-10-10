@@ -288,3 +288,10 @@ button.cd-tile { font: inherit; cursor: pointer; }
 .cd-emp__txt { padding: 8px 10px 10px; display: grid; gap: 2px; }
 .cd-emp__txt b { font-size: 13px; }
 .cd-emp__txt small { font-size: 11px; color: var(--cd-txt-3); }
+
+/* Login: campo de senha com "mostrar senha". */
+.cd-senha { position: relative; }
+.cd-senha .cd-campo { padding-right: 48px; }
+.cd-senha__olho { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; border-radius: 10px;
+  background: none; color: var(--cd-txt-2); display: grid; place-items: center; }
+.cd-senha__olho:hover { color: #fff; background: var(--cd-vidro); }
