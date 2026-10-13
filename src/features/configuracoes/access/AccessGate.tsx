@@ -1,9 +1,7 @@
-import { ShieldOff, UserX } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import { UserX } from "lucide-react";
+import type { ReactNode } from "react";
+import { Navigate } from "react-router";
 import { PageSkeleton } from "../../../components/PageSkeleton";
-import { APP_ACCESS_DENIED_MESSAGE, AppAccessDeniedPopup } from "../../auth/AppAccessDeniedPopup";
-import { useAuthSession } from "../../auth/useAuthSession";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
 import { PasswordGate } from "./PasswordGate";
@@ -12,17 +10,22 @@ import { useAccess } from "./useAccess";
 
 /**
  * Guard do layout protegido (a sessão do Supabase já foi exigida pelo RequireSession), nesta ordem:
- * 1. carregando → skeleton; 2. e-mail sem acesso ao portal → aviso com "Sair";
+ * 1. carregando → skeleton; 2. e-mail sem acesso ao portal (ou bloqueado na Central) → CalperDESK (/app), que mostra o aviso;
  * 3. troca de senha obrigatória → /trocar-senha; 4. sem perfil → aviso;
  * 5. sem permissão para a rota → /home com toast.
+ * CalperDESK: perfil Solicitante, ou e-mail @calper.com.br ainda sem cadastro no portal → app do solicitante (/app),
+ * que faz o 1º acesso. O bloqueio manual da Central também é conferido lá.
  */
+const SOLICITANTE_ROLE = "solicitante";
+
 export function AccessGate({ children }: { children: ReactNode }) {
   const { isLoading, isError, errorCode, refetch, role } = useAccess();
 
   if (isLoading) return <PageSkeleton />;
   if (isError && (errorCode === "NO_PORTAL_ACCESS" || errorCode === "NO_APP_ACCESS")) {
-    return <NoPortalAccess blockedByApp={errorCode === "NO_APP_ACCESS"} />;
+    return <Navigate to="/app" replace />;
   }
+  if (role === SOLICITANTE_ROLE) return <Navigate to="/app" replace />;
   if (isError) {
     return <ErrorState message="Não foi possível carregar as suas permissões." onRetry={refetch} />;
   }
@@ -44,51 +47,3 @@ export function AccessGate({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * Entrou com uma conta @calper.com.br válida, mas que não está cadastrada (ou está inativa) no portal,
- * ou que foi bloqueada neste aplicativo em Permissões por aplicativo.
- */
-function NoPortalAccess({ blockedByApp }: { blockedByApp: boolean }) {
-  const { email, signOut } = useAuthSession();
-  const [signingOut, setSigningOut] = useState(false);
-  // Pop-up de Permissões por aplicativo: abre sozinho ao entrar bloqueado; o cartão fica por trás.
-  const [popupOpen, setPopupOpen] = useState(blockedByApp);
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    try {
-      await signOut();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível sair.");
-      setSigningOut(false);
-    }
-  };
-
-  return (
-    <div className="card">
-      {blockedByApp && (
-        <AppAccessDeniedPopup
-          open={popupOpen}
-          onOpenChange={setPopupOpen}
-          email={email}
-          signingOut={signingOut}
-          onSignOut={() => void handleSignOut()}
-        />
-      )}
-      <EmptyState
-        icon={ShieldOff}
-        title={blockedByApp ? "Sem permissão nessa aplicação" : "Acesso ao portal não liberado"}
-        description={
-          blockedByApp
-            ? `${APP_ACCESS_DENIED_MESSAGE} (login ${email ?? ""})`
-            : `A conta ${email ?? ""} ainda não está autorizada neste portal. Peça a um administrador para cadastrá-la.`
-        }
-        action={
-          <button type="button" className="btn btn--outline" disabled={signingOut} onClick={() => void handleSignOut()}>
-            Sair e entrar com outra conta
-          </button>
-        }
-      />
-    </div>
-  );
-}

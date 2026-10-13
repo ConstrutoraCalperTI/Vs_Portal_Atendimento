@@ -216,6 +216,27 @@ describe("limites por IP e IP + conta", () => {
     expect(await events("RATE_LIMIT_IP_ACCOUNT")).toBe(1);
   });
 
+  it("tentativa barrada não prolonga o limite de IP + conta (caso de 10/10/2026)", async () => {
+    await reset({ ...NO_BACKOFF, account_max_failures: 100 });
+    const email = "a@calper.com.br";
+    for (let i = 0; i < 5; i++) await fail(email, "200.1.1.1");
+    // A pessoa insiste durante o bloqueio: cada tentativa é barrada (denied)…
+    for (let i = 0; i < 3; i++) expect(await begin(email, "200.1.1.1")).toMatchObject({ allowed: false, reason: "SEC_AUTH_006" });
+    // …e quando as 5 senhas erradas saem da janela de 15 min, ela volta a entrar (as barradas não contam).
+    await db.admin.query("update portal_atendimento.security_attempts set created_at = created_at - interval '16 minutes' where outcome = 'failure'");
+    expect((await begin(email, "200.1.1.1")).allowed).toBe(true);
+  });
+
+  it("login certo não conta para o limite de IP + conta", async () => {
+    await reset({ ...NO_BACKOFF, account_max_failures: 100 });
+    const email = "a@calper.com.br";
+    for (let i = 0; i < 6; i++) {
+      const r = await begin(email, "200.1.1.1");
+      expect(r.allowed).toBe(true);
+      await finish(r.attempt_id!, "SUCCESS", email, "200.1.1.1", randomUUID(), randomUUID());
+    }
+  });
+
   it("limite por conta somando IPs (20 em 15 min)", async () => {
     await reset({ ...NO_BACKOFF, account_max_failures: 1000, distributed_ips_15m: 1000 });
     const email = "a@calper.com.br";
@@ -441,7 +462,8 @@ describe("sessão confiável (bypass do gateway pela API do Auth)", () => {
     const sid = await session(alice);
     const r = await begin("alice@calper.com.br", "200.1.1.1");
     await finish(r.attempt_id!, "SUCCESS", "alice@calper.com.br", "200.1.1.1", alice, sid);
-    expect(await portalAccess(claims(alice, sid))).toEqual({ ativo: true, perfil: "operador", perfis: 5 });
+    // 6 perfis: os 5 do modelo + "solicitante" (CalperDESK, 20261010100000).
+    expect(await portalAccess(claims(alice, sid))).toEqual({ ativo: true, perfil: "operador", perfis: 6 });
   });
 
   it("sessão de link de e-mail (recovery) acessa sem vínculo; a de senha não", async () => {
@@ -490,6 +512,8 @@ describe("sessão confiável (bypass do gateway pela API do Auth)", () => {
     expect((await control("alice@calper.com.br")).locked_until).toBeNull();
     expect((await portalAccess(claims(alice, atual))).ativo).toBe(true);
     expect((await portalAccess(claims(alice, outra))).ativo).toBe(false);
+    // Caso de 10/10/2026: logo depois de trocar a senha, a conta entra do mesmo IP (as 5 falhas eram de antes da troca).
+    expect((await begin("alice@calper.com.br", "200.1.1.1")).allowed).toBe(true);
   });
 
   it("TESTE 14: usuário A não lê o registro do usuário B", async () => {

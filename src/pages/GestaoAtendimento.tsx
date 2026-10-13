@@ -12,6 +12,7 @@ import { NotFound } from "./NotFound";
 import "../features/configuracoes/pages/Integracoes.css";
 
 const WhatsappOpenwa = lazy(() => import("../features/atendimento/pages/WhatsappOpenwa").then((m) => ({ default: m.WhatsappOpenwa })));
+const CalperDeskAdmin = lazy(() => import("../features/calperdesk/admin/CalperDeskAdmin").then((m) => ({ default: m.CalperDeskAdmin })));
 const FilaHorarios = lazy(() => import("../features/atendimento/pages/FilaHorarios").then((m) => ({ default: m.FilaHorarios })));
 const ContasEmail = lazy(() => import("../features/atendimento/pages/ContasEmail").then((m) => ({ default: m.ContasEmail })));
 const Setores = lazy(() => import("../features/atendimento/pages/Setores").then((m) => ({ default: m.Setores })));
@@ -19,6 +20,7 @@ const ServicosCadastro = lazy(() => import("../features/chamados/cadastros/Servi
 const UrgenciasCadastro = lazy(() => import("../features/chamados/cadastros/UrgenciasCadastro").then((m) => ({ default: m.UrgenciasCadastro })));
 const CategoriasCadastro = lazy(() => import("../features/chamados/cadastros/CategoriasCadastro").then((m) => ({ default: m.CategoriasCadastro })));
 const CamposCadastro = lazy(() => import("../features/chamados/cadastros/CamposCadastro").then((m) => ({ default: m.CamposCadastro })));
+const EmpreendimentosCadastro = lazy(() => import("../features/chamados/empreendimentos/EmpreendimentosCadastro").then((m) => ({ default: m.EmpreendimentosCadastro })));
 const GatilhosCadastro = lazy(() => import("../features/chamados/gatilhos/GatilhosCadastro").then((m) => ({ default: m.GatilhosCadastro })));
 const RegrasCadastro = lazy(() => import("../features/chamados/cadastros/RegrasCadastro").then((m) => ({ default: m.RegrasCadastro })));
 
@@ -31,11 +33,13 @@ const SECOES: { id: MenuItemId; segmento: string }[] = [
   { id: "gestao_atendimento_fila", segmento: "fila" },
   { id: "gestao_atendimento_setores", segmento: "setores" },
   { id: "gestao_atendimento_openwa", segmento: "whatsapp-openwa" },
+  { id: "gestao_atendimento_calperdesk", segmento: "calperdesk" },
   { id: "gestao_atendimento_emails", segmento: "emails" },
   { id: "gestao_atendimento_servicos", segmento: "servicos" },
   { id: "gestao_atendimento_urgencias", segmento: "urgencias" },
   { id: "gestao_atendimento_categorias", segmento: "categorias" },
   { id: "gestao_atendimento_campos", segmento: "campos-adicionais" },
+  { id: "gestao_atendimento_empreendimentos", segmento: "empreendimentos" },
   { id: "gestao_atendimento_regras_exibicao", segmento: "regras-exibicao" },
   { id: "gestao_atendimento_gatilhos", segmento: "gatilhos" },
 ];
@@ -84,11 +88,13 @@ export function GestaoAtendimento() {
           <Route path="fila" element={pode("gestao_atendimento_fila") ? <FilaHorarios /> : <NotFound />} />
           <Route path="setores" element={pode("gestao_atendimento_setores") ? <Setores /> : <NotFound />} />
           <Route path="whatsapp-openwa" element={pode("gestao_atendimento_openwa") ? <WhatsappOpenwa /> : <NotFound />} />
+          <Route path="calperdesk" element={pode("gestao_atendimento_calperdesk") ? <CalperDeskAdmin /> : <NotFound />} />
           <Route path="emails" element={pode("gestao_atendimento_emails") ? <ContasEmail /> : <NotFound />} />
           <Route path="servicos" element={pode("gestao_atendimento_servicos") ? <ServicosCadastro /> : <NotFound />} />
           <Route path="urgencias" element={pode("gestao_atendimento_urgencias") ? <UrgenciasCadastro /> : <NotFound />} />
           <Route path="categorias" element={pode("gestao_atendimento_categorias") ? <CategoriasCadastro /> : <NotFound />} />
           <Route path="campos-adicionais" element={pode("gestao_atendimento_campos") ? <CamposCadastro /> : <NotFound />} />
+          <Route path="empreendimentos" element={pode("gestao_atendimento_empreendimentos") ? <EmpreendimentosCadastro /> : <NotFound />} />
           <Route path="regras-exibicao" element={pode("gestao_atendimento_regras_exibicao") ? <RegrasCadastro /> : <NotFound />} />
           <Route path="gatilhos" element={pode("gestao_atendimento_gatilhos") ? <GatilhosCadastro /> : <NotFound />} />
           <Route path="*" element={<NotFound />} />

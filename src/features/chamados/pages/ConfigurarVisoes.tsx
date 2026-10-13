@@ -10,13 +10,14 @@ import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
 import { ComPainel } from "../../dashboard/useDashboardData";
 import type { DashboardPayload } from "../../dashboard/types";
-import { useEquipesVisoes, useExcluirVisao, useKanbanPadrao, useSalvarKanbanPadrao, useSalvarVisao, useStatusTickets, useVisoesConfig } from "../hooks";
+import { useEquipesVisoes, useExcluirVisao, useKanbanPadrao, useListaExtras, useSalvarKanbanPadrao, useSalvarVisao, useStatusTickets, useVisoesConfig } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import { atendeCondicoes } from "../visoes/avaliar";
-import { AGRUPAMENTOS, CAMPOS, campoDef, COLUNAS_LISTA, fonteDoValor, OPERADORES, ORDENACOES, PRIORIDADES } from "../visoes/campos";
+import { AGRUPAMENTOS, CAMPOS, campoDef, fonteDoValor, OPERADORES, ORDENACOES, PRIORIDADES } from "../visoes/campos";
+import { SeletorColunas } from "../visoes/SeletorColunas";
 import { usePermissoesVisoes } from "../visoes/permissoes";
 import { AGRUPAMENTO_PADRAO } from "../visoes/seed";
-import type { CampoAgrupamento, ColunaKanban, ColunaLista, Condicao, Condicoes, Ordenacao, StatusRef, Visao, VisaoSalvar } from "../visoes/types";
+import type { CampoAgrupamento, ColunaKanban, Condicao, Condicoes, Ordenacao, StatusRef, Visao, VisaoSalvar } from "../visoes/types";
 import { coordenadasPorColuna } from "../dnd";
 import "./Chamados.css";
 
@@ -590,7 +591,7 @@ function Chip({ id, status, detalhe }: { id: string; status: string; detalhe: st
 
 function AbaAgrupamento({ v, onChange }: { v: VisaoSalvar; onChange: (a: VisaoSalvar["agrupamento"]) => void }) {
   const a = v.agrupamento;
-  const alternar = (c: ColunaLista) => onChange({ ...a, colunas: a.colunas.includes(c) ? a.colunas.filter((x) => x !== c) : [...a.colunas, c] });
+  const extras = useListaExtras(true);
   return (
     <div className="ch-sec">
       <h3>Agrupamento da listagem</h3>
@@ -634,15 +635,7 @@ function AbaAgrupamento({ v, onChange }: { v: VisaoSalvar; onChange: (a: VisaoSa
       </div>
       <div className="field">
         <span className="field__label">Colunas da listagem</span>
-        <div className="ch-cols-pick">
-          <label className="ch-check"><input type="checkbox" checked disabled /> Nº e assunto</label>
-          {(Object.keys(COLUNAS_LISTA) as ColunaLista[]).map((c) => (
-            <label key={c} className="ch-check">
-              <input type="checkbox" checked={a.colunas.includes(c)} onChange={() => alternar(c)} />
-              {COLUNAS_LISTA[c]}
-            </label>
-          ))}
-        </div>
+        <SeletorColunas valor={a.colunas} onChange={(colunas) => onChange({ ...a, colunas })} campos={extras.data?.campos ?? []} carregandoCampos={extras.isPending} />
       </div>
     </div>
   );

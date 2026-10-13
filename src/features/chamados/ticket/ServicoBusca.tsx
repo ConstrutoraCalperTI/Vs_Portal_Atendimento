@@ -22,7 +22,8 @@ export function filtrarServicos(opcoes: readonly OpcaoServico[], busca: string, 
     .slice(0, limite);
 }
 
-export function ServicoBusca({ opcoes, valor, onChange, rotuloId }: { opcoes: OpcaoServico[]; valor: number | null; onChange: (id: number | null) => void; rotuloId: string }) {
+/** `item`: o que se busca ("serviço", "empreendimento"), nos textos do campo. */
+export function ServicoBusca({ opcoes, valor, onChange, rotuloId, item = "serviço" }: { opcoes: OpcaoServico[]; valor: number | null; onChange: (id: number | null) => void; rotuloId: string; item?: string }) {
   const listaId = useId();
   const atual = opcoes.find((o) => o.id === valor);
   const [busca, setBusca] = useState<string | null>(null); // null = mostrando o selecionado
@@ -46,7 +47,7 @@ export function ServicoBusca({ opcoes, valor, onChange, rotuloId }: { opcoes: Op
         aria-controls={listaId}
         aria-autocomplete="list"
         aria-activedescendant={aberto && lista[ativo] ? `${listaId}-${lista[ativo].id}` : undefined}
-        placeholder="Digite para buscar o serviço…"
+        placeholder={`Digite para buscar o ${item}…`}
         value={busca ?? atual?.rotulo ?? ""}
         onFocus={(e) => {
           e.currentTarget.select();
@@ -75,13 +76,13 @@ export function ServicoBusca({ opcoes, valor, onChange, rotuloId }: { opcoes: Op
         onBlur={() => (busca ? escolher(lista[ativo]) : setAberto(false))}
       />
       {valor !== null && (
-        <button type="button" className="tk-busca__limpar" aria-label="Limpar serviço" onMouseDown={(e) => e.preventDefault()} onClick={() => onChange(null)}>
+        <button type="button" className="tk-busca__limpar" aria-label={`Limpar ${item}`} onMouseDown={(e) => e.preventDefault()} onClick={() => onChange(null)}>
           <X size={14} aria-hidden="true" />
         </button>
       )}
       {aberto && (
         <ul className="tk-busca__lista" id={listaId} role="listbox">
-          {lista.length === 0 && <li className="tk-busca__vazio">Nenhum serviço com “{busca}”.</li>}
+          {lista.length === 0 && <li className="tk-busca__vazio">Nenhum {item} com “{busca}”.</li>}
           {lista.map((o, i) => (
             <li
               key={o.id}

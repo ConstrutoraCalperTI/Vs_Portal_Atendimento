@@ -9,7 +9,7 @@ import { ServiceError } from "../../configuracoes/services/types";
 import { CAMPOS, OPERADORES } from "./campos";
 import { permissoesVisoes } from "./permissoes";
 import { KANBAN_PADRAO, VISOES_INICIAIS } from "./seed";
-import type { ColunaKanban, EquipeVisao, Visao, VisaoSalvar } from "./types";
+import type { ColunaKanban, EquipeVisao, ListaExtras, Visao, VisaoSalvar } from "./types";
 
 // Visões da tela Tickets. Leitura: as habilitadas das equipes do usuário (Admin e Super admin veem todas).
 // Escrita: Admin e Super admin; excluir e o Kanban padrão, só Super admin (permissoes.ts). As RPCs ch_visao*
@@ -23,6 +23,8 @@ export interface VisoesService {
   excluir(id: number): Promise<void>;
   kanbanPadrao(): Promise<ColunaKanban[]>;
   salvarKanbanPadrao(colunas: ColunaKanban[]): Promise<void>;
+  /** Dados das colunas novas da Lista e os campos adicionais "usar em visões" (ch_lista_extras). */
+  listaExtras(): Promise<ListaExtras>;
 }
 
 async function rpc<T>(nome: string, args?: Record<string, unknown>): Promise<T> {
@@ -39,6 +41,7 @@ const supabaseVisoes: VisoesService = {
   excluir: (id) => rpc<void>("ch_visao_excluir", { p_id: id }),
   kanbanPadrao: () => rpc<ColunaKanban[]>("ch_kanban_padrao"),
   salvarKanbanPadrao: (colunas) => rpc<void>("ch_kanban_padrao_salvar", { p_colunas: colunas as unknown as Json }),
+  listaExtras: () => rpc<ListaExtras>("ch_lista_extras"),
 };
 
 /** Validação comum (a RPC repete): nome, tipo, campos e operadores da lista fechada, colunas do Kanban. */
@@ -121,6 +124,10 @@ const mockVisoes: VisoesService = {
     exigir(permissoesAtuais().podeDefinirPadrao, "Só o Super admin define o Kanban padrão.");
     padrao = structuredClone(colunas);
     recordAudit({ module: "atendimento", action: "update", description: "Kanban padrão das visões de tickets redefinido." });
+  },
+  async listaExtras() {
+    await delay();
+    return { campos: [], tickets: {} };
   },
 };
 

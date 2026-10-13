@@ -87,7 +87,8 @@ export function LinhaDoTempo({ d, historico, setHistorico }: { d: TicketDetalhe;
                   <span className="tk-acao__n">{it.a.numero}</span>
                 </div>
                 <div className="tk-acao__c">{it.a.texto}</div>
-                {it.a.canal === "whatsapp" && <ListaAnexos anexos={it.a.anexos} />}
+                {/* E-mail mostra os anexos no "Visualizar e-mail"; WhatsApp e CalperDESK (portal), aqui. */}
+                {it.a.canal !== "email" && <ListaAnexos anexos={it.a.anexos} />}
                 {it.a.email && (
                   <div className="tl-acao__rodape">
                     <button type="button" className="tk-link" onClick={() => setEmailAberto(it.a)}>
