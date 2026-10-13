@@ -1,6 +1,6 @@
 import { ChangeOwnPasswordDialog } from "../../auth/ChangeOwnPasswordDialog";
 import * as Tabs from "@radix-ui/react-tabs";
-import { CircleDot, KeyRound, Lock, MonitorSmartphone, Plus, Search, Shield, User, UserRound, Users as UsersIcon } from "lucide-react";
+import { CircleDot, KeyRound, Lock, MonitorSmartphone, Plus, Search, Shield, UserRound, Users as UsersIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
@@ -126,7 +126,7 @@ export function Usuarios({ nav }: { nav?: ReactNode } = {}) {
     {
       id: "user",
       header: "Usuário",
-      icon: User,
+      icon: UserRound,
       cell: (row) => (
         <div className="users__identity">
           <UserAvatar name={row.name} />

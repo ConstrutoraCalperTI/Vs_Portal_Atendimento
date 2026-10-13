@@ -1,4 +1,4 @@
-import { CircleCheckBig, CircleDot, Flag, Inbox, Plus, Reply, Settings2, Timer, Users, Wrench } from "lucide-react";
+import { CircleCheckBig, CircleDot, Flag, Inbox, MessageSquareReply, Plus, Settings2, Timer, Users, Wrench } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ThLabel } from "../../../components/ds";
@@ -249,7 +249,7 @@ function EditorServico({ cad, servico, onFechar }: { cad: Cadastros; servico: Se
           <thead>
             <tr>
               <th><ThLabel icon={Flag}>Urgência</ThLabel></th>
-              <th><ThLabel icon={Reply}>1ª resposta</ThLabel></th>
+              <th><ThLabel icon={MessageSquareReply}>1ª resposta</ThLabel></th>
               <th><ThLabel icon={CircleCheckBig}>Solução</ThLabel></th>
             </tr>
           </thead>

@@ -1,5 +1,5 @@
 import * as Switch from "@radix-ui/react-switch";
-import { ArrowDown, ArrowUp, FileCode2, FlaskConical, Hash, Info, ListOrdered, Pencil, Play, Plus, Shapes, Tag, ToggleRight, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, FileCode2, FlaskConical, Hash, Info, Pencil, Play, Plus, Shapes, Tag, ToggleRight, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatDateTime } from "../../../../utils/dates";
@@ -75,7 +75,7 @@ export function IntegracaoConsultas() {
     {
       id: "order",
       header: "Ordem",
-      icon: ListOrdered,
+      icon: ArrowUpDown,
       width: "92px",
       cell: (row) => {
         const index = rows?.indexOf(row) ?? 0;
