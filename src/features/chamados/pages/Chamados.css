@@ -219,9 +219,8 @@
   padding: 0 4px;
   font-size: 11px;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Os status da coluna aparecem inteiros, quebrando a linha entre palavras. */
+  line-height: 1.45;
 }
 
 .ch-card {
