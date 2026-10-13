@@ -306,3 +306,83 @@ button.cd-tile { font: inherit; cursor: pointer; }
   .cd-logo__calper { height: 24px; }
   .cd-logo { gap: 8px; }
 }
+
+/* ---------- Modo Técnico (mockup docs/mockups/calperdesk-tecnico.html, aprovado em 13/10/2026) ---------- */
+/* Tema: o mesmo app, com verde-água no lugar do dourado e fundo azul-petróleo. */
+.cd--tec { --cd-1: #0f2e33; --cd-2: #0b2226; --cd-3: #061417; --cd-ouro: #5eead4; --cd-ouro-b: rgba(94, 234, 212, 0.32);
+  --cd-ouro-bg1: rgba(94, 234, 212, 0.12); --cd-ouro-bg2: rgba(20, 184, 166, 0.05); }
+.cd--tec .cd-btn-ouro, .cd--tec .cd-redondo--ouro { background: linear-gradient(135deg, #5eead4, #14b8a6); color: #042f2e; box-shadow: 0 10px 24px -10px rgba(20, 184, 166, 0.7); }
+.cd--tec .cd-campo:focus { box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.18); }
+
+/* Login: Colaborador × Técnico */
+.cd-seg { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--cd-borda); margin: 0 0 16px; }
+.cd-seg button { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--cd-txt-2); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.cd-seg button[aria-selected="true"] { background: linear-gradient(135deg, #fcd34d, #f59e0b); color: #3b2600; }
+.cd--tec .cd-seg button[aria-selected="true"] { background: linear-gradient(135deg, #5eead4, #14b8a6); color: #042f2e; }
+.cd-login__tec { border-radius: 12px; border: 1px solid var(--cd-ouro-b); background: var(--cd-ouro-bg1); padding: 10px 12px; font-size: 13px; margin: 0 0 12px; }
+
+.cd-selo { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 11px; border-radius: 99px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--cd-ouro); border: 1px solid var(--cd-ouro-b); background: var(--cd-ouro-bg1); white-space: nowrap; }
+
+/* Quadros e filtros */
+.cd-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0 20px 12px; }
+.cd-kpi { border-radius: 14px; border: 1px solid var(--cd-borda); background: var(--cd-vidro); padding: 10px 12px; text-align: left; color: #fff; display: grid; gap: 3px; }
+.cd-kpi b { font-size: 22px; line-height: 1; }
+.cd-kpi span { font-size: 11px; color: var(--cd-txt-2); display: flex; align-items: center; gap: 6px; }
+.cd-kpi span::before { content: ""; width: 7px; height: 7px; border-radius: 9px; background: var(--c, #94a3b8); flex: none; }
+.cd-kpi[aria-pressed="true"] { border-color: var(--cd-ouro-b); background: var(--cd-ouro-bg1); }
+.cd-kpi[aria-pressed="true"] b { color: var(--cd-ouro); }
+.cd-filtros .cd-chip { flex: none; white-space: nowrap; }
+.cd-filtro { margin: 0 20px 12px; border-radius: 14px; border: 1px solid var(--cd-borda); background: rgba(0, 0, 0, 0.18); padding: 2px 12px 12px; }
+.cd-filtro__2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.cd select.cd-campo { appearance: none; padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--cd-txt-3) 50%), linear-gradient(135deg, var(--cd-txt-3) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.cd select.cd-campo option { color: #111; }
+
+/* Cartão do técnico */
+.cd-tk { display: grid; gap: 7px; }
+.cd-tk h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.cd-card--meu { border-color: var(--cd-ouro-b); }
+.cd-etqs { display: flex; flex-wrap: wrap; gap: 5px; }
+.cd-etq { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--cd-borda); color: var(--cd-txt-2); }
+.cd-etq--parado { color: #fecdd3; background: rgba(251, 113, 133, 0.18); border-color: rgba(251, 113, 133, 0.4); }
+.cd-etq--grave { color: #fed7aa; background: rgba(251, 146, 60, 0.14); border-color: rgba(251, 146, 60, 0.35); }
+.cd-etq--prazo { color: #fde68a; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.35); }
+.cd-meta { display: grid; gap: 3px; font-size: 12px; color: var(--cd-txt-2); }
+.cd-meta div { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.cd-meta svg { flex: none; color: var(--cd-txt-3); }
+.cd-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd-vencido { color: var(--cd-perigo); font-weight: 600; }
+.cd-tk__pe { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--cd-txt-3); }
+.cd-tk__pe b { color: var(--cd-txt); }
+.cd-btn-mini { min-height: 32px; padding: 0 12px; border-radius: 10px; border: 0; background: linear-gradient(135deg, #5eead4, #14b8a6); color: #042f2e;
+  font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+
+/* Detalhe do técnico */
+.cd-bloco { margin: 0 20px 12px; border-radius: 16px; border: 1px solid var(--cd-borda); background: var(--cd-vidro); padding: 12px 14px; }
+.cd-bloco h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cd-txt-3); font-weight: 600; }
+.cd-bloco p { margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cd-bloco small { color: var(--cd-txt-2); font-size: 13px; }
+.cd-bloco--acao { border-color: var(--cd-ouro-b); }
+.cd-bloco--acao h4 { color: var(--cd-ouro); }
+.cd-obs { margin-top: 8px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.08); padding: 8px 10px; font-size: 12px; color: #fde68a; }
+.cd-com-outro { margin: 0 20px 12px; border-radius: 12px; padding: 10px 12px; font-size: 13px; background: rgba(125, 211, 252, 0.08); border: 1px solid rgba(125, 211, 252, 0.3); color: #e0f2fe; }
+.cd-fotos { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.cd-fotos .cd-anexos { margin: 0; }
+.cd-foto-add { position: relative; width: 64px; height: 64px; border-radius: 10px; border: 1px dashed var(--cd-ouro-b); background: var(--cd-ouro-bg1); color: var(--cd-ouro);
+  font-size: 11px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; text-align: center; }
+.cd-foto-add:focus-within { outline: 2px solid var(--cd-ouro); outline-offset: 2px; }
+.cd-foto-add input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.cd-tipos { display: grid; gap: 8px; }
+.cd-tipo { display: flex; gap: 10px; align-items: center; border-radius: 12px; border: 1px solid var(--cd-borda); background: rgba(255, 255, 255, 0.04); padding: 10px 12px; text-align: left; color: #fff; width: 100%; }
+.cd-tipo i { font-style: normal; font-size: 20px; width: 28px; text-align: center; flex: none; }
+.cd-tipo b { display: block; font-size: 14px; }
+.cd-tipo small { display: block; font-size: 12px; color: var(--cd-txt-3); }
+.cd-tipo[aria-checked="true"] { border-color: var(--cd-ouro-b); background: var(--cd-ouro-bg1); }
+.cd-tipo[aria-checked="true"] b { color: var(--cd-ouro); }
+.cd-efeito { margin-top: 10px; border-radius: 12px; border: 1px solid rgba(125, 211, 252, 0.3); background: rgba(125, 211, 252, 0.08); padding: 10px 12px; font-size: 13px; color: #e0f2fe; line-height: 1.45; }
+.cd-efeito b { color: var(--cd-info); }
+.cd-rodape { position: sticky; bottom: 0; margin-top: auto; padding: 10px 20px 16px; background: linear-gradient(to top, var(--cd-3) 72%, transparent); }
+.cd-rodape small { display: block; text-align: center; font-size: 11px; color: var(--cd-txt-3); margin-top: 6px; }
+.cd-tl--tec { padding: 0; }

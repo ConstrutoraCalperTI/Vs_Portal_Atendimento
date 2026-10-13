@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Eye, EyeOff, LogOut } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LogOut, User, Wrench } from "lucide-react";
 import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from "react-router";
 import { CORPORATE_DOMAIN } from "../../config/app";
@@ -8,6 +8,7 @@ import { useAuthSession } from "../auth/useAuthSession";
 import { AbrirChamado } from "./AbrirChamado";
 import { DetalheChamado, MeusChamados } from "./Chamados";
 import { calperdesk, type Entrada } from "./service";
+import { AppTecnico } from "./Tecnico";
 import { Avisos, EscolherSetorPelaUrl, Inicio, Perfil, Solucoes } from "./Telas";
 import "./calperdesk.css";
 
@@ -18,6 +19,17 @@ import "./calperdesk.css";
 const SIMULAR_KEY = "calperdesk-simular";
 /** Quem pediu "Primeiro acesso" pelo app volta para o app depois de criar a senha. */
 export const VOLTAR_APP_KEY = "calperdesk-voltar";
+/** Aba do login (Colaborador ou Técnico), guardada no aparelho: o técnico já abre na aba dele. */
+const MODO_KEY = "calperdesk-modo";
+export type Modo = "col" | "tec";
+
+function lerModo(): Modo {
+  try {
+    return localStorage.getItem(MODO_KEY) === "tec" ? "tec" : "col";
+  } catch {
+    return "col";
+  }
+}
 
 function lerSessao(chave: string): string | null {
   try {
@@ -112,18 +124,25 @@ export function CalperDeskApp() {
   const [params] = useSearchParams();
   const pedido = params.get("simular");
   if (pedido) gravarSessao(SIMULAR_KEY, /^[0-9a-f-]{36}$/i.test(pedido) ? pedido : null);
+  const [modo, setModoEstado] = useState<Modo>(lerModo);
+  const setModo = (m: Modo) => {
+    setModoEstado(m);
+    gravarLocal(MODO_KEY, m);
+  };
+  // A simulação da Administração é sempre do colaborador.
+  const tecnico = modo === "tec" && !lerSessao(SIMULAR_KEY);
 
   if (status === "loading") {
     return (
-      <div className="cd">
+      <div className={tecnico ? "cd cd--tec" : "cd"}>
         <div className="cd__col">
           <Carregando />
         </div>
       </div>
     );
   }
-  if (status === "signedOut") return <AppLogin />;
-  return <AppAutenticado />;
+  if (status === "signedOut") return <AppLogin modo={modo} onModo={setModo} />;
+  return tecnico ? <AppTecnico onColaborador={() => setModo("col")} /> : <AppAutenticado />;
 }
 
 function AppAutenticado() {
@@ -225,7 +244,8 @@ function AppAutenticado() {
 }
 
 /** Login do app: mesmo gateway seguro do portal, com o visual do CalperDESK. "Primeiro acesso" cria a conta. */
-function AppLogin() {
+function AppLogin({ modo: aba, onModo }: { modo: Modo; onModo: (m: Modo) => void }) {
+  const tec = aba === "tec";
   const { signIn, requestPasswordReset, notice, clearNotice } = useAuthSession();
   const [modo, setModo] = useState<"entrar" | "link">("entrar");
   const [email, setEmail] = useState("");
@@ -268,16 +288,25 @@ function AppLogin() {
 
   const mensagem = erro ?? notice;
   return (
-    <div className="cd">
+    <div className={tec ? "cd cd--tec" : "cd"}>
       <div className="cd__col">
         <div className="cd-login">
           <Logo para="/app" />
-          <h1>{modo === "entrar" ? "Entrar" : "Primeiro acesso"}</h1>
+          <h1>{modo === "entrar" ? (tec ? "Entrar como técnico" : "Entrar") : "Primeiro acesso"}</h1>
           <p>
             {modo === "entrar"
               ? `Use seu e-mail @${CORPORATE_DOMAIN} e sua senha.`
               : "Digite seu e-mail da Calper. Enviaremos um link para você criar (ou trocar) a sua senha."}
           </p>
+          <div className="cd-seg" role="tablist" aria-label="Tipo de acesso">
+            <button type="button" role="tab" aria-selected={!tec} onClick={() => onModo("col")}>
+              <User size={16} aria-hidden="true" /> Colaborador
+            </button>
+            <button type="button" role="tab" aria-selected={tec} onClick={() => onModo("tec")}>
+              <Wrench size={16} aria-hidden="true" /> Técnico
+            </button>
+          </div>
+          {tec && <p className="cd-login__tec">Acesso dos técnicos do <b>CFTV</b>. Mesmo e-mail e senha do portal.</p>}
           {mensagem && (
             <p className="cd-alerta" role="alert">
               {mensagem}
@@ -331,7 +360,7 @@ function AppLogin() {
               </>
             )}
             <button type="submit" className="cd-btn-ouro" disabled={enviando} style={{ marginTop: 8 }}>
-              {enviando ? "Aguarde…" : modo === "entrar" ? "Entrar" : "Enviar link"}
+              {enviando ? "Aguarde…" : modo === "entrar" ? (tec ? "Entrar como técnico" : "Entrar") : "Enviar link"}
             </button>
           </form>
           <small>
@@ -345,7 +374,7 @@ function AppLogin() {
               </button>
             )}
           </small>
-          <small>Só e-mails @{CORPORATE_DOMAIN}. No 1º acesso você entra como Solicitante.</small>
+          <small>{tec ? "Só membros das equipes do CFTV." : `Só e-mails @${CORPORATE_DOMAIN}. No 1º acesso você entra como Solicitante.`}</small>
         </div>
       </div>
     </div>
