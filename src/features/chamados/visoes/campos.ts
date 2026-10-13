@@ -92,11 +92,12 @@ export const COLUNAS_LISTA: Record<ColunaPadrao, string> = {
   prazo_resposta: "Prazo de 1ª resposta",
   prazo_solucao: "Prazo de solução",
   encerrado: "Encerrado em",
+  empreendimento: "Empreendimento",
 };
 
 /** Colunas que dependem de ch_lista_extras (a Lista só busca quando a visão usa alguma). */
 export const COLUNAS_COM_EXTRAS: ReadonlySet<ColunaLista> = new Set<ColunaLista>([
-  "categoria", "setor", "contato", "criado_por", "atualizado", "primeira_resposta", "prazo_resposta", "prazo_solucao", "encerrado",
+  "categoria", "setor", "contato", "criado_por", "atualizado", "primeira_resposta", "prazo_resposta", "prazo_solucao", "encerrado", "empreendimento",
 ]);
 
 export const ehCampoAdicional = (c: ColunaLista): c is `campo:${string}` => c.startsWith("campo:");

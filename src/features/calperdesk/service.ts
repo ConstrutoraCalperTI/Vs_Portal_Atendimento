@@ -135,9 +135,16 @@ export interface Empreendimento {
 export interface NovoChamado {
   setorId: number;
   servicoId: number | null;
+  /** Obrigatório quando o setor pede (Administração › Empreendimentos, ex.: CFTV). */
+  empreendimentoId: number | null;
   descricao: string;
   urgente: boolean;
   anexos: Anexo[];
+}
+
+export interface EmpreendimentosSetor {
+  pedir: boolean;
+  lista: { id: number; nome: string; apelidos: string[]; cidade: string | null }[];
 }
 
 // ---------- Administração ----------
@@ -204,12 +211,13 @@ export const calperdesk = {
   },
   salvarPerfil: (p: { nome: string; telefone: string }) => rpc<void>("cd_perfil_salvar", { p: json(p) }),
   servicos: (setor: number) => rpc<Servico[]>("cd_servicos", { p_setor: setor }),
+  empreendimentosDoSetor: (setor: number) => rpc<EmpreendimentosSetor>("cd_setor_empreendimentos", { p_setor: setor }),
   meusChamados: (filtro: "abertos" | "resolvidos" | "todos", como: string | null) => rpc<MeusChamados>("cd_meus_chamados", { p_filtro: filtro, p_como: como }),
   avisos: (setor: number | null) => rpc<Aviso[]>("cd_avisos_listar", { p_setor: setor }),
   solucoes: (setor: number, servico: number | null, busca: string | null) =>
     rpc<Solucao[]>("cd_solucoes_listar", { p_setor: setor, p_servico: servico, p_busca: busca }),
   solucaoUsada: (id: number) => rpc<void>("cd_solucao_usada", { p_id: id }),
-  criar: (p: NovoChamado) => rpc<{ id: number; servico: string | null; slaRespostaAte: string | null; setor: string }>("cd_ticket_criar", { p: json(p) }),
+  criar: (p: NovoChamado) => rpc<{ id: number; servico: string | null; slaRespostaAte: string | null; setor: string; empreendimento?: string | null }>("cd_ticket_criar", { p: json(p) }),
   chamado: (id: number, como: string | null) => rpc<Chamado>("cd_chamado", { p_id: id, p_como: como }),
   responder: (id: number, p: { texto: string; anexos: Anexo[] }) => rpc<void>("cd_chamado_responder", { p_id: id, p: json(p) }),
   confirmar: (id: number, resolveu: boolean, comentario: string | null) =>

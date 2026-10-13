@@ -32,6 +32,7 @@ import { LinhaDoTempo } from "./LinhaDoTempo";
 
 const ConversaAoVivo = lazy(() => import("../../atendimento/pages/ConversaAoVivo").then((m) => ({ default: m.ConversaAoVivo })));
 import { ServicoBusca } from "./ServicoBusca";
+import { CampoEmpreendimento } from "../empreendimentos/CampoEmpreendimento";
 import "./Ticket.css";
 
 // Gestão de Chamados › Tickets › #número (mockup aprovado docs/mockups/tela-ticket.html): classificar à
@@ -508,6 +509,7 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo, 
               <ServicoBusca rotuloId={servicoRotuloId} opcoes={opcoesServico} valor={servicoId} onChange={escolherServico} />
               <span className="field__help">Digite parte do nome (ex.: impressora, totvs). Define a equipe e o prazo de SLA. Obrigatório para enviar a ação.</span>
             </div>
+            <CampoEmpreendimento ticketId={d.id} bloqueado={bloqueado} />
             <div className="tk-row2">
               <label className="field">
                 <span className="field__label">Categoria</span>

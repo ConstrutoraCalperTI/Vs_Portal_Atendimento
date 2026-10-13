@@ -23,6 +23,7 @@ import type { DashboardTicket } from "../../dashboard/types";
 import { ComPainel, useAtualizarTicket } from "../../dashboard/useDashboardData";
 import type { DashboardPayload } from "../../dashboard/types";
 import { ServiceError } from "../../configuracoes/services/types";
+import { useEmpreendimentos } from "../empreendimentos/hooks";
 import { useListaExtras, useSalvarVisao, useStatusTickets, useVisoesDisponiveis } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import { atendeCondicoes, colunaDoTicket, ordenarTickets } from "../visoes/avaliar";
@@ -73,6 +74,11 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
   const perm = usePermissoesVisoes();
   const [params, setParams] = useSearchParams();
   const [busca, setBusca] = useState("");
+  /** Filtro por empreendimento: "" = todos, "sem" = sem empreendimento, senão o id. */
+  const [empFiltro, setEmpFiltro] = useState("");
+  const empreendimentos = useEmpreendimentos();
+  const usaEmpreendimento = empreendimentos.data?.setores.some((s) => s.iaLigada || s.pedirNoApp) ?? false;
+  const extrasFiltro = useListaExtras(empFiltro !== "");
   const tickets = data.tickets;
   const atualizar = useAtualizarTicket();
   const navigate = useNavigate();
@@ -101,8 +107,13 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
     const q = busca.trim().toLowerCase();
     return recentes
       .filter((t) => atendeCondicoes(t, visao.condicoes, ctx))
-      .filter((t) => !q || `${t.id} ${t.subject} ${t.requester}`.toLowerCase().includes(q));
-  }, [recentes, visao, busca, ctx]);
+      .filter((t) => !q || `${t.id} ${t.subject} ${t.requester}`.toLowerCase().includes(q))
+      .filter((t) => {
+        const x = extrasFiltro.data?.tickets[String(t.id)];
+        if (!empFiltro || !extrasFiltro.data) return true;
+        return empFiltro === "sem" ? !x?.empreendimento_id : String(x?.empreendimento_id ?? "") === empFiltro;
+      });
+  }, [recentes, visao, busca, ctx, empFiltro, extrasFiltro.data]);
 
   /** D5: quem pode mudar o status (arrastar): admin vê tudo; o agente, os seus e os sem responsável. */
   const podeMover = (t: DashboardTicket) => perm.veTodas || !t.owner || t.owner.id === me.id;
@@ -173,6 +184,22 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
           </label>
         )}
         <input className="input ch-search" type="search" aria-label="Buscar tickets" placeholder="Buscar nº, assunto ou solicitante..." value={busca} onChange={(e) => setBusca(e.target.value)} />
+        {usaEmpreendimento && (
+          <label className="ch-viewsel">
+            Empreendimento:
+            <select value={empFiltro} onChange={(e) => setEmpFiltro(e.target.value)}>
+              <option value="">Todos</option>
+              <option value="sem">Sem empreendimento</option>
+              {empreendimentos.data?.empreendimentos
+                .filter((e) => e.ativo || e.tickets > 0)
+                .map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nome}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
         {visao && <span className="ch-count" aria-live="polite">{daVisao.length} tickets nesta visão</span>}
         <span className="ch-toolbar__spacer" />
         {perm.podeConfigurar && visao?.tipo === "lista" && (
@@ -467,6 +494,15 @@ function Celula({ coluna, t, x, campos, meuId, servicoNome }: { coluna: ColunaLi
       return <Data iso={x?.sla_solucao_ate} />;
     case "encerrado":
       return <Data iso={x?.encerrado_em ?? t.closed_at} />;
+    case "empreendimento":
+      return x?.empreendimento ? (
+        <>
+          {x.empreendimento}
+          {x.empreendimento_origem === "ia" && <span className="ch-badge ch-badge--info" style={{ marginLeft: 6 }}>IA</span>}
+        </>
+      ) : (
+        vazio
+      );
   }
 }
 
@@ -506,6 +542,7 @@ function valorOrdem(coluna: ColunaLista, t: DashboardTicket, x: Extras, campos: 
     case "prazo_resposta": return data(x?.sla_resposta_ate);
     case "prazo_solucao": return data(x?.sla_solucao_ate);
     case "encerrado": return data(x?.encerrado_em ?? t.closed_at);
+    case "empreendimento": return texto(x?.empreendimento);
   }
 }
 

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
+  Building,
   BarChart3,
   Workflow,
   Building2,
@@ -230,6 +231,16 @@ const definitions = [
     icon: FormInput,
     group: "principal",
     description: "Campos próprios do ticket (ex.: PROTOCOLO, obra, unidade), com tipo e obrigatoriedade.",
+    parent: "gestao_atendimento",
+    adminOnly: true,
+  },
+  {
+    id: "gestao_atendimento_empreendimentos",
+    label: "Empreendimentos",
+    path: "/gestao-atendimento/empreendimentos",
+    icon: Building,
+    group: "principal",
+    description: "Empreendimentos atendidos pelas equipes (CFTV): o CalperDESK pede ao abrir o chamado e a IA identifica nos demais canais.",
     parent: "gestao_atendimento",
     adminOnly: true,
   },

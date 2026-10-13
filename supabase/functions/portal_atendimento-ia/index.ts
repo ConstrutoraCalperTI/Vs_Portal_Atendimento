@@ -2,7 +2,8 @@
 // Chamada pelo pg_cron a cada 1 min (job portal-atendimento-ia-1min), sem JWT: a autenticação é o cabeçalho
 // x-atendimento-chave (chave no Vault). Também aceita a supervisão geral logada (rodar agora).
 //
-//   {acao: "triagem"}  classifica até 10 tickets sem equipe de setores com IA ligada (ch_ia_pendentes)
+//   {acao: "triagem"}  classifica até 10 tickets sem equipe de setores com IA ligada (ch_ia_pendentes) e
+//                      identifica o empreendimento de até 10 tickets sem ele (ch_ia_empreendimentos_pendentes, CFTV)
 //   {acao: "resumir", ticketId}  pessoa logada que vê o ticket: sugere a "Solução aplicada" a partir da conversa
 //                                 (diálogo "Foi resolvido?" ao encerrar o WhatsApp; o atendente revisa)
 //
@@ -22,6 +23,7 @@ import {
   type EquipeCandidata,
   type ServicoCandidato,
 } from "../_shared/ia/triagem.ts";
+import { ESQUEMA_EMPREENDIMENTO, montarPedidoEmpreendimento, REGRAS_EMPREENDIMENTO, validarIdentificacao, type EmpreendimentoCandidato } from "../_shared/ia/empreendimento.ts";
 import { ESQUEMA_RESUMO, montarConversa, REGRAS_RESUMO, validarResumo, type AcaoParaResumo } from "../_shared/ia/resumo.ts";
 
 interface Pendente {
@@ -30,6 +32,13 @@ interface Pendente {
   descricao: string;
   equipes: EquipeCandidata[];
   servicos: ServicoCandidato[];
+}
+
+interface PendenteEmpreendimento {
+  ticketId: number;
+  assunto: string;
+  descricao: string;
+  empreendimentos: EmpreendimentoCandidato[];
 }
 
 function iguais(a: string, b: string): boolean {
@@ -119,7 +128,36 @@ Deno.serve(async (req) => {
       resultados.push({ ticket: t.ticketId, ...(g.error ? { erro: g.error.message } : (g.data as Record<string, unknown>)) });
     }
     console.log(JSON.stringify({ evento: "ia.triagem", resultados }));
-    return json({ resultados });
+
+    // Empreendimento (Administração › Empreendimentos): mesmos cuidados; aplica sozinho a partir do limiar do setor.
+    const pend = await db.rpc("ch_ia_empreendimentos_pendentes", { p_limite: 10 });
+    if (pend.error) throw new Error(pend.error.message);
+    const empreendimentos: Record<string, unknown>[] = [];
+    for (const t of (pend.data ?? []) as PendenteEmpreendimento[]) {
+      const inicio = Date.now();
+      let registro: Record<string, unknown>;
+      try {
+        if (t.empreendimentos.length === 0) throw new Error("Nenhum empreendimento ativo no cadastro.");
+        const r = await classificarComGemini(fetch, {
+          chave: chaveIa,
+          modelo,
+          reserva,
+          sistema: REGRAS_EMPREENDIMENTO,
+          pedido: montarPedidoEmpreendimento(prepararTicket(t.assunto, t.descricao), t.empreendimentos),
+          esquema: ESQUEMA_EMPREENDIMENTO,
+        });
+        const c = validarIdentificacao(r.json, t.empreendimentos);
+        registro = c
+          ? { ...c, modelo: r.modelo, tokensEntrada: r.tokensEntrada, tokensSaida: r.tokensSaida, ms: Date.now() - inicio }
+          : { erro: "Resposta da IA fora do formato.", modelo: r.modelo, ms: Date.now() - inicio };
+      } catch (e) {
+        registro = { erro: String(e instanceof Error ? e.message : e).slice(0, 500), modelo, ms: Date.now() - inicio };
+      }
+      const g = await db.rpc("ch_ia_empreendimento_registrar", { p_ticket: t.ticketId, p: registro });
+      empreendimentos.push({ ticket: t.ticketId, ...(g.error ? { erro: g.error.message } : (g.data as Record<string, unknown>)) });
+    }
+    if (empreendimentos.length) console.log(JSON.stringify({ evento: "ia.empreendimento", resultados: empreendimentos }));
+    return json({ resultados, empreendimentos });
   } catch (error) {
     return errorResponse(error);
   }

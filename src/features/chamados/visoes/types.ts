@@ -70,7 +70,7 @@ export type CampoAgrupamento = "equipe" | "responsavel" | "status" | "servico" |
 export type ColunaPadrao =
   | "solicitante" | "status" | "responsavel" | "sla" | "origem" | "servico" | "equipe" | "prioridade" | "criado"
   | "tags" | "recebido_em" | "categoria" | "setor" | "contato" | "criado_por" | "atualizado" | "primeira_resposta"
-  | "prazo_resposta" | "prazo_solucao" | "encerrado";
+  | "prazo_resposta" | "prazo_solucao" | "encerrado" | "empreendimento";
 /** Coluna da Lista: padrão ou campo adicional ("campo:<chave>" do cadastro de Campos adicionais). */
 export type ColunaLista = ColunaPadrao | `campo:${string}`;
 
@@ -91,6 +91,10 @@ export interface ExtrasTicket {
   sla_resposta_ate: string | null;
   sla_solucao_ate: string | null;
   encerrado_em: string | null;
+  /** Administração › Empreendimentos (migration 20261012100000). */
+  empreendimento_id?: number | null;
+  empreendimento?: string | null;
+  empreendimento_origem?: "ia" | "manual" | "solicitante" | null;
   campos: Record<string, unknown>;
 }
 export interface ListaExtras {

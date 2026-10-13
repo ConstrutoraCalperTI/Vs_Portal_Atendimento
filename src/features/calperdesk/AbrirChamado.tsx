@@ -8,14 +8,19 @@ import { calperdesk, formatarTelefone, type Servico } from "./service";
 import { prazo } from "./Telas";
 
 const TIPOS_ARQUIVO = "image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv";
+const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/** Abrir chamado: tipo de serviço (árvore do departamento), descrição, foto/arquivo e urgência. */
+/** Abrir chamado: empreendimento (setores que pedem, ex.: CFTV), tipo de serviço (árvore do departamento), descrição, foto/arquivo e urgência. */
 export function AbrirChamado() {
   const { setorId } = useParams();
   const { entrada, simulando } = useCd();
   const setor = entrada.setores.find((s) => String(s.id) === setorId) ?? null;
   const qc = useQueryClient();
   const servicos = useQuery({ queryKey: ["cd", "servicos", setor?.id], queryFn: () => calperdesk.servicos(setor!.id), enabled: Boolean(setor), staleTime: 300_000 });
+  const emps = useQuery({ queryKey: ["cd", "empreendimentos-setor", setor?.id], queryFn: () => calperdesk.empreendimentosDoSetor(setor!.id), enabled: Boolean(setor), staleTime: 300_000 });
+  const pedeEmp = emps.data?.pedir === true;
+  const [empId, setEmpId] = useState<number | null>(null);
+  const [empBusca, setEmpBusca] = useState("");
   const [caminho, setCaminho] = useState<Servico[]>([]);
   /** undefined = ainda escolhendo; null = "Outro assunto"; número = serviço final. */
   const [servicoId, setServicoId] = useState<number | null | undefined>(undefined);
@@ -31,7 +36,7 @@ export function AbrirChamado() {
   const [dicaAberta, setDicaAberta] = useState(false);
 
   const criar = useMutation({
-    mutationFn: () => calperdesk.criar({ setorId: setor!.id, servicoId: servicoId ?? null, descricao: descricao.trim(), urgente, anexos: anexos.anexos }),
+    mutationFn: () => calperdesk.criar({ setorId: setor!.id, servicoId: servicoId ?? null, empreendimentoId: pedeEmp ? empId : null, descricao: descricao.trim(), urgente, anexos: anexos.anexos }),
     onSuccess: () => {
       anexos.limpar();
       void qc.invalidateQueries({ queryKey: ["cd", "meus"] });
@@ -51,6 +56,7 @@ export function AbrirChamado() {
           </div>
           <h2>Chamado #{r.id} aberto</h2>
           <p>{r.servico ? `${r.setor} › ${r.servico}` : r.setor}</p>
+          {r.empreendimento && <p style={{ fontSize: 13, color: "var(--cd-txt-3)", marginTop: -6 }}>{r.empreendimento}</p>}
           {r.slaRespostaAte && <p style={{ fontSize: 13, color: "var(--cd-txt-3)" }}>Prazo para a 1ª resposta: {prazo(r.slaRespostaAte)}</p>}
           <div className="cd-confirma__acoes" style={{ marginLeft: "auto", marginRight: "auto" }}>
             <Link to={`/app/chamados/${r.id}`} className="cd-btn-ouro">
@@ -95,6 +101,10 @@ export function AbrirChamado() {
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     setErro(null);
+    if (pedeEmp && empId === null) {
+      setErro({ campo: "empreendimentoId", texto: "Escolha o empreendimento." });
+      return;
+    }
     if (!escolhido) {
       setErro({ campo: "servicoId", texto: "Escolha o tipo de serviço." });
       return;
@@ -106,6 +116,11 @@ export function AbrirChamado() {
     criar.mutate();
   };
   const sol = dica.data?.[0];
+  // Os passos ganham um número a mais quando o setor pede o empreendimento.
+  const passo = (n: number) => n + (pedeEmp ? 1 : 0);
+  const empEscolhido = emps.data?.lista.find((e) => e.id === empId);
+  const termos = norm(empBusca).split(/\s+/).filter(Boolean);
+  const empLista = (emps.data?.lista ?? []).filter((e) => termos.every((t) => norm(`${e.nome} ${e.apelidos.join(" ")}`).includes(t)));
 
   return (
     <>
@@ -130,8 +145,58 @@ export function AbrirChamado() {
           </div>
         </div>
 
+        {pedeEmp && (
+          <>
+            <span className="cd-rot" id="cd-emp">
+              1 · Empreendimento
+            </span>
+            {empEscolhido ? (
+              <div className="cd-menu">
+                <div className="cd-menu__escolhido">
+                  <b>{empEscolhido.nome}</b>
+                  {!simulando && (
+                    <button type="button" className="cd-link" onClick={() => setEmpId(null)}>
+                      trocar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <input
+                  className="cd-campo"
+                  type="search"
+                  aria-labelledby="cd-emp"
+                  placeholder="Digite o nome do condomínio ou obra"
+                  value={empBusca}
+                  onChange={(e) => setEmpBusca(e.target.value)}
+                  aria-invalid={erro?.campo === "empreendimentoId" || undefined}
+                />
+                <div className="cd-menu" role="group" aria-labelledby="cd-emp" style={{ marginTop: 8, maxHeight: 260, overflowY: "auto" }}>
+                  {empLista.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      className="cd-menu__op"
+                      onClick={() => {
+                        setErro(null);
+                        setEmpId(e.id);
+                        setEmpBusca("");
+                      }}
+                    >
+                      {e.nome}
+                    </button>
+                  ))}
+                  {empLista.length === 0 && <p className="cd-vazio" style={{ padding: 12, textAlign: "left" }}>Nenhum empreendimento com “{empBusca}”.</p>}
+                </div>
+              </>
+            )}
+            {erro?.campo === "empreendimentoId" && <span className="cd-erro">{erro.texto}</span>}
+          </>
+        )}
+
         <span className="cd-rot" id="cd-servico">
-          1 · Tipo de serviço
+          {passo(1)} · Tipo de serviço
         </span>
         {servicos.isPending ? (
           <Carregando />
@@ -182,7 +247,7 @@ export function AbrirChamado() {
         )}
 
         <label className="cd-rot" htmlFor="cd-desc">
-          2 · Descrição
+          {passo(2)} · Descrição
         </label>
         <textarea
           id="cd-desc"
@@ -213,7 +278,7 @@ export function AbrirChamado() {
           </div>
         )}
 
-        <span className="cd-rot">3 · Anexar arquivo ou foto (opcional)</span>
+        <span className="cd-rot">{passo(3)} · Anexar arquivo ou foto (opcional)</span>
         <div className="cd-anexar">
           <label>
             <Camera size={22} aria-hidden="true" />
@@ -228,7 +293,7 @@ export function AbrirChamado() {
         </div>
         <Miniaturas itens={anexos.itens} onRemover={anexos.remover} />
 
-        <span className="cd-rot">4 · É urgente?</span>
+        <span className="cd-rot">{passo(4)} · É urgente?</span>
         <div className="cd-chips" role="group" aria-label="Urgência">
           <button type="button" className="cd-chip" aria-pressed={!urgente} onClick={() => setUrgente(false)}>
             Normal
