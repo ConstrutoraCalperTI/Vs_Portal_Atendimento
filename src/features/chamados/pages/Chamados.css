@@ -221,6 +221,10 @@
   color: var(--muted);
   /* Os status da coluna aparecem inteiros, quebrando a linha entre palavras. */
   line-height: 1.45;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
 }
 
 .ch-card {
