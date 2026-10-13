@@ -1,4 +1,5 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
+import { ThLabel } from "../../../components/ds/ThLabel";
 import { Fragment, useState, type ReactNode } from "react";
 import { ErrorState } from "./ErrorState";
 import "./DataTable.css";
@@ -6,6 +7,8 @@ import "./DataTable.css";
 export interface Column<T> {
   id: string;
   header: string;
+  /** Ícone ao lado do título (padrão do portal). */
+  icon?: LucideIcon;
   cell: (row: T) => ReactNode;
   width?: string;
   align?: "left" | "right";
@@ -142,7 +145,7 @@ export function DataTable<T>({
             )}
             {columns.map((column) => (
               <th key={column.id} scope="col" style={{ width: column.width, textAlign: column.align }}>
-                {column.header}
+                {column.icon ? <ThLabel icon={column.icon}>{column.header}</ThLabel> : column.header}
               </th>
             ))}
           </tr>

@@ -1,6 +1,7 @@
-import { Plus } from "lucide-react";
+import { AlignLeft, ArrowUpDown, CircleDot, Flag, Plus, Star } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { useSalvarUrgencia } from "../hooks";
 import { ComCadastros, linhaProps, mensagem, OrdemBotoes, Rodape, Situacao } from "./comum";
 import { CORES_URGENCIA, type Cadastros, type CorUrgencia, type Urgencia } from "./types";
@@ -32,11 +33,11 @@ function Conteudo({ cad }: { cad: Cadastros }) {
         <table className="cad-table">
           <thead>
             <tr>
-              <th>Ordem</th>
-              <th>Urgência</th>
-              <th>Quando usar</th>
-              <th>Padrão</th>
-              <th>Situação</th>
+              <th><ThLabel icon={ArrowUpDown}>Ordem</ThLabel></th>
+              <th><ThLabel icon={Flag}>Urgência</ThLabel></th>
+              <th><ThLabel icon={AlignLeft}>Quando usar</ThLabel></th>
+              <th><ThLabel icon={Star}>Padrão</ThLabel></th>
+              <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
             </tr>
           </thead>
           <tbody>

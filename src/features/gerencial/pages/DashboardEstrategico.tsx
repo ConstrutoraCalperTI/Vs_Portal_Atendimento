@@ -1,5 +1,7 @@
+import { CalendarRange, CircleCheckBig, CircleDot, Layers, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router";
+import { ThLabel } from "../../../components/ds/ThLabel";
 import { getMenuItem } from "../../../config/menuRegistry";
 import { projecao, serieDiaria, somarDias, variacaoPct } from "../calculos";
 import { KpiGer, Secao, Semaforo } from "../componentes";
@@ -105,11 +107,11 @@ export function DashboardEstrategico() {
             <table className="ger-tabela">
               <thead>
                 <tr>
-                  <th>Horizonte</th>
-                  <th className="num">Entradas previstas</th>
-                  <th className="num">Capacidade (resolvidos)</th>
-                  <th className="num">Backlog projetado</th>
-                  <th>Situação</th>
+                  <th><ThLabel icon={CalendarRange}>Horizonte</ThLabel></th>
+                  <th className="num"><ThLabel icon={TrendingUp}>Entradas previstas</ThLabel></th>
+                  <th className="num"><ThLabel icon={CircleCheckBig}>Capacidade (resolvidos)</ThLabel></th>
+                  <th className="num"><ThLabel icon={Layers}>Backlog projetado</ThLabel></th>
+                  <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
                 </tr>
               </thead>
               <tbody>

@@ -16,6 +16,7 @@ export { ScopeSegmented, type SegmentOption } from "./ScopeSegmented";
 export { SlaHealth, type SlaMetric } from "./SlaHealth";
 export { formatDuration, slaLabel, slaTone, SLA_SOON_MINUTES } from "./sla";
 export { TablePagination } from "./TablePagination";
+export { ThLabel } from "./ThLabel";
 export { TeamDistribution, type TeamLoad } from "./TeamDistribution";
 export { Toast } from "./Toast";
 export { TriagePanel, type TriageBar } from "./TriagePanel";

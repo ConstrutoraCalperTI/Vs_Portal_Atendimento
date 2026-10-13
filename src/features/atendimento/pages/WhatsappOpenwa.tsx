@@ -1,7 +1,8 @@
 import * as Switch from "@radix-ui/react-switch";
-import { CheckCircle2, CircleAlert, Info, KeyRound, Link2, QrCode, RefreshCw, Smartphone, Trash2, Upload, Users } from "lucide-react";
+import { AlignLeft, CheckCircle2, CircleAlert, CircleDot, Info, KeyRound, Link2, MonitorSmartphone, Phone, QrCode, RefreshCw, Smartphone, Trash2, Upload, User, UserCheck, Users } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { formatDateTime } from "../../../utils/dates";
 import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
@@ -193,7 +194,7 @@ function Conexao({ p }: { p: PainelOpenwa }) {
         <div className="at-tab-wrap">
           <table className="at-tab">
             <thead>
-              <tr><th>Sessão no OpenWA</th><th>Telefone</th><th>Status</th></tr>
+              <tr><th><ThLabel icon={MonitorSmartphone}>Sessão no OpenWA</ThLabel></th><th><ThLabel icon={Phone}>Telefone</ThLabel></th><th><ThLabel icon={CircleDot}>Status</ThLabel></th></tr>
             </thead>
             <tbody>
               {v.sessoes.map((s) => (
@@ -452,7 +453,7 @@ function Atendentes({ s }: { s: SetorWhatsapp }) {
     <div className="at-tab-wrap">
       <table className="at-tab">
         <thead>
-          <tr><th>Atendente</th><th>WhatsApp pessoal</th>{numero && <th>No grupo interno?</th>}<th /></tr>
+          <tr><th><ThLabel icon={UserCheck}>Atendente</ThLabel></th><th><ThLabel icon={Phone}>WhatsApp pessoal</ThLabel></th>{numero && <th><ThLabel icon={Users}>No grupo interno?</ThLabel></th>}<th /></tr>
         </thead>
         <tbody>
           {s.atendentes.length === 0 && <tr><td colSpan={4} className="at-vazio">Nenhum atendente no setor (Fila e horários).</td></tr>}
@@ -566,7 +567,7 @@ function Linhas({ podeEditar, dominios }: { podeEditar: boolean; dominios: strin
       <div className="at-tab-wrap">
         <table className="at-tab">
           <thead>
-            <tr><th>Número</th><th>Pessoa</th><th>Situação</th><th>Observação</th>{podeEditar && <th />}</tr>
+            <tr><th><ThLabel icon={Phone}>Número</ThLabel></th><th><ThLabel icon={User}>Pessoa</ThLabel></th><th><ThLabel icon={CircleDot}>Situação</ThLabel></th><th><ThLabel icon={AlignLeft}>Observação</ThLabel></th>{podeEditar && <th />}</tr>
           </thead>
           <tbody>
             {linhas.isPending && <tr><td colSpan={5} className="at-vazio">Carregando…</td></tr>}

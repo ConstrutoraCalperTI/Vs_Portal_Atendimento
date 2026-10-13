@@ -1,10 +1,11 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
-import { Contact, Download, GitMerge, ImagePlus, Paperclip, Plus, Trash2, X } from "lucide-react";
+import { Briefcase, Building, CalendarClock, CalendarPlus, CircleDot, Contact, Download, GitMerge, HardDrive, IdCard, ImagePlus, Inbox, Mail, Paperclip, Phone, Plus, Shapes, Ticket, Trash2, User, UserPen, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
 import { PageSkeleton } from "../../../components/PageSkeleton";
+import { ThLabel } from "../../../components/ds";
 import { getMenuItem } from "../../../config/menuRegistry";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { formatDateTime } from "../../../utils/dates";
@@ -150,16 +151,16 @@ function Lista({ onAbrir }: { onAbrir: (id: number | "nova") => void }) {
           <table className="at-tab ca-tab">
             <thead>
               <tr>
-                <th>Nome</th>
-                <th>Tipo</th>
-                <th>CPF/CNPJ</th>
-                <th>E-mail principal</th>
-                <th>Telefone</th>
-                <th>Empresa</th>
-                <th>Origem</th>
-                <th className="n">Chamados</th>
-                <th>Último contato</th>
-                <th>Situação</th>
+                <th><ThLabel icon={User}>Nome</ThLabel></th>
+                <th><ThLabel icon={Shapes}>Tipo</ThLabel></th>
+                <th><ThLabel icon={IdCard}>CPF/CNPJ</ThLabel></th>
+                <th><ThLabel icon={Mail}>E-mail principal</ThLabel></th>
+                <th><ThLabel icon={Phone}>Telefone</ThLabel></th>
+                <th><ThLabel icon={Building}>Empresa</ThLabel></th>
+                <th><ThLabel icon={Inbox}>Origem</ThLabel></th>
+                <th className="n"><ThLabel icon={Ticket}>Chamados</ThLabel></th>
+                <th><ThLabel icon={CalendarClock}>Último contato</ThLabel></th>
+                <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
               </tr>
             </thead>
             <tbody>
@@ -479,7 +480,7 @@ function Relacoes({ tipo, relacoes, onChange, proprioId }: { tipo: TipoPessoa; r
         <div className="at-tab-wrap">
           <table className="at-tab">
             <thead>
-              <tr><th>{tipo === "pessoa" ? "Empresa" : "Pessoa"}</th><th>Cargo</th><th>E-mail</th><th /></tr>
+              <tr><th><ThLabel icon={tipo === "pessoa" ? Building : User}>{tipo === "pessoa" ? "Empresa" : "Pessoa"}</ThLabel></th><th><ThLabel icon={Briefcase}>Cargo</ThLabel></th><th><ThLabel icon={Mail}>E-mail</ThLabel></th><th /></tr>
             </thead>
             <tbody>
               {relacoes.map((r, i) => (
@@ -572,7 +573,7 @@ function Anexos({ pessoa }: { pessoa: PessoaDetalhe }) {
       ) : (
         <div className="at-tab-wrap">
           <table className="at-tab">
-            <thead><tr><th>Arquivo</th><th>Tamanho</th><th>Enviado por</th><th>Em</th><th /></tr></thead>
+            <thead><tr><th><ThLabel icon={Paperclip}>Arquivo</ThLabel></th><th><ThLabel icon={HardDrive}>Tamanho</ThLabel></th><th><ThLabel icon={UserPen}>Enviado por</ThLabel></th><th><ThLabel icon={CalendarPlus}>Em</ThLabel></th><th /></tr></thead>
             <tbody>
               {pessoa.anexos.map((a) => (
                 <tr key={a.id}>

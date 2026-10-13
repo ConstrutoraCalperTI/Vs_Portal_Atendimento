@@ -1,6 +1,7 @@
-import { Plus } from "lucide-react";
+import { ArrowUpDown, CircleDot, FolderTree, Plus, Star, Wrench } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { useSalvarCategoria } from "../hooks";
 import { ComCadastros, linhaProps, mensagem, OrdemBotoes, Rodape, Situacao } from "./comum";
 import { caminhoServico, type Cadastros, type Categoria } from "./types";
@@ -34,11 +35,11 @@ function Conteudo({ cad }: { cad: Cadastros }) {
         <table className="cad-table">
           <thead>
             <tr>
-              <th>Ordem</th>
-              <th>Categoria</th>
-              <th>Serviços</th>
-              <th>Padrão</th>
-              <th>Situação</th>
+              <th><ThLabel icon={ArrowUpDown}>Ordem</ThLabel></th>
+              <th><ThLabel icon={FolderTree}>Categoria</ThLabel></th>
+              <th><ThLabel icon={Wrench}>Serviços</ThLabel></th>
+              <th><ThLabel icon={Star}>Padrão</ThLabel></th>
+              <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
             </tr>
           </thead>
           <tbody>

@@ -1,10 +1,11 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Switch from "@radix-ui/react-switch";
-import { Plus, UsersRound, X } from "lucide-react";
+import { Building2, CircleDot, Crown, Plus, Users, UsersRound, X } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
 import { PageSkeleton } from "../../../components/PageSkeleton";
+import { ThLabel } from "../../../components/ds";
 import { getMenuItem } from "../../../config/menuRegistry";
 import { configBreadcrumb } from "../../configuracoes/components/configBreadcrumb";
 import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
@@ -62,11 +63,11 @@ export function Equipes({ nav }: { nav?: ReactNode }) {
               <table className="at-tab ca-tab">
                 <thead>
                   <tr>
-                    <th>Equipe</th>
-                    <th>Setor</th>
-                    <th>Membros</th>
-                    <th>Líder</th>
-                    <th>Situação</th>
+                    <th><ThLabel icon={UsersRound}>Equipe</ThLabel></th>
+                    <th><ThLabel icon={Building2}>Setor</ThLabel></th>
+                    <th><ThLabel icon={Users}>Membros</ThLabel></th>
+                    <th><ThLabel icon={Crown}>Líder</ThLabel></th>
+                    <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
                   </tr>
                 </thead>
                 <tbody>

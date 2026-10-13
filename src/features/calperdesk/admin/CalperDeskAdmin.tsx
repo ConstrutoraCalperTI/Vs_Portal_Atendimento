@@ -1,11 +1,12 @@
 import * as Switch from "@radix-ui/react-switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, ExternalLink, Eye, Info, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlignLeft, ArrowUpDown, Building2, CalendarRange, Copy, ExternalLink, Eye, Hash, Info, LayoutDashboard, Lightbulb, Megaphone, Pencil, Plus, Smartphone, Smile, Trash2, Wrench } from "lucide-react";
 import qrcode from "qrcode-generator";
 import { useId, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { DetailDialog } from "../../../components/ds/DetailDialog";
+import { ThLabel } from "../../../components/ds";
 import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { Notice } from "../../configuracoes/components/Notice";
@@ -185,8 +186,8 @@ function Quadros({ p }: { p: PainelCalperdesk }) {
       <table className="at-tab">
         <thead>
           <tr>
-            <th>Quadro</th>
-            <th className="c">Visível</th>
+            <th><ThLabel icon={LayoutDashboard}>Quadro</ThLabel></th>
+            <th className="c"><ThLabel icon={Eye}>Visível</ThLabel></th>
           </tr>
         </thead>
         <tbody>
@@ -245,12 +246,12 @@ function Departamentos({ setores }: { setores: SetorApp[] }) {
         <table className="at-tab">
           <thead>
             <tr>
-              <th>Departamento</th>
-              <th>Ícone</th>
-              <th>Texto de ajuda</th>
-              <th className="n">Ordem</th>
-              <th className="n">Serviços no Portal</th>
-              <th className="c">No app</th>
+              <th><ThLabel icon={Building2}>Departamento</ThLabel></th>
+              <th><ThLabel icon={Smile}>Ícone</ThLabel></th>
+              <th><ThLabel icon={AlignLeft}>Texto de ajuda</ThLabel></th>
+              <th className="n"><ThLabel icon={ArrowUpDown}>Ordem</ThLabel></th>
+              <th className="n"><ThLabel icon={Wrench}>Serviços no Portal</ThLabel></th>
+              <th className="c"><ThLabel icon={Smartphone}>No app</ThLabel></th>
               <th />
             </tr>
           </thead>
@@ -334,9 +335,9 @@ function AvisosAdmin({ p }: { p: PainelCalperdesk }) {
           <table className="at-tab">
             <thead>
               <tr>
-                <th>Aviso</th>
-                <th>Departamento</th>
-                <th>Período</th>
+                <th><ThLabel icon={Megaphone}>Aviso</ThLabel></th>
+                <th><ThLabel icon={Building2}>Departamento</ThLabel></th>
+                <th><ThLabel icon={CalendarRange}>Período</ThLabel></th>
                 <th />
                 <th />
               </tr>
@@ -489,10 +490,10 @@ function SolucoesAdmin({ p }: { p: PainelCalperdesk }) {
           <table className="at-tab">
             <thead>
               <tr>
-                <th>Solução</th>
-                <th>Serviço</th>
-                <th className="n">Usos</th>
-                <th className="c">No app</th>
+                <th><ThLabel icon={Lightbulb}>Solução</ThLabel></th>
+                <th><ThLabel icon={Wrench}>Serviço</ThLabel></th>
+                <th className="n"><ThLabel icon={Hash}>Usos</ThLabel></th>
+                <th className="c"><ThLabel icon={Smartphone}>No app</ThLabel></th>
                 <th />
               </tr>
             </thead>

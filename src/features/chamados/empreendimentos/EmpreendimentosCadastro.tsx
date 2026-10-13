@@ -1,6 +1,7 @@
-import { Plus } from "lucide-react";
+import { Building2, CircleDot, HardHat, MessageSquare, Percent, Plus, Sparkles, Tags, Ticket } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { linhaProps, mensagem, Rodape, Situacao } from "../cadastros/comum";
@@ -48,10 +49,10 @@ function Conteudo({ dados }: { dados: CadastroEmpreendimentos }) {
           <table className="cad-table">
             <thead>
               <tr>
-                <th>Empreendimento</th>
-                <th>Apelidos (para a IA)</th>
-                <th>Tickets</th>
-                <th>Situação</th>
+                <th><ThLabel icon={HardHat}>Empreendimento</ThLabel></th>
+                <th><ThLabel icon={Tags}>Apelidos (para a IA)</ThLabel></th>
+                <th><ThLabel icon={Ticket}>Tickets</ThLabel></th>
+                <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
               </tr>
             </thead>
             <tbody>
@@ -119,10 +120,10 @@ function UsoPorSetor({ setores }: { setores: ConfigSetor[] }) {
       <table className="cad-table">
         <thead>
           <tr>
-            <th>Setor</th>
-            <th>CalperDESK pede o empreendimento</th>
-            <th>IA identifica</th>
-            <th>Aplicar sozinho a partir de</th>
+            <th><ThLabel icon={Building2}>Setor</ThLabel></th>
+            <th><ThLabel icon={MessageSquare}>CalperDESK pede o empreendimento</ThLabel></th>
+            <th><ThLabel icon={Sparkles}>IA identifica</ThLabel></th>
+            <th><ThLabel icon={Percent}>Aplicar sozinho a partir de</ThLabel></th>
           </tr>
         </thead>
         <tbody>

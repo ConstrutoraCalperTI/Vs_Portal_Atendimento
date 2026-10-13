@@ -10,7 +10,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Settings2, SquareKanban } from "lucide-react";
+import { Settings2, SquareKanban, X } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { PageSkeleton } from "../../../components/PageSkeleton";
@@ -32,6 +32,7 @@ import { usePermissoesVisoes } from "../visoes/permissoes";
 import type { CampoColuna, ColunaKanban, ColunaLista, ConfigAgrupamento, ListaExtras, StatusRef, Visao } from "../visoes/types";
 import { coordenadasPorColuna } from "../dnd";
 import { ColunasLista } from "./ColunasLista";
+import { FiltroColuna, iconeColuna, VAZIO, type ColunaFiltro, type OpcaoFiltro } from "./FiltroColuna";
 import { DialogoColuna, NovaColunaBotao, TituloColuna } from "./KanbanEdicao";
 import "./Chamados.css";
 
@@ -240,7 +241,7 @@ function TicketsConteudo({ data }: { data: DashboardPayload }) {
           onSalvarColunas={(colunas, mensagem, aoSalvar) => salvarColunas(visao, colunas, mensagem, aoSalvar)}
         />
       ) : (
-        <Listagem visao={visao} tickets={daVisao} meuId={me.id} servicoNome={ctx.servicoNome} onAbrir={abrir} />
+        <Listagem key={visao.id} visao={visao} tickets={daVisao} meuId={me.id} servicoNome={ctx.servicoNome} onAbrir={abrir} />
       )}
 
       <DetailDialog
@@ -551,6 +552,78 @@ function valorOrdem(coluna: ColunaLista, t: DashboardTicket, x: Extras, campos: 
   }
 }
 
+const DIA = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
+const SLA_FAIXAS = ["Vencido", "Vence em até 24h", "No prazo", "Encerrado"];
+
+/** Valores do filtro de uma coluna para o ticket (Tags pode ter vários). Datas viram o dia; SLA, a faixa. */
+function valoresFiltro(coluna: ColunaFiltro, t: DashboardTicket, x: Extras, campos: CampoColuna[], meuId: string, servicoNome: (id: number) => string): string[] {
+  const dia = (iso: string | null | undefined) => [iso ? DIA.format(new Date(iso)) : VAZIO];
+  const txt = (v: string | null | undefined) => [v?.trim() || VAZIO];
+  if (coluna === "ticket") return txt(t.subject);
+  if (ehCampoAdicional(coluna)) {
+    const chave = coluna.slice(6);
+    return txt(formatarCampo(campos.find((c) => c.chave === chave)?.tipo, x?.campos[chave]));
+  }
+  switch (coluna) {
+    case "solicitante": return txt(t.requester);
+    case "status": return txt(rotuloStatus(t.status, t.justificativa));
+    case "responsavel": return [t.owner ? (t.owner.id === meuId ? "Você" : t.owner.name) : "Não atribuído"];
+    case "sla": {
+      if (isClosed(t)) return [SLA_FAIXAS[3]];
+      const m = t.sla_due_minutes;
+      return [m < 0 ? SLA_FAIXAS[0] : m <= 24 * 60 ? SLA_FAIXAS[1] : SLA_FAIXAS[2]];
+    }
+    case "origem": return txt(t.origin);
+    case "servico": return txt(servicoNome(t.service_id));
+    case "equipe": return txt(t.team);
+    case "prioridade": return txt(t.prioridade);
+    case "criado": return dia(t.criado_em);
+    case "tags": return t.tags.length ? t.tags : [VAZIO];
+    case "recebido_em": return txt(t.recebido_em);
+    case "categoria": return txt(x?.categoria);
+    case "setor": return txt(x?.setor);
+    case "contato": return txt(x?.contato);
+    case "criado_por": return txt(x?.criado_por);
+    case "atualizado": return dia(x?.atualizado_em);
+    case "primeira_resposta": return dia(x?.primeira_resposta_em);
+    case "prazo_resposta": return dia(x?.sla_resposta_ate);
+    case "prazo_solucao": return dia(x?.sla_solucao_ate);
+    case "encerrado": return dia(x?.encerrado_em ?? t.closed_at);
+    case "empreendimento": return txt(x?.empreendimento);
+  }
+}
+
+/** Ordem das opções no filtro: faixas e prioridades na ordem natural, datas da mais nova, o resto em A–Z; vazio por último. */
+function ordenarOpcoes(coluna: ColunaFiltro, opcoes: OpcaoFiltro[]): OpcaoFiltro[] {
+  const fixa = coluna === "sla" ? SLA_FAIXAS : coluna === "prioridade" ? ORDEM_PRIORIDADE : null;
+  const data = (v: string) => {
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v);
+    return m ? Number(`${m[3]}${m[2]}${m[1]}`) : null;
+  };
+  return [...opcoes].sort((a, b) => {
+    if (a.valor === VAZIO || b.valor === VAZIO) return a.valor === VAZIO ? 1 : -1;
+    if (fixa) return fixa.indexOf(a.valor) - fixa.indexOf(b.valor);
+    const da = data(a.valor);
+    const db = data(b.valor);
+    if (da !== null && db !== null) return db - da;
+    return a.valor.localeCompare(b.valor, "pt-BR", { numeric: true });
+  });
+}
+
+/** O ticket atende a todos os filtros ativos (em cada coluna, a qualquer um dos valores marcados)? */
+function passaFiltros(
+  doTicket: Map<ColunaFiltro, string[]> | undefined,
+  filtros: Partial<Record<ColunaFiltro, Set<string>>>,
+  colunas: readonly ColunaFiltro[],
+  ignorar?: ColunaFiltro,
+): boolean {
+  return colunas.every((c) => {
+    const sel = filtros[c];
+    if (c === ignorar || !sel || sel.size === 0) return true;
+    return (doTicket?.get(c) ?? []).some((v) => sel.has(v));
+  });
+}
+
 function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visao; tickets: DashboardTicket[]; meuId: string; servicoNome: (id: number) => string; onAbrir: (id: number) => void }) {
   const [pagina, setPagina] = useState(0);
   /** Ordenação pelo cabeçalho: só nesta tela, não salva na visão. */
@@ -560,8 +633,46 @@ function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visa
   const campos = useMemo(() => extras.data?.campos ?? [], [extras.data]);
   const extrasDe = (t: DashboardTicket): Extras => extras.data?.tickets[String(t.id)];
 
+  /** Filtros do cabeçalho (múltipla escolha por coluna): só nesta tela, não salvos na visão. */
+  const [filtros, setFiltros] = useState<Partial<Record<ColunaFiltro, Set<string>>>>({});
+  const colunasFiltro = useMemo<ColunaFiltro[]>(() => ["ticket", ...colunas], [colunas]);
+  const ativos = colunasFiltro.filter((c) => (filtros[c]?.size ?? 0) > 0);
+
+  /** Valores de cada coluna por ticket, calculados uma vez para filtrar e montar as opções. */
+  const valores = useMemo(() => {
+    const mapa = new Map<number, Map<ColunaFiltro, string[]>>();
+    for (const t of tickets) {
+      const x = extras.data?.tickets[String(t.id)];
+      mapa.set(t.id, new Map(colunasFiltro.map((c) => [c, valoresFiltro(c, t, x, campos, meuId, servicoNome)])));
+    }
+    return mapa;
+  }, [tickets, colunasFiltro, extras.data, campos, meuId, servicoNome]);
+
+  const passa = (t: DashboardTicket, ignorar?: ColunaFiltro) => passaFiltros(valores.get(t.id), filtros, colunasFiltro, ignorar);
+
+  const filtrados = useMemo(() => tickets.filter((t) => passaFiltros(valores.get(t.id), filtros, colunasFiltro)), [tickets, valores, filtros, colunasFiltro]);
+
+  /** Opções de uma coluna considerando os outros filtros (como numa planilha), com a contagem de tickets. */
+  const opcoesDe = (c: ColunaFiltro): OpcaoFiltro[] => {
+    const qtd = new Map<string, number>();
+    for (const t of tickets) {
+      if (!passa(t, c)) continue;
+      for (const v of new Set(valores.get(t.id)?.get(c) ?? [])) qtd.set(v, (qtd.get(v) ?? 0) + 1);
+    }
+    // Valor marcado que sumiu com outro filtro continua na lista, para poder desmarcar.
+    for (const v of filtros[c] ?? []) if (!qtd.has(v)) qtd.set(v, 0);
+    return ordenarOpcoes(c, [...qtd].map(([valor, n]) => ({ valor, qtd: n })));
+  };
+
+  const mudarFiltro = (c: ColunaFiltro, sel: Set<string> | null) => {
+    setPagina(0);
+    setFiltros((f) => ({ ...f, [c]: sel ?? new Set() }));
+  };
+
+  const rotuloFiltro = (c: ColunaFiltro) => (c === "ticket" ? "Ticket" : rotuloColuna(c, campos));
+
   const ordenados = useMemo(() => {
-    const base = ordenarTickets(tickets, ordenar);
+    const base = ordenarTickets(filtrados, ordenar);
     if (!ordem) return base;
     const chave = new Map(base.map((t) => [t.id, valorOrdem(ordem.coluna, t, extras.data?.tickets[String(t.id)], campos, meuId, servicoNome)]));
     return [...base].sort((a, b) => {
@@ -573,7 +684,7 @@ function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visa
       const r = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
       return ordem.asc ? r : -r;
     });
-  }, [tickets, ordenar, ordem, extras.data, campos, meuId, servicoNome]);
+  }, [filtrados, ordenar, ordem, extras.data, campos, meuId, servicoNome]);
 
   const grupos = useMemo(() => {
     if (!por) return [{ nome: "", itens: ordenados }];
@@ -595,35 +706,85 @@ function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visa
 
   if (tickets.length === 0) return <p className="ch-empty card">Nenhum ticket atende a esta visão agora.</p>;
 
+  const filtro = (c: ColunaFiltro) => (
+    <FiltroColuna rotulo={rotuloFiltro(c)} opcoes={opcoesDe(c)} selecionados={filtros[c] ?? new Set()} onChange={(sel) => mudarFiltro(c, sel)} />
+  );
+  const TicketIcone = iconeColuna("ticket");
+
   return (
     <>
+      {ativos.length > 0 && (
+        <div className="ch-filtros-ativos" aria-label="Filtros ativos">
+          {ativos.map((c) => {
+            const Icone = iconeColuna(c);
+            const sel = [...(filtros[c] ?? [])];
+            return (
+              <span key={c} className="ch-filtro-chip">
+                <Icone size={13} aria-hidden="true" />
+                <strong>{rotuloFiltro(c)}:</strong>
+                <span className="ch-filtro-chip__valores" title={sel.join(", ")}>
+                  {sel.length > 2 ? `${sel.slice(0, 2).join(", ")} +${sel.length - 2}` : sel.join(", ")}
+                </span>
+                <button type="button" aria-label={`Remover filtro de ${rotuloFiltro(c)}`} onClick={() => mudarFiltro(c, null)}>
+                  <X size={12} aria-hidden="true" />
+                </button>
+              </span>
+            );
+          })}
+          <button type="button" className="ch-link" onClick={() => { setPagina(0); setFiltros({}); }}>
+            Limpar filtros
+          </button>
+          <span className="ch-count" aria-live="polite">{filtrados.length} de {tickets.length} tickets</span>
+        </div>
+      )}
       <div className="ch-table-wrap">
         <table className="ch-table">
           <thead>
             <tr>
-              <th scope="col">Ticket</th>
+              <th scope="col">
+                <span className="ch-th">
+                  <TicketIcone size={14} className="ch-th__icone" aria-hidden="true" />
+                  Ticket
+                  {filtro("ticket")}
+                </span>
+              </th>
               {colunas.map((c) => {
                 const ativa = ordem?.coluna === c;
+                const Icone = iconeColuna(c);
                 return (
                   <th key={c} scope="col" aria-sort={ativa ? (ordem.asc ? "ascending" : "descending") : "none"}>
-                    <button
-                      type="button"
-                      className="ch-th-ordem"
-                      title="Ordenar (só para você)"
-                      onClick={() => {
-                        setPagina(0);
-                        setOrdem(ativa ? (ordem.asc ? { coluna: c, asc: false } : null) : { coluna: c, asc: true });
-                      }}
-                    >
-                      {rotuloColuna(c, campos)}
-                      {ativa && <span className="ch-th-ordem__seta" aria-hidden="true">{ordem.asc ? "▲" : "▼"}</span>}
-                    </button>
+                    <span className="ch-th">
+                      <button
+                        type="button"
+                        className="ch-th-ordem"
+                        title="Ordenar (só para você)"
+                        onClick={() => {
+                          setPagina(0);
+                          setOrdem(ativa ? (ordem.asc ? { coluna: c, asc: false } : null) : { coluna: c, asc: true });
+                        }}
+                      >
+                        <Icone size={14} className="ch-th__icone" aria-hidden="true" />
+                        {rotuloColuna(c, campos)}
+                        {ativa && <span className="ch-th-ordem__seta" aria-hidden="true">{ordem.asc ? "▲" : "▼"}</span>}
+                      </button>
+                      {filtro(c)}
+                    </span>
                   </th>
                 );
               })}
             </tr>
           </thead>
           <tbody>
+            {visiveis.length === 0 && (
+              <tr>
+                <td colSpan={colunas.length + 1} className="ch-filtro-vazio">
+                  Nenhum ticket com esses filtros.{" "}
+                  <button type="button" className="ch-link" onClick={() => setFiltros({})}>
+                    Limpar filtros
+                  </button>
+                </td>
+              </tr>
+            )}
             {visiveis.map(({ grupo, total, t }, i) => (
               <FragmentoLinha key={t.id} mostrarGrupo={Boolean(por) && (i === 0 || visiveis[i - 1].grupo !== grupo)} grupo={grupo} total={total} colSpan={colunas.length + 1} rotuloGrupo={por ? AGRUPAMENTOS[por] : ""}>
                 {/* A linha inteira abre o ticket; o botão do assunto fica para o teclado (o clique dele sobe até a linha). */}
@@ -646,7 +807,7 @@ function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visa
       </div>
       <div className="ch-pager">
         <span aria-live="polite">
-          {atual * porPagina + 1}–{Math.min((atual + 1) * porPagina, linhas.length)} de {linhas.length} tickets
+          {linhas.length === 0 ? 0 : atual * porPagina + 1}–{Math.min((atual + 1) * porPagina, linhas.length)} de {linhas.length} tickets
         </span>
         <span>
           <button type="button" className="icon-btn icon-btn--bordered" aria-label="Página anterior" disabled={atual === 0} onClick={() => setPagina(atual - 1)}>←</button>{" "}

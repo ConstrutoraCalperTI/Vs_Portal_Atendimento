@@ -1,6 +1,8 @@
+import { Building2, Hash, User, Wrench } from "lucide-react";
 import { useId, useState } from "react";
 import { Panel, PanelHeader } from "../../components/ds/Panel";
 import { Pill } from "../../components/ds/Pill";
+import { ThLabel } from "../../components/ds/ThLabel";
 import { useTopSolicitantes } from "../atendimento/hooks/useAtendimento";
 
 const PERIODOS = [7, 30, 90] as const;
@@ -48,7 +50,7 @@ export function TopSolicitantes() {
             <div className="ds-tablewrap">
               <table className="ds-table">
                 <thead>
-                  <tr><th>Colaborador</th><th>Tickets</th><th aria-hidden="true" /><th>Serviço mais pedido</th></tr>
+                  <tr><th><ThLabel icon={User}>Colaborador</ThLabel></th><th><ThLabel icon={Hash}>Tickets</ThLabel></th><th aria-hidden="true" /><th><ThLabel icon={Wrench}>Serviço mais pedido</ThLabel></th></tr>
                 </thead>
                 <tbody>
                   {d.top.length === 0 && <tr><td colSpan={4}>Nenhum ticket com solicitante identificado no período.</td></tr>}
@@ -66,7 +68,7 @@ export function TopSolicitantes() {
             <div className="ds-tablewrap">
               <table className="ds-table">
                 <thead>
-                  <tr><th>Departamento</th><th>Tickets</th></tr>
+                  <tr><th><ThLabel icon={Building2}>Departamento</ThLabel></th><th><ThLabel icon={Hash}>Tickets</ThLabel></th></tr>
                 </thead>
                 <tbody>
                   {d.departamentos.length === 0 && <tr><td colSpan={2}>Sem departamento nos cadastros de Pessoas.</td></tr>}

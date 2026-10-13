@@ -1,6 +1,7 @@
-import { Plus } from "lucide-react";
+import { ArrowUpDown, Asterisk, CircleDot, LayoutPanelTop, ListPlus, Plus, Shapes } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { useSalvarCampo } from "../hooks";
 import { ComCadastros, linhaProps, mensagem, OrdemBotoes, Rodape, Situacao } from "./comum";
 import { chaveDoRotulo, LOCAIS_CAMPO, TIPOS_CAMPO, type Cadastros, type Campo, type LocalCampo, type Obrigatoriedade, type TipoCampo } from "./types";
@@ -34,12 +35,12 @@ function Conteudo({ cad }: { cad: Cadastros }) {
         <table className="cad-table">
           <thead>
             <tr>
-              <th>Ordem</th>
-              <th>Campo</th>
-              <th>Tipo</th>
-              <th>Onde aparece</th>
-              <th>Obrigatório</th>
-              <th>Situação</th>
+              <th><ThLabel icon={ArrowUpDown}>Ordem</ThLabel></th>
+              <th><ThLabel icon={ListPlus}>Campo</ThLabel></th>
+              <th><ThLabel icon={Shapes}>Tipo</ThLabel></th>
+              <th><ThLabel icon={LayoutPanelTop}>Onde aparece</ThLabel></th>
+              <th><ThLabel icon={Asterisk}>Obrigatório</ThLabel></th>
+              <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
             </tr>
           </thead>
           <tbody>

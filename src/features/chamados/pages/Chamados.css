@@ -1027,3 +1027,207 @@
 .ch-table th,
 .ch-table td { white-space: nowrap; }
 .ch-table td:first-child { white-space: normal; min-width: 260px; max-width: 420px; }
+
+/* ---------- Cabeçalho da Lista: ícone + ordenar + filtro de múltipla escolha ---------- */
+.ch-th {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ch-th__icone {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.ch-th-ordem:hover .ch-th__icone { color: var(--ink); }
+
+.ch-th-filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.7;
+  transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+}
+.ch-table th:hover .ch-th-filtro,
+.ch-th-filtro:focus-visible,
+.ch-th-filtro[data-state="open"] {
+  opacity: 1;
+}
+.ch-th-filtro:hover,
+.ch-th-filtro[data-state="open"] {
+  background: var(--neutral-bg);
+  color: var(--ink);
+}
+.ch-th-filtro:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.ch-th-filtro--ativo,
+.ch-th-filtro--ativo:hover {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--brand) 30%, transparent);
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.ch-th-filtro__qtd {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.ch-filtropop {
+  z-index: 60;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  max-height: min(70vh, 460px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.18);
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.ch-filtropop__head {
+  display: grid;
+  padding: 12px 14px 8px;
+}
+.ch-filtropop__head strong { font-size: 14px; }
+.ch-filtropop__head .ch-hint { margin: 0; }
+.ch-filtropop__busca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px 6px;
+  padding: 0 10px;
+  height: 34px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.ch-filtropop__busca:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.ch-filtropop__busca input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ink);
+}
+.ch-filtropop__lista {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 2px 6px 6px;
+  list-style: none;
+}
+.ch-filtropop__opcao {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.ch-filtropop__opcao:hover { background: var(--table-head); }
+.ch-filtropop__opcao input {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+.ch-filtropop__opcao span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-filtropop__opcao small {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+  font-size: 11px;
+  font-weight: 600;
+}
+.ch-filtropop__opcao--todos {
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 7px 7px 0 0;
+  font-weight: 600;
+}
+.ch-filtropop__vazio {
+  margin: 0;
+  padding: 14px;
+  color: var(--muted);
+}
+.ch-filtropop__rod {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+.ch-filtropop__rod .ch-hint { margin: 0; }
+
+.ch-filtros-ativos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ch-filtro-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent);
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-hover);
+  font-size: 12px;
+}
+.ch-filtro-chip strong { font-weight: 600; }
+.ch-filtro-chip__valores {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+  color: var(--ink);
+}
+.ch-filtro-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+}
+.ch-filtro-chip button:hover { background: color-mix(in srgb, var(--brand) 15%, transparent); }
+.ch-filtro-vazio {
+  padding: 28px 14px !important;
+  text-align: center;
+  color: var(--muted);
+}
