@@ -298,14 +298,19 @@ function Cartao({ t, meuId, arrastavel, onAbrir }: { t: DashboardTicket; meuId: 
 
 function CartaoConteudo({ t, meuId, arrastavel = false, overlay = false, onAbrir }: { t: DashboardTicket; meuId: string; arrastavel?: boolean; overlay?: boolean; onAbrir: (id: number) => void }) {
   return (
-    <article className={`ch-card${arrastavel ? " ch-card--drag" : ""}${overlay ? " ch-card--overlay" : ""}`}>
+    // O cartão inteiro abre o ticket; o arraste só começa após 6px de movimento, então clique não arrasta.
+    // O botão do assunto fica para o teclado: o clique dele sobe até o article, que faz a navegação.
+    <article
+      className={`ch-card ch-card--clicavel${arrastavel ? " ch-card--drag" : ""}${overlay ? " ch-card--overlay" : ""}`}
+      onClick={overlay ? undefined : () => onAbrir(t.id)}
+    >
       <div className="ch-card__meta">
         <span>
           <span className="ch-mono">#{t.id}</span> · {t.requester}
         </span>
         <span>{t.team}</span>
       </div>
-      <button type="button" className="ch-card__subject" onClick={() => onAbrir(t.id)} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      <button type="button" className="ch-card__subject" onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
         {t.subject}
       </button>
       <div className="ch-card__row">
@@ -401,11 +406,12 @@ function Listagem({ visao, tickets, meuId, servicoNome, onAbrir }: { visao: Visa
           <tbody>
             {visiveis.map(({ grupo, total, t }, i) => (
               <FragmentoLinha key={t.id} mostrarGrupo={Boolean(por) && (i === 0 || visiveis[i - 1].grupo !== grupo)} grupo={grupo} total={total} colSpan={colunas.length + 1} rotuloGrupo={por ? AGRUPAMENTOS[por] : ""}>
-                <tr>
+                {/* A linha inteira abre o ticket; o botão do assunto fica para o teclado (o clique dele sobe até a linha). */}
+                <tr className="ch-table__row--clicavel" onClick={() => onAbrir(t.id)}>
                   <td>
                     <span className="ch-mono ch-muted" style={{ fontSize: 12 }}>#{t.id}</span>
                     <br />
-                    <button type="button" className="ch-link" onClick={() => onAbrir(t.id)}>{t.subject}</button>
+                    <button type="button" className="ch-link">{t.subject}</button>
                   </td>
                   {colunas.map((c) => (
                     <td key={c}>
