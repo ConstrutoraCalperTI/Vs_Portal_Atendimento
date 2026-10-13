@@ -190,8 +190,19 @@ export interface ChamadoTecnicoDetalhe extends ChamadoTecnico {
   podeAtender: boolean;
   /** Só quando o chamado está sem serviço: as opções do setor. */
   servicos: { id: number; rotulo: string }[] | null;
+  /** Campos adicionais obrigatórios para resolver este chamado (regras de exibição), com o valor atual. */
+  campos: CampoTecnico[];
   acoes: { numero: number; direcao: "entrada" | "saida"; autorNome: string; texto: string; anexos: Anexo[]; criadoEm: string }[];
   eventos: { tipo: string; descricao: string; autorNome: string; criadoEm: string }[];
+}
+
+export interface CampoTecnico {
+  chave: string;
+  rotulo: string;
+  tipo: "texto" | "texto_longo" | "numero" | "data" | "data_hora" | "lista" | "multipla" | "sim_nao";
+  opcoes: string[];
+  ajuda: string | null;
+  valor: unknown;
 }
 
 /** Tipo de resolução do técnico → status (cd_tec_concluir). */
@@ -310,7 +321,7 @@ export const calperdesk = {
     chamados: (dias = 30) => rpc<ChamadoTecnico[]>("cd_tec_chamados", { p_dias: dias }),
     chamado: (id: number) => rpc<ChamadoTecnicoDetalhe>("cd_tec_chamado", { p_id: id }),
     atribuir: (id: number) => rpc<void>("cd_tec_atribuir", { p_id: id }),
-    concluir: (id: number, p: { tipo: TipoResolucao; texto: string; fotos: Anexo[]; servicoId: number | null }) =>
+    concluir: (id: number, p: { tipo: TipoResolucao; texto: string; fotos: Anexo[]; servicoId: number | null; campos: Record<string, unknown> }) =>
       rpc<{ status: string; justificativa: string | null }>("cd_tec_concluir", { p_id: id, p: json(p) }),
   },
 

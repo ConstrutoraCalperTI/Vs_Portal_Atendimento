@@ -7,7 +7,7 @@ import { AppAccessDeniedPopup } from "../auth/AppAccessDeniedPopup";
 import { useAuthSession } from "../auth/useAuthSession";
 import { Carregando, Logo, SubCabecalho } from "./CalperDeskApp";
 import { AnexoNaMensagem, Miniaturas, useAnexos } from "./anexos";
-import { calperdesk, formatarTelefone, type ChamadoTecnico, type ChamadoTecnicoDetalhe, type EntradaTecnico, type TipoResolucao } from "./service";
+import { calperdesk, formatarTelefone, type CampoTecnico, type ChamadoTecnico, type ChamadoTecnicoDetalhe, type EntradaTecnico, type TipoResolucao } from "./service";
 import { prazo, quando } from "./Telas";
 
 // CalperDESK · modo Técnico (mockup docs/mockups/calperdesk-tecnico.html, aprovado em 13/10/2026). Entra pela aba
@@ -609,10 +609,11 @@ function Registrar({ d, usuarioId, onConcluido }: { d: ChamadoTecnicoDetalhe; us
   const [tipo, setTipo] = useState<TipoResolucao | null>(null);
   const [texto, setTexto] = useState("");
   const [servicoId, setServicoId] = useState<number | null>(null);
+  const [campos, setCampos] = useState<Record<string, unknown>>(() => Object.fromEntries(d.campos.map((c) => [c.chave, c.valor ?? null])));
   const [erro, setErro] = useState<{ campo?: string; texto: string } | null>(null);
 
   const concluir = useMutation({
-    mutationFn: () => calperdesk.tec.concluir(d.id, { tipo: tipo!, texto: texto.trim(), fotos: fotos.anexos, servicoId }),
+    mutationFn: () => calperdesk.tec.concluir(d.id, { tipo: tipo!, texto: texto.trim(), fotos: fotos.anexos, servicoId, campos }),
     onSuccess: (r) => {
       const n = fotos.anexos.length;
       fotos.limpar();
@@ -626,6 +627,8 @@ function Registrar({ d, usuarioId, onConcluido }: { d: ChamadoTecnicoDetalhe; us
     if (!tipo) return setErro({ campo: "tipo", texto: "Escolha o tipo de resolução." });
     if (tipo === "resolvido" && fotos.anexos.length === 0) return setErro({ campo: "fotos", texto: "Tire pelo menos 1 foto do atendimento para concluir como Resolvido." });
     if (tipo === "resolvido" && d.servicos && !servicoId) return setErro({ campo: "servicoId", texto: "Escolha o serviço antes de concluir como Resolvido." });
+    const vazios = d.campos.filter((c) => vazio(campos[c.chave])).map((c) => c.rotulo);
+    if (tipo === "resolvido" && vazios.length) return setErro({ campo: "campos", texto: `Preencha antes de concluir: ${vazios.join(", ")}.` });
     if (texto.trim().length < 5) return setErro({ campo: "texto", texto: "Escreva o que foi feito." });
     concluir.mutate();
   };
@@ -672,6 +675,11 @@ function Registrar({ d, usuarioId, onConcluido }: { d: ChamadoTecnicoDetalhe; us
           </>
         )}
 
+        {d.campos.map((c) => (
+          <CampoAdicional key={c.chave} c={c} obrigatorio={tipo === "resolvido" || !tipo} valor={campos[c.chave]} onChange={(v) => setCampos((x) => ({ ...x, [c.chave]: v }))} />
+        ))}
+        {msg("campos")}
+
         <span className="cd-rot">Tipo de resolução *</span>
         <div className="cd-tipos" role="radiogroup" aria-label="Tipo de resolução">
           {TIPOS.map((t) => (
@@ -701,7 +709,7 @@ function Registrar({ d, usuarioId, onConcluido }: { d: ChamadoTecnicoDetalhe; us
         />
         {msg("texto")}
         <span style={{ display: "block", fontSize: 12, color: "var(--cd-txt-3)", marginTop: 6 }}>Vai para o solicitante e vira a Solução aplicada.</span>
-        {erro && !["fotos", "servicoId", "tipo", "texto"].includes(erro.campo ?? "") && (
+        {erro && !["fotos", "servicoId", "tipo", "texto", "campos"].includes(erro.campo ?? "") && (
           <p className="cd-alerta" role="alert" style={{ margin: "10px 0 0" }}>
             {erro.texto}
           </p>
@@ -713,6 +721,63 @@ function Registrar({ d, usuarioId, onConcluido }: { d: ChamadoTecnicoDetalhe; us
         </button>
         <small>Obrigatórios: tipo de resolução, o que foi feito e foto (para Resolvido).</small>
       </div>
+    </>
+  );
+}
+
+const vazio = (v: unknown) => v === null || v === undefined || (typeof v === "string" && v.trim() === "") || (Array.isArray(v) && v.length === 0);
+
+/** Campo adicional obrigatório do chamado (Administração › Campos adicionais), no visual do app. */
+function CampoAdicional({ c, obrigatorio, valor, onChange }: { c: CampoTecnico; obrigatorio: boolean; valor: unknown; onChange: (v: unknown) => void }) {
+  const id = `tec-campo-${c.chave}`;
+  const texto = valor === null || valor === undefined ? "" : String(valor);
+  let controle: ReactNode;
+  if (c.tipo === "lista") {
+    controle = (
+      <select id={id} className="cd-campo" value={texto} onChange={(e) => onChange(e.target.value || null)}>
+        <option value="">— Escolha —</option>
+        {c.opcoes.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    );
+  } else if (c.tipo === "multipla") {
+    const lista = Array.isArray(valor) ? (valor as string[]) : [];
+    controle = (
+      <div className="cd-chips" role="group" aria-labelledby={`${id}-rot`}>
+        {c.opcoes.map((o) => (
+          <button key={o} type="button" className="cd-chip" aria-pressed={lista.includes(o)} onClick={() => onChange(lista.includes(o) ? lista.filter((x) => x !== o) : [...lista, o])}>
+            {o}
+          </button>
+        ))}
+      </div>
+    );
+  } else if (c.tipo === "sim_nao") {
+    controle = (
+      <div className="cd-chips" role="group" aria-labelledby={`${id}-rot`}>
+        {[true, false].map((b) => (
+          <button key={String(b)} type="button" className="cd-chip" aria-pressed={valor === b} onClick={() => onChange(b)}>
+            {b ? "Sim" : "Não"}
+          </button>
+        ))}
+      </div>
+    );
+  } else if (c.tipo === "texto_longo") {
+    controle = <textarea id={id} className="cd-campo" style={{ minHeight: 70 }} value={texto} onChange={(e) => onChange(e.target.value)} />;
+  } else {
+    const tipo = { texto: "text", numero: "number", data: "date", data_hora: "datetime-local" }[c.tipo] ?? "text";
+    controle = <input id={id} className="cd-campo" type={tipo} inputMode={c.tipo === "numero" ? "decimal" : undefined} value={texto} onChange={(e) => onChange(e.target.value)} />;
+  }
+  return (
+    <>
+      <label className="cd-rot" id={`${id}-rot`} htmlFor={id}>
+        {c.rotulo}
+        {obrigatorio ? " *" : ""}
+      </label>
+      {controle}
+      {c.ajuda && <span style={{ display: "block", fontSize: 12, color: "var(--cd-txt-3)", marginTop: 4 }}>{c.ajuda}</span>}
     </>
   );
 }
