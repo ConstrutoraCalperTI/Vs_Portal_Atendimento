@@ -4,10 +4,17 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useParams } from "react-router";
 import { Carregando, SubCabecalho, useCd } from "./CalperDeskApp";
 import { Miniaturas, useAnexos } from "./anexos";
-import { calperdesk, formatarTelefone, type Servico } from "./service";
+import { calperdesk, formatarTelefone, type Servico, type TipoUrgencia } from "./service";
 import { prazo } from "./Telas";
 
 const TIPOS_ARQUIVO = "image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv";
+/** "Tipo urgência" (Wagner, 13/10/2026), do menos para o mais urgente. */
+const URGENCIAS: { valor: TipoUrgencia; rotulo: string }[] = [
+  { valor: "normal", rotulo: "Normal" },
+  { valor: "prazo", rotulo: "Tenho prazo" },
+  { valor: "grave", rotulo: "Grave" },
+  { valor: "parado", rotulo: "Estou parado" },
+];
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Abrir chamado: empreendimento (setores que pedem, ex.: CFTV), tipo de serviço (árvore do departamento), descrição, foto/arquivo e urgência. */
@@ -25,7 +32,7 @@ export function AbrirChamado() {
   /** undefined = ainda escolhendo; null = "Outro assunto"; número = serviço final. */
   const [servicoId, setServicoId] = useState<number | null | undefined>(undefined);
   const [descricao, setDescricao] = useState("");
-  const [urgente, setUrgente] = useState(false);
+  const [urgencia, setUrgencia] = useState<TipoUrgencia>("normal");
   const [erro, setErro] = useState<{ campo?: string; texto: string } | null>(null);
   const anexos = useAnexos(entrada.usuarioId, simulando);
   const dica = useQuery({
@@ -36,7 +43,7 @@ export function AbrirChamado() {
   const [dicaAberta, setDicaAberta] = useState(false);
 
   const criar = useMutation({
-    mutationFn: () => calperdesk.criar({ setorId: setor!.id, servicoId: servicoId ?? null, empreendimentoId: pedeEmp ? empId : null, descricao: descricao.trim(), urgente, anexos: anexos.anexos }),
+    mutationFn: () => calperdesk.criar({ setorId: setor!.id, servicoId: servicoId ?? null, empreendimentoId: pedeEmp ? empId : null, descricao: descricao.trim(), urgencia, anexos: anexos.anexos }),
     onSuccess: () => {
       anexos.limpar();
       void qc.invalidateQueries({ queryKey: ["cd", "meus"] });
@@ -293,14 +300,13 @@ export function AbrirChamado() {
         </div>
         <Miniaturas itens={anexos.itens} onRemover={anexos.remover} />
 
-        <span className="cd-rot">{passo(4)} · É urgente?</span>
-        <div className="cd-chips" role="group" aria-label="Urgência">
-          <button type="button" className="cd-chip" aria-pressed={!urgente} onClick={() => setUrgente(false)}>
-            Normal
-          </button>
-          <button type="button" className="cd-chip" aria-pressed={urgente} onClick={() => setUrgente(true)}>
-            Estou parado
-          </button>
+        <span className="cd-rot">{passo(4)} · Tipo urgência</span>
+        <div className="cd-chips" role="group" aria-label="Tipo urgência">
+          {URGENCIAS.map((u) => (
+            <button key={u.valor} type="button" className="cd-chip" aria-pressed={urgencia === u.valor} onClick={() => setUrgencia(u.valor)}>
+              {u.rotulo}
+            </button>
+          ))}
         </div>
         <div style={{ height: 18 }} />
         <button type="submit" className="cd-btn-ouro" disabled={simulando || criar.isPending || anexos.enviando}>

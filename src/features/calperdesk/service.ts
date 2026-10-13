@@ -138,14 +138,64 @@ export interface NovoChamado {
   /** Obrigatório quando o setor pede (Administração › Empreendimentos, ex.: CFTV). */
   empreendimentoId: number | null;
   descricao: string;
-  urgente: boolean;
+  /** "Tipo urgência": normal = a do serviço; prazo e grave = Alta; parado = Urgente (cd_ticket_criar). */
+  urgencia: TipoUrgencia;
   anexos: Anexo[];
 }
+
+export type TipoUrgencia = "normal" | "prazo" | "grave" | "parado";
 
 export interface EmpreendimentosSetor {
   pedir: boolean;
   lista: { id: number; nome: string; apelidos: string[]; cidade: string | null }[];
 }
+
+// ---------- Modo Técnico (docs/mockups/calperdesk-tecnico.html) ----------
+
+export interface EntradaTecnico {
+  usuarioId: string;
+  nome: string;
+  email: string;
+  setores: { id: number; nome: string }[];
+}
+
+export interface ChamadoTecnico {
+  id: number;
+  assunto: string;
+  origem: string;
+  servico: string | null;
+  status: StatusTicket;
+  justificativa: string | null;
+  urgencia: string | null;
+  tags: string[];
+  empreendimento: string | null;
+  solicitante: string | null;
+  telefone: string | null;
+  criadoEm: string;
+  slaSolucaoAte: string | null;
+  slaPausadoDesde: string | null;
+  encerradoEm: string | null;
+  responsavelId: string | null;
+  responsavel: string | null;
+  meu: boolean;
+}
+
+export interface ChamadoTecnicoDetalhe extends ChamadoTecnico {
+  setor: string | null;
+  servicoId: number | null;
+  local: { nome: string; cidade: string | null; endereco: string | null; observacao: string | null } | null;
+  email: string | null;
+  solucao: string | null;
+  podeAtribuir: boolean;
+  podeAtender: boolean;
+  /** Só quando o chamado está sem serviço: as opções do setor. */
+  servicos: { id: number; rotulo: string }[] | null;
+  acoes: { numero: number; direcao: "entrada" | "saida"; autorNome: string; texto: string; anexos: Anexo[]; criadoEm: string }[];
+  eventos: { tipo: string; descricao: string; autorNome: string; criadoEm: string }[];
+}
+
+/** Tipo de resolução do técnico → status (cd_tec_concluir). */
+export type TipoResolucao = "resolvido" | "voltar" | "peca" | "orcamento" | "aprovacao" | "sem_acesso" | "nao_procede";
 
 // ---------- Administração ----------
 
@@ -252,6 +302,16 @@ export const calperdesk = {
   },
   async removerArquivo(path: string) {
     await supabase.storage.from(BUCKET).remove([path]);
+  },
+
+  // Modo Técnico
+  tec: {
+    entrar: () => rpc<EntradaTecnico>("cd_tec_entrar"),
+    chamados: (dias = 30) => rpc<ChamadoTecnico[]>("cd_tec_chamados", { p_dias: dias }),
+    chamado: (id: number) => rpc<ChamadoTecnicoDetalhe>("cd_tec_chamado", { p_id: id }),
+    atribuir: (id: number) => rpc<void>("cd_tec_atribuir", { p_id: id }),
+    concluir: (id: number, p: { tipo: TipoResolucao; texto: string; fotos: Anexo[]; servicoId: number | null }) =>
+      rpc<{ status: string; justificativa: string | null }>("cd_tec_concluir", { p_id: id, p: json(p) }),
   },
 
   // Administração › CalperDESK
