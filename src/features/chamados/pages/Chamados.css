@@ -156,6 +156,10 @@
   touch-action: none;
 }
 
+.ch-card--clicavel {
+  cursor: pointer;
+}
+
 .ch-card--drag {
   cursor: grab;
 }
@@ -247,6 +251,14 @@
 
 .ch-table tr:last-child td {
   border-bottom: 0;
+}
+
+.ch-table__row--clicavel {
+  cursor: pointer;
+}
+
+.ch-table__row--clicavel:hover td {
+  background: var(--table-head);
 }
 
 .ch-table__group td {
