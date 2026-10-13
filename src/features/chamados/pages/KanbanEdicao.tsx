@@ -1,5 +1,24 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ArrowLeft, ArrowRight, Check, ListChecks, MoreHorizontal, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CircleCheckBig,
+  CircleX,
+  ClipboardCheck,
+  Columns3,
+  Headset,
+  Hourglass,
+  Inbox,
+  ListChecks,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { useId, useState, type FormEvent, type KeyboardEvent } from "react";
 import { DetailDialog } from "../../../components/ds";
 import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
@@ -39,6 +58,21 @@ interface TituloProps {
   onRemover: () => void;
 }
 
+/** Ícone da coluna pelo nome (a ordem importa: "A Fazer · Aguardando" é espera; "Pré-fechamento" não é concluído). */
+const ICONES_COLUNA: [RegExp, LucideIcon][] = [
+  [/aguard|pend[êe]ncia|espera/i, Hourglass],
+  [/pr[ée]-?fechamento|valida[çc]|homolog|revis/i, ClipboardCheck],
+  [/reabert/i, RotateCcw],
+  [/cancel/i, CircleX],
+  [/conclu|fechad|resolvid|finaliz|encerrad/i, CircleCheckBig],
+  [/atendimento|andamento|execu[çc]|fazendo/i, Headset],
+  [/fazer|novo|entrada|backlog|triagem/i, Inbox],
+];
+
+export function iconeDaColuna(nome: string): LucideIcon {
+  return ICONES_COLUNA.find(([re]) => re.test(nome))?.[1] ?? Columns3;
+}
+
 /** Cabeçalho da coluna: nome (vira campo ao renomear), contador e menu ⋯. */
 export function TituloColuna({ coluna, total, editavel, primeira, ultima, salvando, onRenomear, onStatus, onMover, onRemover }: TituloProps) {
   const [editando, setEditando] = useState(false);
@@ -54,6 +88,7 @@ export function TituloColuna({ coluna, total, editavel, primeira, ultima, salvan
     setEditando(false);
     if (n && n !== coluna.nome) onRenomear(n.slice(0, 40));
   };
+  const Icone = iconeDaColuna(coluna.nome);
   const tecla = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") salvar();
     if (e.key === "Escape") setEditando(false);
@@ -84,14 +119,12 @@ export function TituloColuna({ coluna, total, editavel, primeira, ultima, salvan
 
   return (
     <div className="ch-col__head">
-      <span className="ch-col__titulo" onDoubleClick={editavel ? abrir : undefined}>
-        {coluna.nome}
+      {/* Nome numa linha só (reticências se faltar espaço; o nome inteiro aparece ao passar o mouse).
+          Renomear fica no menu ⋯ e no duplo clique, para sobrar espaço ao nome. */}
+      <span className="ch-col__titulo" title={coluna.nome} onDoubleClick={editavel ? abrir : undefined}>
+        <Icone size={15} className="ch-col__icone" aria-hidden="true" />
+        <span className="ch-col__texto">{coluna.nome}</span>
       </span>
-      {editavel && (
-        <button type="button" className="ch-col__btn" aria-label={`Renomear a coluna ${coluna.nome}`} disabled={salvando} onClick={abrir}>
-          <Pencil size={13} aria-hidden="true" />
-        </button>
-      )}
       <span className="ch-col__count">{total}</span>
       {editavel && (
         <DropdownMenu.Root modal={false}>

@@ -379,10 +379,12 @@ function Quadro({ visao, tickets, statusCadastro, meuId, podeMover, onAbrir, onS
 
 function Coluna({ coluna, tickets, statusCadastro, titulo, children }: { coluna: ColunaKanban; tickets: DashboardTicket[]; statusCadastro: StatusTicket[]; titulo: ReactNode; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: coluna.id });
+  /** Status da coluna numa linha só; o texto inteiro aparece ao passar o mouse. */
+  const sub = coluna.status.map((r) => rotuloRef(r, statusCadastro)).join(" · ");
   return (
     <section ref={setNodeRef} className={`ch-col${isOver ? " ch-col--over" : ""}`} aria-label={`${coluna.nome}: ${tickets.length} tickets`}>
       {titulo}
-      {coluna.status.length > 0 && <div className="ch-col__sub">{coluna.status.map((r) => rotuloRef(r, statusCadastro)).join(" · ")}</div>}
+      {sub && <div className="ch-col__sub" title={sub}>{sub}</div>}
       {children}
     </section>
   );
