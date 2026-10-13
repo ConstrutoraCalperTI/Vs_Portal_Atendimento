@@ -103,9 +103,10 @@
 }
 
 .ch-col {
-  /* As colunas dividem a largura da tela; só rola para o lado se não couberem no mínimo. */
+  /* As colunas dividem a largura da tela; abaixo de 270px (o nome inteiro
+     no título) o quadro rola para o lado pela barra de baixo. */
   flex: 1 1 0;
-  min-width: 190px;
+  min-width: 270px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -113,6 +114,7 @@
   min-height: 60vh;
   max-height: 72vh;
   overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 12px;
   background: var(--neutral-bg);
   border: 1px solid var(--input-border);
