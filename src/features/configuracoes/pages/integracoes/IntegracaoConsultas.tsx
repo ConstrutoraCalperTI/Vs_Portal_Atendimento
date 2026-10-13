@@ -75,6 +75,7 @@ export function IntegracaoConsultas() {
     {
       id: "order",
       header: "Ordem",
+      icon: ListOrdered,
       width: "92px",
       cell: (row) => {
         const index = rows?.indexOf(row) ?? 0;
@@ -106,6 +107,7 @@ export function IntegracaoConsultas() {
     {
       id: "name",
       header: "Nome",
+      icon: Tag,
       cell: (row) => (
         <div className="sql-query__name">
           <span>{row.name}</span>
@@ -123,6 +125,7 @@ export function IntegracaoConsultas() {
     {
       id: "status",
       header: "Status",
+      icon: ToggleRight,
       width: "80px",
       cell: (row) => (
         <Switch.Root
@@ -139,6 +142,7 @@ export function IntegracaoConsultas() {
     {
       id: "lastTest",
       header: "Último teste",
+      icon: FlaskConical,
       cell: (row) =>
         row.lastTest ? (
           <span className={`sql-query__test ${row.lastTest.ok ? "integration-card__ok" : "integration-card__fail"}`} title={row.lastTest.message}>

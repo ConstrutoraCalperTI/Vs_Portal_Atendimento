@@ -126,6 +126,7 @@ export function Usuarios({ nav }: { nav?: ReactNode } = {}) {
     {
       id: "user",
       header: "Usuário",
+      icon: User,
       cell: (row) => (
         <div className="users__identity">
           <UserAvatar name={row.name} />
@@ -145,11 +146,13 @@ export function Usuarios({ nav }: { nav?: ReactNode } = {}) {
     {
       id: "lastAccess",
       header: "Último acesso",
+      icon: MonitorSmartphone,
       cell: (row) => <span className="users__muted">{formatLastAccess(row.lastAccessAt)}</span>,
     },
     {
       id: "password",
       header: "Senha",
+      icon: KeyRound,
       cell: (row) =>
         row.mustChangePassword ? (
           <StatusBadge variant="warning">Troca exigida</StatusBadge>

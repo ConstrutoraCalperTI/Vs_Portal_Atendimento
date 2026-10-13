@@ -135,7 +135,7 @@ function TestPanel({ query }: { query: SqlQuery }) {
                       <tr>
                         {result.columns.map((column) => (
                           <th key={column} scope="col">
-                            {column}
+                            <ThLabel icon={Columns3}>{column}</ThLabel>
                           </th>
                         ))}
                       </tr>

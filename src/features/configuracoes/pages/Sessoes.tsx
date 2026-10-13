@@ -38,6 +38,7 @@ export function Sessoes() {
     {
       id: "user",
       header: "Usuário",
+      icon: User,
       cell: (row) => (
         <div className="sessions__identity">
           <UserAvatar name={row.userName} />
@@ -54,6 +55,7 @@ export function Sessoes() {
     {
       id: "activity",
       header: "Última atividade",
+      icon: CalendarSync,
       cell: (row) => (
         <span className="sessions__activity">
           {isNow(row.lastActivityAt) && <span className="sessions__online" aria-hidden="true" />}

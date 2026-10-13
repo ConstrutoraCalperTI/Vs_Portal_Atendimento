@@ -129,6 +129,7 @@ export function Auditoria() {
     {
       id: "action",
       header: "Ação",
+      icon: Activity,
       cell: (row) => <StatusBadge variant={ACTION_VARIANTS[row.action]}>{AUDIT_ACTION_LABELS[row.action]}</StatusBadge>,
     },
     { id: "description", header: "Descrição", icon: AlignLeft, cell: (row) => row.description },
