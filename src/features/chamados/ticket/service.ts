@@ -203,7 +203,12 @@ function aplicar(id: number, p: PatchTicket) {
     const pend = camposPendentes(CAD.campos, estado, n.campos);
     if (pend.length) throw new ServiceError("INVALID_INPUT", `Preencha antes de resolver: ${pend.join(", ")}.`, "campos");
     if (n.servicoId === null) throw new ServiceError("INVALID_INPUT", "Escolha o serviço antes de resolver.", "servicoId");
-    if (!n.solucaoAplicada) throw new ServiceError("INVALID_INPUT", "Descreva a solução aplicada antes de resolver.", "solucaoAplicada");
+    // Como ch_solucao_da_resposta: a última resposta ao solicitante; senão a última nota interna.
+    if (!n.solucaoAplicada) {
+      const saidas = n.acoes.filter((a) => a.direcao === "saida" && a.texto.trim()).sort((a, b) => b.numero - a.numero);
+      n.solucaoAplicada = (saidas.find((a) => a.tipo === "publica") ?? saidas[0])?.texto.trim().slice(0, 20000) || null;
+    }
+    if (!n.solucaoAplicada) throw new ServiceError("INVALID_INPUT", "Responda ao solicitante antes de resolver: o texto da resposta vira a solução aplicada.", "texto");
   }
   // Histórico das mudanças.
   if (n.statusId !== d.statusId || n.justificativaId !== d.justificativaId) evento(n, "status", `Status alterado para ${st.nome}`);

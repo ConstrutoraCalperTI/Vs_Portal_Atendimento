@@ -403,7 +403,6 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo, 
   const [campos, setCampos] = useState<Record<string, unknown>>(d.campos);
   const [tags, setTags] = useState(d.tags.join(", "));
   const [cc, setCc] = useState(d.cc.join("; "));
-  const [solucao, setSolucao] = useState(d.solucaoAplicada ?? "");
 
   const folhas = useMemo(
     () =>
@@ -429,7 +428,6 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo, 
   if (JSON.stringify(campos) !== JSON.stringify(d.campos)) patch.campos = campos;
   if (listaTags.join("|") !== d.tags.join("|")) patch.tags = listaTags;
   if (listaCc.join("|") !== d.cc.join("|")) patch.cc = listaCc;
-  if ((solucao.trim() || null) !== d.solucaoAplicada) patch.solucaoAplicada = solucao.trim() || null;
   const sujo = Object.keys(patch).length > 0;
   const patchJson = JSON.stringify(patch);
 
@@ -582,10 +580,6 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo, 
             <label className="field">
               <span className="field__label">Cc (cópia dos e-mails)</span>
               <input className="input" placeholder="pessoa@calper.com.br; outra@calper.com.br" value={cc} onChange={(e) => setCc(e.target.value)} />
-            </label>
-            <label className="field">
-              <span className="field__label">Solução aplicada</span>
-              <textarea className="input" rows={3} maxLength={20000} placeholder="O que resolveu. Obrigatória para resolver; vira sugestão nos próximos tickets do mesmo serviço." value={solucao} onChange={(e) => setSolucao(e.target.value)} />
             </label>
           </>
         ) : (
@@ -745,8 +739,8 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
     const statusDepois = lerStatus(depois);
     const st = status.find((s) => s.id === statusDepois.statusId);
     const encerra = Boolean(st && (st.categoria === "resolvido" || st.categoria === "fechado"));
-    // Encerrar sem janela (Wagner, 08/10/2026): sem "Solução aplicada" preenchida, o texto da ação de encerramento
-    // vira a solução (é o que a IA sugere nos próximos tickets). Obrigatórios faltando: o banco recusa tudo e avisa.
+    // "Solução aplicada" não aparece na tela (Wagner, 13/10/2026): o texto da ação de encerramento vira a solução
+    // (base de conhecimento: sugestões e CalperDESK). Sem ele, o banco usa a última resposta. Obrigatórios faltando: o banco recusa tudo e avisa.
     if (encerra && !d.solucaoAplicada && !campos.solucaoAplicada) campos.solucaoAplicada = texto.trim();
     const temCampos = Object.keys(campos).length > 0;
     adicionar.mutate(
@@ -859,12 +853,11 @@ function Compositor({ d, status, macros, tipo, setTipo, texto, setTexto, textoRe
 
 function SolucaoAnterior({ d, bloqueado, onUsarNaResposta }: { d: TicketDetalhe; bloqueado: boolean; onUsarNaResposta: (t: string) => void }) {
   const q = useSolucoesAnteriores(d.id, d.servicoId);
-  const atualizar = useAtualizarDetalhe();
   const [todas, setTodas] = useState(false);
   if (!q.data?.length) {
     return q.isSuccess && !d.encerradoEm ? (
       <p className="tk-rel" style={{ fontStyle: "normal" }}>
-        <Lightbulb size={13} aria-hidden="true" /> Ainda não há solução registrada para {d.servicoId ? "este serviço" : "esta equipe"}. Ao resolver, a "Solução aplicada" deste ticket passa a ser sugerida nos próximos.
+        <Lightbulb size={13} aria-hidden="true" /> Ainda não há solução registrada para {d.servicoId ? "este serviço" : "esta equipe"}. Ao resolver, a resposta ao solicitante deste ticket vira a solução sugerida nos próximos.
       </p>
     ) : null;
   }
@@ -889,15 +882,6 @@ function SolucaoAnterior({ d, bloqueado, onUsarNaResposta }: { d: TicketDetalhe;
               <button type="button" className="btn btn--primary" onClick={() => onUsarNaResposta(s.solucao)}>
                 Usar esta solução na resposta
               </button>
-              {!d.solucaoAplicada && (
-                <button
-                  type="button"
-                  className="btn btn--outline"
-                  onClick={() => atualizar.mutate({ id: d.id, patch: { solucaoAplicada: s.solucao } }, { onSuccess: () => toast.success("Registrada como solução aplicada deste ticket"), onError: (e) => toast.error(erroMsg(e, "Não foi possível registrar.")) })}
-                >
-                  Usar como solução aplicada
-                </button>
-              )}
             </div>
           )}
         </div>

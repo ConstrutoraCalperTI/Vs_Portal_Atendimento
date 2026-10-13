@@ -1,5 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { CheckCircle2, Hourglass, Sparkles } from "lucide-react";
+import { CheckCircle2, Hourglass } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ServiceError } from "../../configuracoes/services/types";
@@ -14,7 +14,8 @@ import "../../configuracoes/components/ConfirmDialog.css";
 
 /**
  * "Foi resolvido?" ao encerrar a conversa (mockup aprovado em 09/10/2026, tela 2).
- *   Sim → ticket Resolvido com a solução (sugerida pela IA, revisada aqui), serviço e categoria.
+ *   Sim → ticket Resolvido com serviço e categoria. A "Solução aplicada" não aparece (Wagner, 13/10/2026): é o resumo
+ *         da IA; se a IA falhar, o banco usa a última resposta ao colaborador (ch_solucao_da_resposta).
  *   Não → o ticket fica "Em atendimento" (coluna do Kanban) e continua se o colaborador voltar.
  * As regras de resolver são as do ticket (serviço, solução e campos obrigatórios): o erro do banco aparece aqui.
  */
@@ -43,29 +44,19 @@ function Formulario({ c, setor, fechar }: { c: Conversa; setor: Setor | undefine
   const [servicoId, setServicoId] = useState<number | null>(null);
   const [categoriaId, setCategoriaId] = useState<number | null>(null);
   const [erro, setErro] = useState<{ campo?: string; mensagem: string } | null>(null);
-  const [daIa, setDaIa] = useState(false);
   const carregou = useRef(false);
 
-  // Ao abrir: o que o ticket já tem (a IA de triagem pode ter escolhido o serviço) e, sem solução, a sugestão da IA.
+  // Ao abrir: o que o ticket já tem (a IA de triagem pode ter escolhido o serviço) e, sem solução, o resumo da IA.
   useEffect(() => {
     if (carregou.current || !ticket.data) return;
     carregou.current = true;
     setServicoId(ticket.data.servicoId);
     setCategoriaId(ticket.data.categoriaId);
     if (ticket.data.solucaoAplicada) setSolucao(ticket.data.solucaoAplicada);
-    else if (c.ticket) sugerir();
+    else if (c.ticket) resumir.mutate(c.ticket, { onSuccess: (r) => setSolucao(r.solucao) });
     // Só na primeira carga do ticket.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticket.data]);
-
-  const sugerir = () =>
-    resumir.mutate(c.ticket!, {
-      onSuccess: (r) => {
-        setSolucao(r.solucao);
-        setDaIa(true);
-      },
-      onError: () => toast.error("A IA não conseguiu resumir. Escreva a solução."),
-    });
 
   const opcoesServico = useMemo(() => {
     const servicos = cad.data?.servicos ?? [];
@@ -107,7 +98,7 @@ function Formulario({ c, setor, fechar }: { c: Conversa; setor: Setor | undefine
           <input type="radio" name={`${ids}-res`} checked={resolvido} onChange={() => setResolvido(true)} />
           <span>
             <b><CheckCircle2 size={15} aria-hidden="true" /> Sim, resolvida</b>
-            <small>Ticket vai para <b>Resolvido</b> com a solução abaixo.</small>
+            <small>Ticket vai para <b>Resolvido</b> e o resumo da conversa vira a solução.</small>
           </span>
         </label>
         <label className={!resolvido ? "at-enc__op at-enc__op--on" : "at-enc__op"}>
@@ -121,22 +112,6 @@ function Formulario({ c, setor, fechar }: { c: Conversa; setor: Setor | undefine
 
       {resolvido && c.ticket && (
         <div className="at-enc__campos">
-          <div className="field">
-            <label className="field__label at-enc__rot" htmlFor={`${ids}-sol`}>
-              Solução aplicada *
-              {resumir.isPending ? (
-                <span className="at-enc__ia">✦ A IA está resumindo…</span>
-              ) : daIa ? (
-                <span className="at-enc__ia">✦ Resumida pela IA — revise</span>
-              ) : (
-                <button type="button" className="btn btn--outline btn--sm" onClick={sugerir}>
-                  <Sparkles size={13} aria-hidden="true" /> Sugerir com IA
-                </button>
-              )}
-            </label>
-            <textarea id={`${ids}-sol`} className="input" rows={3} maxLength={20000} value={solucao} onChange={(e) => { setSolucao(e.target.value); setDaIa(false); }} placeholder="O que resolveu o problema" />
-            {erro?.campo === "solucaoAplicada" && <span className="field__error" role="alert">{erro.mensagem}</span>}
-          </div>
           <div className="field">
             <span className="field__label" id={`${ids}-sv`}>Serviço *</span>
             <ServicoBusca rotuloId={`${ids}-sv`} opcoes={opcoesServico} valor={servicoId} onChange={setServicoId} />
@@ -156,14 +131,14 @@ function Formulario({ c, setor, fechar }: { c: Conversa; setor: Setor | undefine
         </div>
       )}
 
-      {erro && !["solucaoAplicada", "servicoId"].includes(erro.campo ?? "") && <p className="field__error" role="alert">{erro.mensagem}</p>}
+      {erro && erro.campo !== "servicoId" && <p className="field__error" role="alert">{erro.mensagem}</p>}
 
       <div className="confirm-dialog__actions">
         <Dialog.Close asChild>
           <button type="button" className="btn btn--outline" disabled={acao.isPending}>Cancelar</button>
         </Dialog.Close>
-        <button type="button" className="btn btn--primary" disabled={acao.isPending || (resolvido && !!c.ticket && (!solucao.trim() || !servicoId))} onClick={confirmar}>
-          {acao.isPending ? "Aguarde…" : resolvido && c.ticket ? "Encerrar e resolver ticket" : "Encerrar e manter em atendimento"}
+        <button type="button" className="btn btn--primary" disabled={acao.isPending || resumir.isPending || (resolvido && !!c.ticket && !servicoId)} onClick={confirmar}>
+          {acao.isPending || resumir.isPending ? "Aguarde…" : resolvido && c.ticket ? "Encerrar e resolver ticket" : "Encerrar e manter em atendimento"}
         </button>
       </div>
     </>
