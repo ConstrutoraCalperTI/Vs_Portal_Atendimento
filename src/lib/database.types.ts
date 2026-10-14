@@ -66,29 +66,35 @@ export type Database = {
         Row: {
           apto: boolean
           criado_em: string
+          grupo_dica_em: string | null
           online_em: string | null
           pausa: boolean
           setor_id: number
           ultimo_recebido_em: string | null
           usuario_id: string
+          whatsapp: string | null
         }
         Insert: {
           apto?: boolean
           criado_em?: string
+          grupo_dica_em?: string | null
           online_em?: string | null
           pausa?: boolean
           setor_id: number
           ultimo_recebido_em?: string | null
           usuario_id: string
+          whatsapp?: string | null
         }
         Update: {
           apto?: boolean
           criado_em?: string
+          grupo_dica_em?: string | null
           online_em?: string | null
           pausa?: boolean
           setor_id?: number
           ultimo_recebido_em?: string | null
           usuario_id?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -123,6 +129,7 @@ export type Database = {
           primeira_resposta_em: string | null
           reaberto_em_24h: boolean
           setor_id: number
+          ticket_id: number | null
           transferencias: number
         }
         Insert: {
@@ -140,6 +147,7 @@ export type Database = {
           primeira_resposta_em?: string | null
           reaberto_em_24h?: boolean
           setor_id: number
+          ticket_id?: number | null
           transferencias?: number
         }
         Update: {
@@ -157,6 +165,7 @@ export type Database = {
           primeira_resposta_em?: string | null
           reaberto_em_24h?: boolean
           setor_id?: number
+          ticket_id?: number | null
           transferencias?: number
         }
         Relationships: [
@@ -188,12 +197,20 @@ export type Database = {
             referencedRelation: "at_setores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "at_atendimentos_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
         ]
       }
       at_config: {
         Row: {
           atualizado_em: string
           atualizado_por: string | null
+          dominios_corporativos: string[]
           google_escopos: string[]
           google_oauth_client_id: string | null
           google_oauth_definido_em: string | null
@@ -205,6 +222,14 @@ export type Database = {
           google_verificacao: Json | null
           id: boolean
           ligado: boolean
+          openwa_chave_id: string | null
+          openwa_chave_mascara: string | null
+          openwa_definido_em: string | null
+          openwa_ligado: boolean
+          openwa_ligado_em: string | null
+          openwa_ligado_por: string | null
+          openwa_url: string | null
+          openwa_verificacao: Json | null
           telefones_piloto: string[]
           token_definido_em: string | null
           token_mascara: string | null
@@ -215,6 +240,7 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           atualizado_por?: string | null
+          dominios_corporativos?: string[]
           google_escopos?: string[]
           google_oauth_client_id?: string | null
           google_oauth_definido_em?: string | null
@@ -226,6 +252,14 @@ export type Database = {
           google_verificacao?: Json | null
           id?: boolean
           ligado?: boolean
+          openwa_chave_id?: string | null
+          openwa_chave_mascara?: string | null
+          openwa_definido_em?: string | null
+          openwa_ligado?: boolean
+          openwa_ligado_em?: string | null
+          openwa_ligado_por?: string | null
+          openwa_url?: string | null
+          openwa_verificacao?: Json | null
           telefones_piloto?: string[]
           token_definido_em?: string | null
           token_mascara?: string | null
@@ -236,6 +270,7 @@ export type Database = {
         Update: {
           atualizado_em?: string
           atualizado_por?: string | null
+          dominios_corporativos?: string[]
           google_escopos?: string[]
           google_oauth_client_id?: string | null
           google_oauth_definido_em?: string | null
@@ -247,6 +282,14 @@ export type Database = {
           google_verificacao?: Json | null
           id?: boolean
           ligado?: boolean
+          openwa_chave_id?: string | null
+          openwa_chave_mascara?: string | null
+          openwa_definido_em?: string | null
+          openwa_ligado?: boolean
+          openwa_ligado_em?: string | null
+          openwa_ligado_por?: string | null
+          openwa_url?: string | null
+          openwa_verificacao?: Json | null
           telefones_piloto?: string[]
           token_definido_em?: string | null
           token_mascara?: string | null
@@ -262,9 +305,11 @@ export type Database = {
           atendente_id: string | null
           atendimento_id: number | null
           atualizado_em: string
+          aviso_nao_corporativo_em: string | null
           criado_em: string
           fila_desde: string | null
           id: number
+          ident: Json | null
           modo: string
           nao_lidas: number
           nome_contato: string | null
@@ -284,9 +329,11 @@ export type Database = {
           atendente_id?: string | null
           atendimento_id?: number | null
           atualizado_em?: string
+          aviso_nao_corporativo_em?: string | null
           criado_em?: string
           fila_desde?: string | null
           id?: never
+          ident?: Json | null
           modo?: string
           nao_lidas?: number
           nome_contato?: string | null
@@ -306,9 +353,11 @@ export type Database = {
           atendente_id?: string | null
           atendimento_id?: number | null
           atualizado_em?: string
+          aviso_nao_corporativo_em?: string | null
           criado_em?: string
           fila_desde?: string | null
           id?: never
+          ident?: Json | null
           modo?: string
           nao_lidas?: number
           nome_contato?: string | null
@@ -378,6 +427,7 @@ export type Database = {
           copia_oculta: string | null
           criado_em: string
           cursor: string | null
+          dominios_permitidos: string[]
           email: string
           exibir_no_envio: boolean
           habilitada: boolean
@@ -425,6 +475,7 @@ export type Database = {
           copia_oculta?: string | null
           criado_em?: string
           cursor?: string | null
+          dominios_permitidos?: string[]
           email: string
           exibir_no_envio?: boolean
           habilitada?: boolean
@@ -472,6 +523,7 @@ export type Database = {
           copia_oculta?: string | null
           criado_em?: string
           cursor?: string | null
+          dominios_permitidos?: string[]
           email?: string
           exibir_no_envio?: boolean
           habilitada?: boolean
@@ -576,6 +628,7 @@ export type Database = {
           importado_em: string
           in_reply_to: string | null
           message_id: string
+          motivo: string | null
           para: string[]
           pessoa_id: number | null
           provedor_id: string | null
@@ -583,6 +636,7 @@ export type Database = {
           referencias: string | null
           texto: string | null
           thread_id: string | null
+          ticket_id: number | null
         }
         Insert: {
           anexos?: Json
@@ -597,6 +651,7 @@ export type Database = {
           importado_em?: string
           in_reply_to?: string | null
           message_id: string
+          motivo?: string | null
           para?: string[]
           pessoa_id?: number | null
           provedor_id?: string | null
@@ -604,6 +659,7 @@ export type Database = {
           referencias?: string | null
           texto?: string | null
           thread_id?: string | null
+          ticket_id?: number | null
         }
         Update: {
           anexos?: Json
@@ -618,6 +674,7 @@ export type Database = {
           importado_em?: string
           in_reply_to?: string | null
           message_id?: string
+          motivo?: string | null
           para?: string[]
           pessoa_id?: number | null
           provedor_id?: string | null
@@ -625,6 +682,7 @@ export type Database = {
           referencias?: string | null
           texto?: string | null
           thread_id?: string | null
+          ticket_id?: number | null
         }
         Relationships: [
           {
@@ -639,6 +697,13 @@ export type Database = {
             columns: ["pessoa_id"]
             isOneToOne: false
             referencedRelation: "at_pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_email_recebidos_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -745,6 +810,7 @@ export type Database = {
           atualizado_por: string | null
           criado_em: string
           descricao: string | null
+          descricao_ia: string | null
           id: number
           lider_id: string | null
           nome: string
@@ -756,6 +822,7 @@ export type Database = {
           atualizado_por?: string | null
           criado_em?: string
           descricao?: string | null
+          descricao_ia?: string | null
           id?: never
           lider_id?: string | null
           nome: string
@@ -767,6 +834,7 @@ export type Database = {
           atualizado_por?: string | null
           criado_em?: string
           descricao?: string | null
+          descricao_ia?: string | null
           id?: never
           lider_id?: string | null
           nome?: string
@@ -788,6 +856,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      at_eventos_openwa: {
+        Row: {
+          chave: string | null
+          evento: string | null
+          id: number
+          payload: Json
+          recebido_em: string
+          resultado: Json | null
+          sessao: string | null
+        }
+        Insert: {
+          chave?: string | null
+          evento?: string | null
+          id?: never
+          payload: Json
+          recebido_em?: string
+          resultado?: Json | null
+          sessao?: string | null
+        }
+        Update: {
+          chave?: string | null
+          evento?: string | null
+          id?: never
+          payload?: Json
+          recebido_em?: string
+          resultado?: Json | null
+          sessao?: string | null
+        }
+        Relationships: []
       }
       at_eventos_zenvia: {
         Row: {
@@ -854,6 +952,47 @@ export type Database = {
           },
         ]
       }
+      at_linhas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          confirmado_em: string | null
+          corporativa: boolean
+          criado_em: string
+          numero: string
+          observacao: string | null
+          pessoa_id: number | null
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          confirmado_em?: string | null
+          corporativa?: boolean
+          criado_em?: string
+          numero: string
+          observacao?: string | null
+          pessoa_id?: number | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          confirmado_em?: string | null
+          corporativa?: boolean
+          criado_em?: string
+          numero?: string
+          observacao?: string | null
+          pessoa_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_linhas_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       at_mensagens: {
         Row: {
           arquivo: Json | null
@@ -863,7 +1002,10 @@ export type Database = {
           conversa_id: number
           criado_em: string
           direcao: string
+          envio_reservado_ate: string | null
+          envio_tentativas: number
           erro: string | null
+          externo_id: string | null
           id: number
           status: string
           texto: string | null
@@ -878,7 +1020,10 @@ export type Database = {
           conversa_id: number
           criado_em?: string
           direcao: string
+          envio_reservado_ate?: string | null
+          envio_tentativas?: number
           erro?: string | null
+          externo_id?: string | null
           id?: never
           status?: string
           texto?: string | null
@@ -893,7 +1038,10 @@ export type Database = {
           conversa_id?: number
           criado_em?: string
           direcao?: string
+          envio_reservado_ate?: string | null
+          envio_tentativas?: number
           erro?: string | null
+          externo_id?: string | null
           id?: never
           status?: string
           texto?: string | null
@@ -927,25 +1075,37 @@ export type Database = {
       at_numeros: {
         Row: {
           ativo: boolean
+          canal: string
           criado_em: string
+          grupo_interno: string | null
+          grupo_interno_nome: string | null
           id: number
           numero: string
+          openwa_sessao: string | null
           setor_id: number
           verificacao: Json | null
         }
         Insert: {
           ativo?: boolean
+          canal?: string
           criado_em?: string
+          grupo_interno?: string | null
+          grupo_interno_nome?: string | null
           id?: never
           numero: string
+          openwa_sessao?: string | null
           setor_id: number
           verificacao?: Json | null
         }
         Update: {
           ativo?: boolean
+          canal?: string
           criado_em?: string
+          grupo_interno?: string | null
+          grupo_interno_nome?: string | null
           id?: never
           numero?: string
+          openwa_sessao?: string | null
           setor_id?: number
           verificacao?: Json | null
         }
@@ -1140,6 +1300,79 @@ export type Database = {
         }
         Relationships: []
       }
+      at_repasses: {
+        Row: {
+          arquivo: Json | null
+          citar_externo_id: string | null
+          conversa_id: number | null
+          criado_em: string
+          envio_reservado_ate: string | null
+          envio_tentativas: number
+          erro: string | null
+          externo_id: string | null
+          id: number
+          numero_id: number
+          status: string
+          texto: string
+          ticket_id: number | null
+          tipo: string
+        }
+        Insert: {
+          arquivo?: Json | null
+          citar_externo_id?: string | null
+          conversa_id?: number | null
+          criado_em?: string
+          envio_reservado_ate?: string | null
+          envio_tentativas?: number
+          erro?: string | null
+          externo_id?: string | null
+          id?: never
+          numero_id: number
+          status?: string
+          texto: string
+          ticket_id?: number | null
+          tipo: string
+        }
+        Update: {
+          arquivo?: Json | null
+          citar_externo_id?: string | null
+          conversa_id?: number | null
+          criado_em?: string
+          envio_reservado_ate?: string | null
+          envio_tentativas?: number
+          erro?: string | null
+          externo_id?: string | null
+          id?: never
+          numero_id?: number
+          status?: string
+          texto?: string
+          ticket_id?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "at_repasses_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "at_conversas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_repasses_numero_id_fkey"
+            columns: ["numero_id"]
+            isOneToOne: false
+            referencedRelation: "at_numeros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "at_repasses_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       at_setor_gestores: {
         Row: {
           setor_id: number
@@ -1178,14 +1411,26 @@ export type Database = {
           ativo: boolean
           atualizado_em: string
           atualizado_por: string | null
+          cd_descricao: string | null
+          cd_icone: string | null
+          cd_ordem: number
+          cd_tecnico: boolean
+          cd_visivel: boolean
           criado_em: string
           encerrar_apos_horas: number
+          equipe_padrao_id: number | null
           id: number
           limite_simultaneo: number
           msg_boas_vindas: string
           msg_encerramento: string
           msg_fora_horario: string
+          msg_nao_corporativo: string
           nome: string
+          sla_padrao_horas: number
+          wa_identificar: boolean
+          wa_pedir_descricao: boolean
+          wa_respostas_auto: boolean
+          wa_so_corporativo: boolean
         }
         Insert: {
           alerta_cliente_min?: number
@@ -1194,14 +1439,26 @@ export type Database = {
           ativo?: boolean
           atualizado_em?: string
           atualizado_por?: string | null
+          cd_descricao?: string | null
+          cd_icone?: string | null
+          cd_ordem?: number
+          cd_tecnico?: boolean
+          cd_visivel?: boolean
           criado_em?: string
           encerrar_apos_horas?: number
+          equipe_padrao_id?: number | null
           id?: never
           limite_simultaneo?: number
           msg_boas_vindas?: string
           msg_encerramento?: string
           msg_fora_horario?: string
+          msg_nao_corporativo?: string
           nome: string
+          sla_padrao_horas?: number
+          wa_identificar?: boolean
+          wa_pedir_descricao?: boolean
+          wa_respostas_auto?: boolean
+          wa_so_corporativo?: boolean
         }
         Update: {
           alerta_cliente_min?: number
@@ -1210,16 +1467,36 @@ export type Database = {
           ativo?: boolean
           atualizado_em?: string
           atualizado_por?: string | null
+          cd_descricao?: string | null
+          cd_icone?: string | null
+          cd_ordem?: number
+          cd_tecnico?: boolean
+          cd_visivel?: boolean
           criado_em?: string
           encerrar_apos_horas?: number
+          equipe_padrao_id?: number | null
           id?: never
           limite_simultaneo?: number
           msg_boas_vindas?: string
           msg_encerramento?: string
           msg_fora_horario?: string
+          msg_nao_corporativo?: string
           nome?: string
+          sla_padrao_horas?: number
+          wa_identificar?: boolean
+          wa_pedir_descricao?: boolean
+          wa_respostas_auto?: boolean
+          wa_so_corporativo?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "at_setores_equipe_padrao_fk"
+            columns: ["equipe_padrao_id"]
+            isOneToOne: false
+            referencedRelation: "at_equipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
@@ -1266,6 +1543,1479 @@ export type Database = {
           origem?: string
           user_email?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      cd_avisos: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          fim: string | null
+          id: number
+          inicio: string
+          link: string | null
+          setor_id: number | null
+          texto: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          fim?: string | null
+          id?: number
+          inicio?: string
+          link?: string | null
+          setor_id?: number | null
+          texto?: string
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          fim?: string | null
+          id?: number
+          inicio?: string
+          link?: string | null
+          setor_id?: number | null
+          texto?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cd_avisos_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cd_config: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          boas_vindas: string
+          id: boolean
+          quadros: Json
+          whatsapp: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          boas_vindas?: string
+          id?: boolean
+          quadros?: Json
+          whatsapp?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          boas_vindas?: string
+          id?: boolean
+          quadros?: Json
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      cd_empreendimentos_cache: {
+        Row: {
+          atualizado_em: string | null
+          erro: string | null
+          id: boolean
+          itens: Json
+        }
+        Insert: {
+          atualizado_em?: string | null
+          erro?: string | null
+          id?: boolean
+          itens?: Json
+        }
+        Update: {
+          atualizado_em?: string | null
+          erro?: string | null
+          id?: boolean
+          itens?: Json
+        }
+        Relationships: []
+      }
+      cd_solucoes: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          id: number
+          publicado: boolean
+          servico_id: number | null
+          setor_id: number
+          texto: string
+          ticket_id: number | null
+          titulo: string
+          usos: number
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: number
+          publicado?: boolean
+          servico_id?: number | null
+          setor_id: number
+          texto: string
+          ticket_id?: number | null
+          titulo: string
+          usos?: number
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: number
+          publicado?: boolean
+          servico_id?: number | null
+          setor_id?: number
+          texto?: string
+          ticket_id?: number | null
+          titulo?: string
+          usos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cd_solucoes_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "ch_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cd_solucoes_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cd_solucoes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cd_vistos: {
+        Row: {
+          ticket_id: number
+          usuario_id: string
+          visto_em: string
+        }
+        Insert: {
+          ticket_id: number
+          usuario_id: string
+          visto_em?: string
+        }
+        Update: {
+          ticket_id?: number
+          usuario_id?: string
+          visto_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cd_vistos_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_campos: {
+        Row: {
+          ajuda: string | null
+          aparece: string[]
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          chave: string
+          id: number
+          interno: boolean
+          obrigatorio: string
+          opcoes: string[]
+          ordem: number
+          rotulo: string
+          tipo: string
+          usar_em_visoes: boolean
+        }
+        Insert: {
+          ajuda?: string | null
+          aparece?: string[]
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          chave: string
+          id?: number
+          interno?: boolean
+          obrigatorio?: string
+          opcoes?: string[]
+          ordem?: number
+          rotulo: string
+          tipo: string
+          usar_em_visoes?: boolean
+        }
+        Update: {
+          ajuda?: string | null
+          aparece?: string[]
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          chave?: string
+          id?: number
+          interno?: boolean
+          obrigatorio?: string
+          opcoes?: string[]
+          ordem?: number
+          rotulo?: string
+          tipo?: string
+          usar_em_visoes?: boolean
+        }
+        Relationships: []
+      }
+      ch_categorias: {
+        Row: {
+          ativa: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          descricao: string | null
+          id: number
+          nome: string
+          ordem: number
+          padrao: boolean
+          servicos: number[] | null
+        }
+        Insert: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          descricao?: string | null
+          id?: number
+          nome: string
+          ordem?: number
+          padrao?: boolean
+          servicos?: number[] | null
+        }
+        Update: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          descricao?: string | null
+          id?: number
+          nome?: string
+          ordem?: number
+          padrao?: boolean
+          servicos?: number[] | null
+        }
+        Relationships: []
+      }
+      ch_empreendimento_config: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          ia_desde: string
+          ia_ligada: boolean
+          limiar: number
+          pedir_no_app: boolean
+          setor_id: number
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          ia_desde?: string
+          ia_ligada?: boolean
+          limiar?: number
+          pedir_no_app?: boolean
+          setor_id: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          ia_desde?: string
+          ia_ligada?: boolean
+          limiar?: number
+          pedir_no_app?: boolean
+          setor_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_empreendimento_config_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: true
+            referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_empreendimentos: {
+        Row: {
+          apelidos: string[]
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          cidade: string | null
+          criado_em: string
+          endereco: string | null
+          id: number
+          nome: string
+          observacao: string | null
+        }
+        Insert: {
+          apelidos?: string[]
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cidade?: string | null
+          criado_em?: string
+          endereco?: string | null
+          id?: number
+          nome: string
+          observacao?: string | null
+        }
+        Update: {
+          apelidos?: string[]
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cidade?: string | null
+          criado_em?: string
+          endereco?: string | null
+          id?: number
+          nome?: string
+          observacao?: string | null
+        }
+        Relationships: []
+      }
+      ch_gatilho_execucoes: {
+        Row: {
+          chave: string
+          criado_em: string
+          detalhe: string | null
+          disparo: string
+          gatilho_id: number
+          id: number
+          resultado: string
+          ticket_id: number
+        }
+        Insert: {
+          chave: string
+          criado_em?: string
+          detalhe?: string | null
+          disparo: string
+          gatilho_id: number
+          id?: never
+          resultado: string
+          ticket_id: number
+        }
+        Update: {
+          chave?: string
+          criado_em?: string
+          detalhe?: string | null
+          disparo?: string
+          gatilho_id?: number
+          id?: never
+          resultado?: string
+          ticket_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_gatilho_execucoes_gatilho_id_fkey"
+            columns: ["gatilho_id"]
+            isOneToOne: false
+            referencedRelation: "ch_gatilhos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_gatilho_execucoes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_gatilho_fila: {
+        Row: {
+          criado_em: string
+          disparo: string
+          id: number
+          ticket_id: number
+          txid: number
+        }
+        Insert: {
+          criado_em?: string
+          disparo: string
+          id?: never
+          ticket_id: number
+          txid?: number
+        }
+        Update: {
+          criado_em?: string
+          disparo?: string
+          id?: never
+          ticket_id?: number
+          txid?: number
+        }
+        Relationships: []
+      }
+      ch_gatilhos: {
+        Row: {
+          acoes: Json
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          disparos: Json
+          execucao: string
+          id: number
+          nome: string
+          ordem: number
+          para: string
+          qualquer: Json
+          todas: Json
+        }
+        Insert: {
+          acoes?: Json
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          disparos?: Json
+          execucao?: string
+          id?: number
+          nome: string
+          ordem?: number
+          para?: string
+          qualquer?: Json
+          todas?: Json
+        }
+        Update: {
+          acoes?: Json
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          disparos?: Json
+          execucao?: string
+          id?: number
+          nome?: string
+          ordem?: number
+          para?: string
+          qualquer?: Json
+          todas?: Json
+        }
+        Relationships: []
+      }
+      ch_gerencial_metas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          chave: string
+          descricao: string
+          valor: number
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          chave: string
+          descricao: string
+          valor: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          chave?: string
+          descricao?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      ch_ia_config: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          ia_desde: string
+          ligada: boolean
+          limiar: number
+          modo: string
+          setor_id: number
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          ia_desde?: string
+          ligada?: boolean
+          limiar?: number
+          modo?: string
+          setor_id: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          ia_desde?: string
+          ligada?: boolean
+          limiar?: number
+          modo?: string
+          setor_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_ia_config_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: true
+            referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_kanban_padrao: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          colunas: Json
+          id: number
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          colunas: Json
+          id?: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          colunas?: Json
+          id?: number
+        }
+        Relationships: []
+      }
+      ch_macros: {
+        Row: {
+          acoes: Json
+          ativa: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          dono_id: string | null
+          equipe_id: number | null
+          escopo: string
+          id: number
+          nome: string
+          texto: string
+        }
+        Insert: {
+          acoes?: Json
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          dono_id?: string | null
+          equipe_id?: number | null
+          escopo?: string
+          id?: number
+          nome: string
+          texto?: string
+        }
+        Update: {
+          acoes?: Json
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          dono_id?: string | null
+          equipe_id?: number | null
+          escopo?: string
+          id?: number
+          nome?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_macros_dono_id_fkey"
+            columns: ["dono_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_macros_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "at_equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_notificacoes: {
+        Row: {
+          criado_em: string
+          id: number
+          lida_em: string | null
+          texto: string
+          ticket_id: number | null
+          titulo: string
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: never
+          lida_em?: string | null
+          texto?: string
+          ticket_id?: number | null
+          titulo: string
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: never
+          lida_em?: string | null
+          texto?: string
+          ticket_id?: number | null
+          titulo?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_notificacoes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_notificacoes_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_regras_exibicao: {
+        Row: {
+          acoes: Json
+          ativa: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          condicoes: Json
+          id: number
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          acoes?: Json
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          condicoes?: Json
+          id?: number
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          acoes?: Json
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          condicoes?: Json
+          id?: number
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
+      ch_servicos: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          canais: string[]
+          categoria_padrao_id: number | null
+          descricao: string | null
+          equipe_id: number | null
+          id: number
+          nivel: number
+          nome: string
+          ordem: number
+          pai_id: number | null
+          setor_id: number
+          urgencia_padrao_id: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          canais?: string[]
+          categoria_padrao_id?: number | null
+          descricao?: string | null
+          equipe_id?: number | null
+          id?: number
+          nivel?: number
+          nome: string
+          ordem?: number
+          pai_id?: number | null
+          setor_id: number
+          urgencia_padrao_id?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          canais?: string[]
+          categoria_padrao_id?: number | null
+          descricao?: string | null
+          equipe_id?: number | null
+          id?: number
+          nivel?: number
+          nome?: string
+          ordem?: number
+          pai_id?: number | null
+          setor_id?: number
+          urgencia_padrao_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_servicos_categoria_padrao_id_fkey"
+            columns: ["categoria_padrao_id"]
+            isOneToOne: false
+            referencedRelation: "ch_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_servicos_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "at_equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_servicos_pai_id_fkey"
+            columns: ["pai_id"]
+            isOneToOne: false
+            referencedRelation: "ch_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_servicos_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_servicos_urgencia_padrao_id_fkey"
+            columns: ["urgencia_padrao_id"]
+            isOneToOne: false
+            referencedRelation: "ch_urgencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_servicos_sla: {
+        Row: {
+          resposta_horas: number | null
+          servico_id: number
+          solucao_horas: number | null
+          urgencia_id: number
+        }
+        Insert: {
+          resposta_horas?: number | null
+          servico_id: number
+          solucao_horas?: number | null
+          urgencia_id: number
+        }
+        Update: {
+          resposta_horas?: number | null
+          servico_id?: number
+          solucao_horas?: number | null
+          urgencia_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_servicos_sla_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "ch_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_servicos_sla_urgencia_id_fkey"
+            columns: ["urgencia_id"]
+            isOneToOne: false
+            referencedRelation: "ch_urgencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_status: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          categoria: string
+          id: number
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          categoria: string
+          id?: number
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          categoria?: string
+          id?: number
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
+      ch_status_justificativas: {
+        Row: {
+          ativa: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          id: number
+          nome: string
+          ordem: number
+          status_id: number
+        }
+        Insert: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          id?: number
+          nome: string
+          ordem?: number
+          status_id: number
+        }
+        Update: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          id?: number
+          nome?: string
+          ordem?: number
+          status_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_status_justificativas_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "ch_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_ticket_acoes: {
+        Row: {
+          anexos: Json
+          autor_id: string | null
+          autor_nome: string
+          canal: string
+          criado_em: string
+          direcao: string
+          email_message_id: string | null
+          enviado_em: string | null
+          envio_erro: string | null
+          envio_status: string | null
+          envio_tentativas: number
+          html: string | null
+          id: number
+          mensagem_id: number | null
+          numero: number
+          texto: string
+          ticket_id: number
+          tipo: string
+        }
+        Insert: {
+          anexos?: Json
+          autor_id?: string | null
+          autor_nome: string
+          canal: string
+          criado_em?: string
+          direcao?: string
+          email_message_id?: string | null
+          enviado_em?: string | null
+          envio_erro?: string | null
+          envio_status?: string | null
+          envio_tentativas?: number
+          html?: string | null
+          id?: never
+          mensagem_id?: number | null
+          numero: number
+          texto?: string
+          ticket_id: number
+          tipo: string
+        }
+        Update: {
+          anexos?: Json
+          autor_id?: string | null
+          autor_nome?: string
+          canal?: string
+          criado_em?: string
+          direcao?: string
+          email_message_id?: string | null
+          enviado_em?: string | null
+          envio_erro?: string | null
+          envio_status?: string | null
+          envio_tentativas?: number
+          html?: string | null
+          id?: never
+          mensagem_id?: number | null
+          numero?: number
+          texto?: string
+          ticket_id?: number
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_ticket_acoes_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_ticket_acoes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_ticket_eventos: {
+        Row: {
+          autor_id: string | null
+          autor_nome: string
+          criado_em: string
+          de: Json | null
+          descricao: string
+          id: number
+          para: Json | null
+          ticket_id: number
+          tipo: string
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_nome?: string
+          criado_em?: string
+          de?: Json | null
+          descricao: string
+          id?: never
+          para?: Json | null
+          ticket_id: number
+          tipo: string
+        }
+        Update: {
+          autor_id?: string | null
+          autor_nome?: string
+          criado_em?: string
+          de?: Json | null
+          descricao?: string
+          id?: never
+          para?: Json | null
+          ticket_id?: number
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_ticket_eventos_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_ticket_ia: {
+        Row: {
+          confianca: number | null
+          criado_em: string
+          equipe_id: number | null
+          erro: string | null
+          id: number
+          modelo: string | null
+          motivo: string | null
+          ms: number | null
+          servico_id: number | null
+          situacao: string
+          ticket_id: number
+          tokens_entrada: number | null
+          tokens_saida: number | null
+        }
+        Insert: {
+          confianca?: number | null
+          criado_em?: string
+          equipe_id?: number | null
+          erro?: string | null
+          id?: never
+          modelo?: string | null
+          motivo?: string | null
+          ms?: number | null
+          servico_id?: number | null
+          situacao: string
+          ticket_id: number
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+        }
+        Update: {
+          confianca?: number | null
+          criado_em?: string
+          equipe_id?: number | null
+          erro?: string | null
+          id?: never
+          modelo?: string | null
+          motivo?: string | null
+          ms?: number | null
+          servico_id?: number | null
+          situacao?: string
+          ticket_id?: number
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_ticket_ia_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "at_equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_ticket_ia_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "ch_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_ticket_ia_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_ticket_ia_empreendimento: {
+        Row: {
+          confianca: number | null
+          criado_em: string
+          empreendimento_id: number | null
+          erro: string | null
+          id: number
+          modelo: string | null
+          motivo: string | null
+          ms: number | null
+          situacao: string
+          sugestoes: number[]
+          ticket_id: number
+          tokens_entrada: number | null
+          tokens_saida: number | null
+        }
+        Insert: {
+          confianca?: number | null
+          criado_em?: string
+          empreendimento_id?: number | null
+          erro?: string | null
+          id?: never
+          modelo?: string | null
+          motivo?: string | null
+          ms?: number | null
+          situacao: string
+          sugestoes?: number[]
+          ticket_id: number
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+        }
+        Update: {
+          confianca?: number | null
+          criado_em?: string
+          empreendimento_id?: number | null
+          erro?: string | null
+          id?: never
+          modelo?: string | null
+          motivo?: string | null
+          ms?: number | null
+          situacao?: string
+          sugestoes?: number[]
+          ticket_id?: number
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_ticket_ia_empreendimento_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "ch_empreendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_ticket_ia_empreendimento_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_ticket_seguidores: {
+        Row: {
+          ticket_id: number
+          usuario_id: string
+        }
+        Insert: {
+          ticket_id: number
+          usuario_id: string
+        }
+        Update: {
+          ticket_id?: number
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_ticket_seguidores_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_ticket_seguidores_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_tickets: {
+        Row: {
+          assumido_em: string | null
+          assunto: string
+          atualizado_em: string
+          campos: Json
+          categoria_id: number | null
+          cc: string[]
+          clonado_de_id: number | null
+          conversa_id: number | null
+          criado_em: string
+          criado_por: string | null
+          email_conta_id: number | null
+          email_thread_id: string | null
+          empreendimento_id: number | null
+          empreendimento_origem: string | null
+          encerrado_em: string | null
+          equipe_id: number | null
+          excluido_em: string | null
+          excluido_por: string | null
+          id: number
+          justificativa_id: number | null
+          mesclado_em_id: number | null
+          numero_id: number | null
+          origem: string
+          primeira_resposta_em: string | null
+          recebido_em: string
+          responsavel_id: string | null
+          servico_id: number | null
+          setor_id: number
+          sla_manual: boolean
+          sla_pausado_desde: string | null
+          sla_resposta_ate: string | null
+          sla_solucao_ate: string | null
+          solicitante_contato: string | null
+          solicitante_nome: string
+          solicitante_pessoa_id: number | null
+          solucao_aplicada: string | null
+          status_id: number
+          tags: string[]
+          urgencia_id: number
+        }
+        Insert: {
+          assumido_em?: string | null
+          assunto: string
+          atualizado_em?: string
+          campos?: Json
+          categoria_id?: number | null
+          cc?: string[]
+          clonado_de_id?: number | null
+          conversa_id?: number | null
+          criado_em?: string
+          criado_por?: string | null
+          email_conta_id?: number | null
+          email_thread_id?: string | null
+          empreendimento_id?: number | null
+          empreendimento_origem?: string | null
+          encerrado_em?: string | null
+          equipe_id?: number | null
+          excluido_em?: string | null
+          excluido_por?: string | null
+          id?: number
+          justificativa_id?: number | null
+          mesclado_em_id?: number | null
+          numero_id?: number | null
+          origem: string
+          primeira_resposta_em?: string | null
+          recebido_em?: string
+          responsavel_id?: string | null
+          servico_id?: number | null
+          setor_id: number
+          sla_manual?: boolean
+          sla_pausado_desde?: string | null
+          sla_resposta_ate?: string | null
+          sla_solucao_ate?: string | null
+          solicitante_contato?: string | null
+          solicitante_nome: string
+          solicitante_pessoa_id?: number | null
+          solucao_aplicada?: string | null
+          status_id: number
+          tags?: string[]
+          urgencia_id: number
+        }
+        Update: {
+          assumido_em?: string | null
+          assunto?: string
+          atualizado_em?: string
+          campos?: Json
+          categoria_id?: number | null
+          cc?: string[]
+          clonado_de_id?: number | null
+          conversa_id?: number | null
+          criado_em?: string
+          criado_por?: string | null
+          email_conta_id?: number | null
+          email_thread_id?: string | null
+          empreendimento_id?: number | null
+          empreendimento_origem?: string | null
+          encerrado_em?: string | null
+          equipe_id?: number | null
+          excluido_em?: string | null
+          excluido_por?: string | null
+          id?: number
+          justificativa_id?: number | null
+          mesclado_em_id?: number | null
+          numero_id?: number | null
+          origem?: string
+          primeira_resposta_em?: string | null
+          recebido_em?: string
+          responsavel_id?: string | null
+          servico_id?: number | null
+          setor_id?: number
+          sla_manual?: boolean
+          sla_pausado_desde?: string | null
+          sla_resposta_ate?: string | null
+          sla_solucao_ate?: string | null
+          solicitante_contato?: string | null
+          solicitante_nome?: string
+          solicitante_pessoa_id?: number | null
+          solucao_aplicada?: string | null
+          status_id?: number
+          tags?: string[]
+          urgencia_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ch_tickets_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "ch_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_clonado_de_id_fkey"
+            columns: ["clonado_de_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "at_conversas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_email_conta_id_fkey"
+            columns: ["email_conta_id"]
+            isOneToOne: false
+            referencedRelation: "at_email_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_empreendimento_id_fkey"
+            columns: ["empreendimento_id"]
+            isOneToOne: false
+            referencedRelation: "ch_empreendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "at_equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_justificativa_id_fkey"
+            columns: ["justificativa_id"]
+            isOneToOne: false
+            referencedRelation: "ch_status_justificativas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_mesclado_em_id_fkey"
+            columns: ["mesclado_em_id"]
+            isOneToOne: false
+            referencedRelation: "ch_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_numero_id_fkey"
+            columns: ["numero_id"]
+            isOneToOne: false
+            referencedRelation: "at_numeros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "ch_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "at_setores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_solicitante_pessoa_id_fkey"
+            columns: ["solicitante_pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "at_pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "ch_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ch_tickets_urgencia_id_fkey"
+            columns: ["urgencia_id"]
+            isOneToOne: false
+            referencedRelation: "ch_urgencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ch_urgencias: {
+        Row: {
+          ativa: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          cor: string
+          descricao: string | null
+          id: number
+          nome: string
+          ordem: number
+          padrao: boolean
+        }
+        Insert: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cor?: string
+          descricao?: string | null
+          id?: number
+          nome: string
+          ordem?: number
+          padrao?: boolean
+        }
+        Update: {
+          ativa?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cor?: string
+          descricao?: string | null
+          id?: number
+          nome?: string
+          ordem?: number
+          padrao?: boolean
+        }
+        Relationships: []
+      }
+      ch_visoes: {
+        Row: {
+          agrupamento: Json
+          atualizado_em: string
+          atualizado_por: string | null
+          condicoes: Json
+          equipes: number[]
+          habilitada: boolean
+          id: number
+          kanban: Json
+          nome: string
+          padrao: boolean
+          tipo: string
+        }
+        Insert: {
+          agrupamento: Json
+          atualizado_em?: string
+          atualizado_por?: string | null
+          condicoes?: Json
+          equipes?: number[]
+          habilitada?: boolean
+          id?: number
+          kanban: Json
+          nome: string
+          padrao?: boolean
+          tipo: string
+        }
+        Update: {
+          agrupamento?: Json
+          atualizado_em?: string
+          atualizado_por?: string | null
+          condicoes?: Json
+          equipes?: number[]
+          habilitada?: boolean
+          id?: number
+          kanban?: Json
+          nome?: string
+          padrao?: boolean
+          tipo?: string
         }
         Relationships: []
       }
@@ -1371,6 +3121,527 @@ export type Database = {
         }
         Relationships: []
       }
+      md_anexos: {
+        Row: {
+          acao_id: number
+          baixado_em: string | null
+          caminho_movidesk: string
+          criado_em: string
+          enviado_em: string | null
+          erro: string | null
+          id: number
+          nome: string
+          proxima_tentativa: string | null
+          reservado_ate: string | null
+          situacao: string
+          storage_path: string | null
+          tamanho: number | null
+          tentativas: number
+          ticket_id: number
+          tipo: string | null
+        }
+        Insert: {
+          acao_id: number
+          baixado_em?: string | null
+          caminho_movidesk: string
+          criado_em?: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: number
+          nome: string
+          proxima_tentativa?: string | null
+          reservado_ate?: string | null
+          situacao?: string
+          storage_path?: string | null
+          tamanho?: number | null
+          tentativas?: number
+          ticket_id: number
+          tipo?: string | null
+        }
+        Update: {
+          acao_id?: number
+          baixado_em?: string | null
+          caminho_movidesk?: string
+          criado_em?: string
+          enviado_em?: string | null
+          erro?: string | null
+          id?: number
+          nome?: string
+          proxima_tentativa?: string | null
+          reservado_ate?: string | null
+          situacao?: string
+          storage_path?: string | null
+          tamanho?: number | null
+          tentativas?: number
+          ticket_id?: number
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "md_anexos_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "md_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      md_config: {
+        Row: {
+          anexo_max_mb: number
+          anexos_travado_ate: string | null
+          ativo: boolean
+          atualizado_em: string
+          atualizado_por: string | null
+          baixar_anexos: boolean
+          campos_expand: string
+          campos_select: string
+          carga_concluida_em: string | null
+          carga_iniciada_em: string | null
+          cursor_past_id: number
+          cursor_recentes_id: number
+          dias: number[]
+          etapa: string
+          id: boolean
+          incremental_cursor_id: number
+          incremental_desde: string | null
+          incremental_dia_todo: boolean
+          incremental_maior_update: string | null
+          incremental_recorrencia_min: number
+          janela_fim: string
+          janela_inicio: string
+          maior_id_movidesk: number | null
+          paginas_por_rodada: number
+          recorrencia_min: number
+          token_definido_em: string | null
+          token_final: string | null
+          token_segredo_id: string | null
+          travado_ate: string | null
+          ultima_rodada_em: string | null
+          ultimo_teste: Json | null
+        }
+        Insert: {
+          anexo_max_mb?: number
+          anexos_travado_ate?: string | null
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          baixar_anexos?: boolean
+          campos_expand?: string
+          campos_select?: string
+          carga_concluida_em?: string | null
+          carga_iniciada_em?: string | null
+          cursor_past_id?: number
+          cursor_recentes_id?: number
+          dias?: number[]
+          etapa?: string
+          id?: boolean
+          incremental_cursor_id?: number
+          incremental_desde?: string | null
+          incremental_dia_todo?: boolean
+          incremental_maior_update?: string | null
+          incremental_recorrencia_min?: number
+          janela_fim?: string
+          janela_inicio?: string
+          maior_id_movidesk?: number | null
+          paginas_por_rodada?: number
+          recorrencia_min?: number
+          token_definido_em?: string | null
+          token_final?: string | null
+          token_segredo_id?: string | null
+          travado_ate?: string | null
+          ultima_rodada_em?: string | null
+          ultimo_teste?: Json | null
+        }
+        Update: {
+          anexo_max_mb?: number
+          anexos_travado_ate?: string | null
+          ativo?: boolean
+          atualizado_em?: string
+          atualizado_por?: string | null
+          baixar_anexos?: boolean
+          campos_expand?: string
+          campos_select?: string
+          carga_concluida_em?: string | null
+          carga_iniciada_em?: string | null
+          cursor_past_id?: number
+          cursor_recentes_id?: number
+          dias?: number[]
+          etapa?: string
+          id?: boolean
+          incremental_cursor_id?: number
+          incremental_desde?: string | null
+          incremental_dia_todo?: boolean
+          incremental_maior_update?: string | null
+          incremental_recorrencia_min?: number
+          janela_fim?: string
+          janela_inicio?: string
+          maior_id_movidesk?: number | null
+          paginas_por_rodada?: number
+          recorrencia_min?: number
+          token_definido_em?: string | null
+          token_final?: string | null
+          token_segredo_id?: string | null
+          travado_ate?: string | null
+          ultima_rodada_em?: string | null
+          ultimo_teste?: Json | null
+        }
+        Relationships: []
+      }
+      md_execucoes: {
+        Row: {
+          em: string
+          erro: string | null
+          etapa: string | null
+          filtro: string | null
+          http: number | null
+          id: number
+          kb: number | null
+          ms: number | null
+          ok: boolean
+          origem: string
+          por: string | null
+          tickets: number
+        }
+        Insert: {
+          em?: string
+          erro?: string | null
+          etapa?: string | null
+          filtro?: string | null
+          http?: number | null
+          id?: number
+          kb?: number | null
+          ms?: number | null
+          ok: boolean
+          origem: string
+          por?: string | null
+          tickets?: number
+        }
+        Update: {
+          em?: string
+          erro?: string | null
+          etapa?: string | null
+          filtro?: string | null
+          http?: number | null
+          id?: number
+          kb?: number | null
+          ms?: number | null
+          ok?: boolean
+          origem?: string
+          por?: string | null
+          tickets?: number
+        }
+        Relationships: []
+      }
+      md_origens: {
+        Row: {
+          codigo: number
+          nome: string
+        }
+        Insert: {
+          codigo: number
+          nome: string
+        }
+        Update: {
+          codigo?: number
+          nome?: string
+        }
+        Relationships: []
+      }
+      md_ticket_acoes: {
+        Row: {
+          acao_id: number
+          anexos: Json
+          criado_em: string | null
+          criado_por: string | null
+          criado_por_id: string | null
+          justificativa: string | null
+          origem: number | null
+          status: string | null
+          texto: string | null
+          ticket_id: number
+          tipo: number | null
+        }
+        Insert: {
+          acao_id: number
+          anexos?: Json
+          criado_em?: string | null
+          criado_por?: string | null
+          criado_por_id?: string | null
+          justificativa?: string | null
+          origem?: number | null
+          status?: string | null
+          texto?: string | null
+          ticket_id: number
+          tipo?: number | null
+        }
+        Update: {
+          acao_id?: number
+          anexos?: Json
+          criado_em?: string | null
+          criado_por?: string | null
+          criado_por_id?: string | null
+          justificativa?: string | null
+          origem?: number | null
+          status?: string | null
+          texto?: string | null
+          ticket_id?: number
+          tipo?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "md_ticket_acoes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "md_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      md_ticket_responsavel_hist: {
+        Row: {
+          alterado_em: string | null
+          alterado_por: string | null
+          equipe: string | null
+          permanencia_util: number | null
+          responsavel: string | null
+          seq: number
+          ticket_id: number
+        }
+        Insert: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          equipe?: string | null
+          permanencia_util?: number | null
+          responsavel?: string | null
+          seq: number
+          ticket_id: number
+        }
+        Update: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          equipe?: string | null
+          permanencia_util?: number | null
+          responsavel?: string | null
+          seq?: number
+          ticket_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "md_ticket_responsavel_hist_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "md_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      md_ticket_status_hist: {
+        Row: {
+          alterado_em: string | null
+          alterado_por: string | null
+          justificativa: string | null
+          permanencia_util: number | null
+          seq: number
+          status: string | null
+          ticket_id: number
+        }
+        Insert: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          justificativa?: string | null
+          permanencia_util?: number | null
+          seq: number
+          status?: string | null
+          ticket_id: number
+        }
+        Update: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          justificativa?: string | null
+          permanencia_util?: number | null
+          seq?: number
+          status?: string | null
+          ticket_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "md_ticket_status_hist_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "md_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      md_tickets: {
+        Row: {
+          assunto: string | null
+          atualizado_movidesk: string | null
+          busca: unknown
+          campos_adicionais: Json
+          categoria: string | null
+          cc: string | null
+          chat_conversa: number | null
+          chat_espera: number | null
+          chat_grupo: string | null
+          chat_widget: string | null
+          clientes: Json
+          conta_email_origem: string | null
+          criado_em: string | null
+          criado_por: string | null
+          criado_por_id: string | null
+          equipe: string | null
+          fechado_em: string | null
+          forma_contato: string | null
+          id: number
+          justificativa: string | null
+          origem: number | null
+          protocolo: string | null
+          qtd_acoes: number | null
+          reaberto_em: string | null
+          resolvido_em: string | null
+          resolvido_primeiro_contato: boolean | null
+          responsavel: string | null
+          responsavel_email: string | null
+          responsavel_id: string | null
+          sequencia: number | null
+          servico: string | null
+          servico_1: string | null
+          servico_1_id: number | null
+          servico_2: string | null
+          servico_3: string | null
+          sincronizado_em: string
+          sla_acordo: string | null
+          sla_regra: string | null
+          sla_resposta_em: string | null
+          sla_resposta_min: number | null
+          sla_resposta_real_em: string | null
+          sla_solucao_alterado: boolean | null
+          sla_solucao_em: string | null
+          sla_solucao_min: number | null
+          sla_solucao_pausado: boolean | null
+          status: string | null
+          status_base: string | null
+          tempo_parado: number | null
+          tempo_parado_util: number | null
+          tempo_vida_util: number | null
+          tipo: number | null
+          ultima_acao_em: string | null
+          urgencia: string | null
+        }
+        Insert: {
+          assunto?: string | null
+          atualizado_movidesk?: string | null
+          busca?: unknown
+          campos_adicionais?: Json
+          categoria?: string | null
+          cc?: string | null
+          chat_conversa?: number | null
+          chat_espera?: number | null
+          chat_grupo?: string | null
+          chat_widget?: string | null
+          clientes?: Json
+          conta_email_origem?: string | null
+          criado_em?: string | null
+          criado_por?: string | null
+          criado_por_id?: string | null
+          equipe?: string | null
+          fechado_em?: string | null
+          forma_contato?: string | null
+          id: number
+          justificativa?: string | null
+          origem?: number | null
+          protocolo?: string | null
+          qtd_acoes?: number | null
+          reaberto_em?: string | null
+          resolvido_em?: string | null
+          resolvido_primeiro_contato?: boolean | null
+          responsavel?: string | null
+          responsavel_email?: string | null
+          responsavel_id?: string | null
+          sequencia?: number | null
+          servico?: string | null
+          servico_1?: string | null
+          servico_1_id?: number | null
+          servico_2?: string | null
+          servico_3?: string | null
+          sincronizado_em?: string
+          sla_acordo?: string | null
+          sla_regra?: string | null
+          sla_resposta_em?: string | null
+          sla_resposta_min?: number | null
+          sla_resposta_real_em?: string | null
+          sla_solucao_alterado?: boolean | null
+          sla_solucao_em?: string | null
+          sla_solucao_min?: number | null
+          sla_solucao_pausado?: boolean | null
+          status?: string | null
+          status_base?: string | null
+          tempo_parado?: number | null
+          tempo_parado_util?: number | null
+          tempo_vida_util?: number | null
+          tipo?: number | null
+          ultima_acao_em?: string | null
+          urgencia?: string | null
+        }
+        Update: {
+          assunto?: string | null
+          atualizado_movidesk?: string | null
+          busca?: unknown
+          campos_adicionais?: Json
+          categoria?: string | null
+          cc?: string | null
+          chat_conversa?: number | null
+          chat_espera?: number | null
+          chat_grupo?: string | null
+          chat_widget?: string | null
+          clientes?: Json
+          conta_email_origem?: string | null
+          criado_em?: string | null
+          criado_por?: string | null
+          criado_por_id?: string | null
+          equipe?: string | null
+          fechado_em?: string | null
+          forma_contato?: string | null
+          id?: number
+          justificativa?: string | null
+          origem?: number | null
+          protocolo?: string | null
+          qtd_acoes?: number | null
+          reaberto_em?: string | null
+          resolvido_em?: string | null
+          resolvido_primeiro_contato?: boolean | null
+          responsavel?: string | null
+          responsavel_email?: string | null
+          responsavel_id?: string | null
+          sequencia?: number | null
+          servico?: string | null
+          servico_1?: string | null
+          servico_1_id?: number | null
+          servico_2?: string | null
+          servico_3?: string | null
+          sincronizado_em?: string
+          sla_acordo?: string | null
+          sla_regra?: string | null
+          sla_resposta_em?: string | null
+          sla_resposta_min?: number | null
+          sla_resposta_real_em?: string | null
+          sla_solucao_alterado?: boolean | null
+          sla_solucao_em?: string | null
+          sla_solucao_min?: number | null
+          sla_solucao_pausado?: boolean | null
+          status?: string | null
+          status_base?: string | null
+          tempo_parado?: number | null
+          tempo_parado_util?: number | null
+          tempo_vida_util?: number | null
+          tipo?: number | null
+          ultima_acao_em?: string | null
+          urgencia?: string | null
+        }
+        Relationships: []
+      }
       perfis: {
         Row: {
           chave: string | null
@@ -1434,6 +3705,234 @@ export type Database = {
           permission_id?: string
           role?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_attempts: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          ip_hash: string
+          kind: string
+          outcome: string
+          reason: string | null
+          request_id: string | null
+          risk_score: number
+          user_hash: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          ip_hash: string
+          kind: string
+          outcome: string
+          reason?: string | null
+          request_id?: string | null
+          risk_score?: number
+          user_hash: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          ip_hash?: string
+          kind?: string
+          outcome?: string
+          reason?: string | null
+          request_id?: string | null
+          risk_score?: number
+          user_hash?: string
+        }
+        Relationships: []
+      }
+      security_auth_control: {
+        Row: {
+          contar_desde: string | null
+          created_at: string
+          failed_attempts: number
+          inflight_until: string | null
+          last_failed_at: string | null
+          last_hook_failure_at: string | null
+          last_lock_at: string | null
+          last_success_at: string | null
+          lock_level: number
+          locked_until: string | null
+          next_allowed_at: string | null
+          risk_score: number
+          updated_at: string
+          user_hash: string
+          user_id: string | null
+        }
+        Insert: {
+          contar_desde?: string | null
+          created_at?: string
+          failed_attempts?: number
+          inflight_until?: string | null
+          last_failed_at?: string | null
+          last_hook_failure_at?: string | null
+          last_lock_at?: string | null
+          last_success_at?: string | null
+          lock_level?: number
+          locked_until?: string | null
+          next_allowed_at?: string | null
+          risk_score?: number
+          updated_at?: string
+          user_hash: string
+          user_id?: string | null
+        }
+        Update: {
+          contar_desde?: string | null
+          created_at?: string
+          failed_attempts?: number
+          inflight_until?: string | null
+          last_failed_at?: string | null
+          last_hook_failure_at?: string | null
+          last_lock_at?: string | null
+          last_success_at?: string | null
+          lock_level?: number
+          locked_until?: string | null
+          next_allowed_at?: string | null
+          risk_score?: number
+          updated_at?: string
+          user_hash?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_config: {
+        Row: {
+          descricao: string
+          key: string
+          value: number
+        }
+        Insert: {
+          descricao: string
+          key: string
+          value: number
+        }
+        Update: {
+          descricao?: string
+          key?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          created_at: string
+          detail: Json
+          email_masked: string | null
+          event_type: string
+          id: number
+          ip_hash: string | null
+          ip_prefix: string | null
+          reason_code: string | null
+          request_id: string | null
+          risk_score: number | null
+          severity: string
+          user_hash: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          email_masked?: string | null
+          event_type: string
+          id?: never
+          ip_hash?: string | null
+          ip_prefix?: string | null
+          reason_code?: string | null
+          request_id?: string | null
+          risk_score?: number | null
+          severity?: string
+          user_hash?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          email_masked?: string | null
+          event_type?: string
+          id?: never
+          ip_hash?: string | null
+          ip_prefix?: string | null
+          reason_code?: string | null
+          request_id?: string | null
+          risk_score?: number | null
+          severity?: string
+          user_hash?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_ip_blocks: {
+        Row: {
+          block_count: number
+          blocked_until: string
+          ip_hash: string
+          last_block_at: string
+          reason: string
+        }
+        Insert: {
+          block_count?: number
+          blocked_until: string
+          ip_hash: string
+          last_block_at?: string
+          reason: string
+        }
+        Update: {
+          block_count?: number
+          blocked_until?: string
+          ip_hash?: string
+          last_block_at?: string
+          reason?: string
+        }
+        Relationships: []
+      }
+      security_secret: {
+        Row: {
+          created_at: string
+          id: number
+          pepper: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          pepper?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          pepper?: string
+        }
+        Relationships: []
+      }
+      security_sessions: {
+        Row: {
+          created_at: string
+          ip_hash: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ip_hash?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ip_hash?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          session_id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1524,6 +4023,13 @@ export type Database = {
     Functions: {
       at_atendente_remover: { Args: { p_usuario: string }; Returns: undefined }
       at_atendente_salvar: { Args: { p: Json }; Returns: undefined }
+      at_atendente_whatsapp_salvar: { Args: { p: Json }; Returns: undefined }
+      at_auto: {
+        Args: { p_conversa: number; p_texto: string }
+        Returns: number
+      }
+      at_auto_conversa: { Args: { p_conversa: number }; Returns: boolean }
+      at_auto_permitido: { Args: { p_telefone: string }; Returns: boolean }
       at_candidatos: {
         Args: never
         Returns: {
@@ -1539,9 +4045,14 @@ export type Database = {
         Returns: string
       }
       at_contexto: { Args: never; Returns: Json }
+      at_conversa_acao: { Args: { p: Json; p_conversa: number }; Returns: Json }
       at_conversa_editar: {
         Args: { p: Json; p_conversa: number }
         Returns: undefined
+      }
+      at_conversa_executar: {
+        Args: { p: Json; p_conversa: number; p_usuario: string }
+        Returns: Json
       }
       at_conversas_lista: {
         Args: { p_limite?: number }
@@ -1567,8 +4078,10 @@ export type Database = {
           ultima_previa: string
         }[]
       }
+      at_dentro_horario: { Args: { p_setor: number }; Returns: boolean }
       at_documento_valido: { Args: { p: string }; Returns: boolean }
       at_dominio_publico: { Args: { p_dominio: string }; Returns: boolean }
+      at_eh_resolvido: { Args: { p_texto: string }; Returns: boolean }
       at_email_conta_excluir: { Args: { p_id: number }; Returns: undefined }
       at_email_conta_habilitar: {
         Args: { p_habilitada: boolean; p_ids: number[] }
@@ -1587,6 +4100,7 @@ export type Database = {
           senha: string
         }[]
       }
+      at_email_cron_chave: { Args: never; Returns: string }
       at_email_oauth_estado_consumir: {
         Args: { p_state: string }
         Returns: {
@@ -1610,6 +4124,15 @@ export type Database = {
         Returns: undefined
       }
       at_email_oauth_token: { Args: { p_conta: number }; Returns: string }
+      at_entrar_fila: {
+        Args: {
+          p_conversa: number
+          p_forcar_novo?: boolean
+          p_pedido: string[]
+          p_prefixo?: string
+        }
+        Returns: number
+      }
       at_equipe_excluir: { Args: { p_id: number }; Returns: undefined }
       at_equipe_salvar: { Args: { p: Json }; Returns: number }
       at_equipes_candidatos: {
@@ -1627,6 +4150,10 @@ export type Database = {
           id: number
           nome: string
         }[]
+      }
+      at_evento: {
+        Args: { p_conversa: number; p_texto: string }
+        Returns: undefined
       }
       at_exigir_equipes: { Args: never; Returns: string }
       at_exigir_pessoas: { Args: never; Returns: string }
@@ -1647,9 +4174,19 @@ export type Database = {
         Returns: undefined
       }
       at_google_sa_salvar: { Args: { p_json: string }; Returns: undefined }
+      at_grupo_receber: { Args: { p: Json }; Returns: Json }
+      at_ia_cron_chave: { Args: never; Returns: string }
       at_indicadores_janela: {
         Args: { p_fim: string; p_ini: string; p_setores: number[] }
         Returns: Json
+      }
+      at_ler_credencial_openwa: {
+        Args: never
+        Returns: {
+          chave: string
+          url: string
+          webhook_segredo: string
+        }[]
       }
       at_ler_credencial_zenvia: {
         Args: never
@@ -1658,6 +4195,9 @@ export type Database = {
           webhook_chave: string
         }[]
       }
+      at_linha_remover: { Args: { p_numero: string }; Returns: undefined }
+      at_linhas_importar: { Args: { p: Json }; Returns: Json }
+      at_linhas_lista: { Args: { p_busca?: string }; Returns: Json }
       at_marcar_lida: { Args: { p_conversa: number }; Returns: undefined }
       at_membro_de: { Args: { p_setor: number }; Returns: boolean }
       at_minha_pausa: { Args: { p_pausa: boolean }; Returns: undefined }
@@ -1702,6 +4242,19 @@ export type Database = {
         Returns: Json
       }
       at_monitor_setores: { Args: { p_setor?: number }; Returns: number[] }
+      at_nome_da_conversa: {
+        Args: {
+          c: Database["portal_atendimento"]["Tables"]["at_conversas"]["Row"]
+        }
+        Returns: string
+      }
+      at_nome_pessoa: { Args: { p_id: number }; Returns: string }
+      at_openwa_ligado: { Args: never; Returns: boolean }
+      at_openwa_ligar: { Args: { p_ligado: boolean }; Returns: Json }
+      at_openwa_numero_salvar: { Args: { p: Json }; Returns: undefined }
+      at_openwa_painel: { Args: never; Returns: Json }
+      at_openwa_salvar: { Args: { p: Json }; Returns: undefined }
+      at_openwa_verificacao_salvar: { Args: { p: Json }; Returns: undefined }
       at_pessoa_anexo_registrar: {
         Args: {
           p_mime: string
@@ -1741,9 +4294,62 @@ export type Database = {
       at_pessoas_lista: { Args: { p?: Json }; Returns: Json }
       at_ping: { Args: never; Returns: boolean }
       at_pode_equipes: { Args: never; Returns: boolean }
+      at_precisa_descricao: { Args: { p_textos: string[] }; Returns: boolean }
+      at_primeiro_nome: { Args: { p_nome: string }; Returns: string }
+      at_repassar: {
+        Args: {
+          p_citar?: string
+          p_conversa: number
+          p_texto: string
+          p_ticket: number
+          p_tipo: string
+        }
+        Returns: undefined
+      }
+      at_repassar_arquivo: {
+        Args: {
+          p_arquivo: Json
+          p_conversa: number
+          p_texto: string
+          p_ticket: number
+          p_tipo: string
+        }
+        Returns: undefined
+      }
+      at_seguir_ou_descrever: {
+        Args: {
+          p_conversa: number
+          p_pedido: string[]
+          p_prefixo_fila: string
+          p_prefixo_pergunta: string
+        }
+        Returns: Json
+      }
       at_setor_config_salvar: { Args: { p: Json }; Returns: undefined }
       at_setor_salvar: { Args: { p: Json }; Returns: number }
+      at_setor_whatsapp_salvar: { Args: { p: Json }; Returns: undefined }
       at_supervisor: { Args: never; Returns: boolean }
+      at_ticket_acao: {
+        Args: {
+          p_autor: string
+          p_autor_nome: string
+          p_direcao: string
+          p_envio: string
+          p_mensagem: number
+          p_texto: string
+          p_ticket: number
+        }
+        Returns: undefined
+      }
+      at_ticket_da_conversa: { Args: { p_conversa: number }; Returns: number }
+      at_ticket_do_atendimento: {
+        Args: { p_atendimento: number }
+        Returns: number
+      }
+      at_ticket_resolver_direto: {
+        Args: { p_ticket: number; p_usuario: string }
+        Returns: undefined
+      }
       at_usuario_equipes: { Args: { p_usuario: string }; Returns: number[] }
       at_usuario_equipes_salvar: {
         Args: { p_equipes: number[]; p_usuario: string }
@@ -1752,6 +4358,16 @@ export type Database = {
       at_ve_conversa: {
         Args: { p_atendente: string; p_setor: number; p_ultimo?: string }
         Returns: boolean
+      }
+      at_whatsapp_ciclo: { Args: never; Returns: Json }
+      at_whatsapp_cron_chave: { Args: never; Returns: string }
+      at_whatsapp_disponivel: { Args: never; Returns: boolean }
+      at_whatsapp_envio_resultado: { Args: { p: Json }; Returns: undefined }
+      at_whatsapp_propria: { Args: { p: Json }; Returns: Json }
+      at_whatsapp_receber: { Args: { p: Json }; Returns: Json }
+      at_whatsapp_reservar: {
+        Args: { p_conversa?: number; p_limite?: number }
+        Returns: Json
       }
       at_zenvia_salvar_token: { Args: { p_token: string }; Returns: undefined }
       atualizar_integracao: {
@@ -1803,6 +4419,450 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cd_admin_checar: { Args: never; Returns: undefined }
+      cd_admin_config_salvar: { Args: { p: Json }; Returns: undefined }
+      cd_admin_painel: { Args: never; Returns: Json }
+      cd_admin_pessoas: { Args: { p_busca: string }; Returns: Json }
+      cd_admin_setor_salvar: {
+        Args: { p: Json; p_id: number }
+        Returns: undefined
+      }
+      cd_anexos_validos: { Args: { p: Json; p_usuario: string }; Returns: Json }
+      cd_aviso_excluir: { Args: { p_id: number }; Returns: undefined }
+      cd_aviso_salvar: { Args: { p: Json }; Returns: number }
+      cd_avisos_listar: { Args: { p_setor?: number }; Returns: Json }
+      cd_chamado: { Args: { p_como?: string; p_id: number }; Returns: Json }
+      cd_chamado_confirmar: {
+        Args: { p_comentario?: string; p_id: number; p_resolveu: boolean }
+        Returns: undefined
+      }
+      cd_chamado_responder: {
+        Args: { p: Json; p_id: number }
+        Returns: undefined
+      }
+      cd_email_de: { Args: { p_usuario: string }; Returns: string }
+      cd_empreendimentos: { Args: never; Returns: Json }
+      cd_empreendimentos_gravar: {
+        Args: { p_erro?: string; p_itens: Json }
+        Returns: undefined
+      }
+      cd_empreendimentos_ler: { Args: never; Returns: Json }
+      cd_entrar: { Args: { p_como?: string }; Returns: Json }
+      cd_meus_chamados: {
+        Args: { p_como?: string; p_filtro?: string }
+        Returns: Json
+      }
+      cd_perfil_salvar: { Args: { p: Json }; Returns: undefined }
+      cd_pessoa_de: { Args: { p_usuario: string }; Returns: number }
+      cd_pode_ler_arquivo: { Args: { p_name: string }; Returns: boolean }
+      cd_quem: { Args: { p_como?: string }; Returns: string }
+      cd_reabrir: { Args: { p_id: number }; Returns: undefined }
+      cd_servicos: { Args: { p_setor: number }; Returns: Json }
+      cd_sessao_ok: { Args: never; Returns: boolean }
+      cd_setor_empreendimentos: { Args: { p_setor: number }; Returns: Json }
+      cd_solucao_excluir: { Args: { p_id: number }; Returns: undefined }
+      cd_solucao_salvar: { Args: { p: Json }; Returns: number }
+      cd_solucao_usada: { Args: { p_id: number }; Returns: undefined }
+      cd_solucoes_listar: {
+        Args: { p_busca?: string; p_servico?: number; p_setor: number }
+        Returns: Json
+      }
+      cd_status_json: { Args: { p_status: number }; Returns: Json }
+      cd_tec_atribuir: { Args: { p_id: number }; Returns: undefined }
+      cd_tec_chamado: { Args: { p_id: number }; Returns: Json }
+      cd_tec_chamados: { Args: { p_dias?: number }; Returns: Json }
+      cd_tec_concluir: { Args: { p: Json; p_id: number }; Returns: Json }
+      cd_tec_entrar: { Args: never; Returns: Json }
+      cd_tec_quem: { Args: never; Returns: string }
+      cd_tec_resumo: {
+        Args: {
+          p_usuario: string
+          t: Database["portal_atendimento"]["Tables"]["ch_tickets"]["Row"]
+        }
+        Returns: Json
+      }
+      cd_tec_setores: { Args: { p_usuario: string }; Returns: number[] }
+      cd_tec_telefone: {
+        Args: {
+          t: Database["portal_atendimento"]["Tables"]["ch_tickets"]["Row"]
+        }
+        Returns: string
+      }
+      cd_tec_ticket: {
+        Args: { p_id: number; p_usuario: string }
+        Returns: {
+          assumido_em: string | null
+          assunto: string
+          atualizado_em: string
+          campos: Json
+          categoria_id: number | null
+          cc: string[]
+          clonado_de_id: number | null
+          conversa_id: number | null
+          criado_em: string
+          criado_por: string | null
+          email_conta_id: number | null
+          email_thread_id: string | null
+          empreendimento_id: number | null
+          empreendimento_origem: string | null
+          encerrado_em: string | null
+          equipe_id: number | null
+          excluido_em: string | null
+          excluido_por: string | null
+          id: number
+          justificativa_id: number | null
+          mesclado_em_id: number | null
+          numero_id: number | null
+          origem: string
+          primeira_resposta_em: string | null
+          recebido_em: string
+          responsavel_id: string | null
+          servico_id: number | null
+          setor_id: number
+          sla_manual: boolean
+          sla_pausado_desde: string | null
+          sla_resposta_ate: string | null
+          sla_solucao_ate: string | null
+          solicitante_contato: string | null
+          solicitante_nome: string
+          solicitante_pessoa_id: number | null
+          solucao_aplicada: string | null
+          status_id: number
+          tags: string[]
+          urgencia_id: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ch_tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cd_ticket_criar: { Args: { p: Json }; Returns: Json }
+      cd_ticket_meu: {
+        Args: { p_id: number; p_usuario: string }
+        Returns: {
+          assumido_em: string | null
+          assunto: string
+          atualizado_em: string
+          campos: Json
+          categoria_id: number | null
+          cc: string[]
+          clonado_de_id: number | null
+          conversa_id: number | null
+          criado_em: string
+          criado_por: string | null
+          email_conta_id: number | null
+          email_thread_id: string | null
+          empreendimento_id: number | null
+          empreendimento_origem: string | null
+          encerrado_em: string | null
+          equipe_id: number | null
+          excluido_em: string | null
+          excluido_por: string | null
+          id: number
+          justificativa_id: number | null
+          mesclado_em_id: number | null
+          numero_id: number | null
+          origem: string
+          primeira_resposta_em: string | null
+          recebido_em: string
+          responsavel_id: string | null
+          servico_id: number | null
+          setor_id: number
+          sla_manual: boolean
+          sla_pausado_desde: string | null
+          sla_resposta_ate: string | null
+          sla_solucao_ate: string | null
+          solicitante_contato: string | null
+          solicitante_nome: string
+          solicitante_pessoa_id: number | null
+          solucao_aplicada: string | null
+          status_id: number
+          tags: string[]
+          urgencia_id: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ch_tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cd_trilha: { Args: { p_servico: number }; Returns: string }
+      ch_cadastro_ordenar: {
+        Args: { p_ids: number[]; p_tabela: string }
+        Returns: undefined
+      }
+      ch_cadastros: { Args: never; Returns: Json }
+      ch_campo_salvar: { Args: { p: Json }; Returns: number }
+      ch_campos_estado: {
+        Args: {
+          t: Database["portal_atendimento"]["Tables"]["ch_tickets"]["Row"]
+        }
+        Returns: {
+          chave: string
+          obrigatorio: boolean
+          visivel: boolean
+        }[]
+      }
+      ch_campos_pendentes: {
+        Args: {
+          t: Database["portal_atendimento"]["Tables"]["ch_tickets"]["Row"]
+        }
+        Returns: string[]
+      }
+      ch_categoria_salvar: { Args: { p: Json }; Returns: number }
+      ch_condicao_valida: { Args: { c: Json }; Returns: boolean }
+      ch_dentro_expediente: {
+        Args: { p_quando: string; p_setor: number }
+        Returns: boolean
+      }
+      ch_eh_admin: { Args: never; Returns: boolean }
+      ch_email_envio_resultado: {
+        Args: {
+          p_acao: number
+          p_erro: string
+          p_message_id: string
+          p_ok: boolean
+        }
+        Returns: undefined
+      }
+      ch_email_para_enviar: { Args: { p_limite?: number }; Returns: Json }
+      ch_email_processar: { Args: { p_recebido: number }; Returns: Json }
+      ch_empreendimento_config_salvar: { Args: { p: Json }; Returns: undefined }
+      ch_empreendimento_salvar: { Args: { p: Json }; Returns: number }
+      ch_empreendimentos_lista: { Args: never; Returns: Json }
+      ch_exigir_admin: { Args: never; Returns: string }
+      ch_exigir_super: { Args: never; Returns: string }
+      ch_forma_atendimento_do_canal: {
+        Args: { p_origem: string }
+        Returns: string
+      }
+      ch_gatilho_aplicar: {
+        Args: {
+          g: Database["portal_atendimento"]["Tables"]["ch_gatilhos"]["Row"]
+          p_ticket: number
+        }
+        Returns: string
+      }
+      ch_gatilho_atende: {
+        Args: {
+          p_autor: string
+          p_qualquer: Json
+          p_todas: Json
+          t: Database["portal_atendimento"]["Tables"]["ch_tickets"]["Row"]
+        }
+        Returns: boolean
+      }
+      ch_gatilho_condicao: {
+        Args: {
+          c: Json
+          p_autor: string
+          t: Database["portal_atendimento"]["Tables"]["ch_tickets"]["Row"]
+        }
+        Returns: boolean
+      }
+      ch_gatilho_em_execucao: { Args: never; Returns: boolean }
+      ch_gatilho_execucoes: {
+        Args: { p_dias: number; p_gatilho: number }
+        Returns: Json
+      }
+      ch_gatilho_executar: {
+        Args: {
+          g: Database["portal_atendimento"]["Tables"]["ch_gatilhos"]["Row"]
+          p_autor: string
+          p_chave: string
+          p_disparo: string
+          p_ticket: number
+        }
+        Returns: boolean
+      }
+      ch_gatilho_exigir_admin: { Args: never; Returns: string }
+      ch_gatilho_ordenar: { Args: { p_ids: number[] }; Returns: undefined }
+      ch_gatilho_salvar: { Args: { p: Json }; Returns: number }
+      ch_gatilho_simular: { Args: { p: Json; p_ticket: number }; Returns: Json }
+      ch_gatilhos_lista: { Args: never; Returns: Json }
+      ch_gatilhos_rodar: {
+        Args: {
+          p_autor: string
+          p_chave: string
+          p_disparos: string[]
+          p_ticket: number
+        }
+        Returns: number
+      }
+      ch_gatilhos_tempo: { Args: never; Returns: number }
+      ch_gerencial: { Args: { p_meses?: number }; Returns: Json }
+      ch_gerencial_alertas_enviar: { Args: never; Returns: number }
+      ch_gerencial_alertas_notificar: { Args: never; Returns: number }
+      ch_gerencial_aviso: {
+        Args: {
+          p_dia: string
+          p_texto: string
+          p_titulo: string
+          p_usuario: string
+        }
+        Returns: number
+      }
+      ch_gerencial_metas: { Args: never; Returns: Json }
+      ch_gerencial_metas_salvar: { Args: { p: Json }; Returns: Json }
+      ch_gerencial_pode: { Args: never; Returns: boolean }
+      ch_ia_empreendimento_registrar: {
+        Args: { p: Json; p_ticket: number }
+        Returns: Json
+      }
+      ch_ia_empreendimentos_pendentes: {
+        Args: { p_limite?: number }
+        Returns: Json
+      }
+      ch_ia_pendentes: { Args: { p_limite?: number }; Returns: Json }
+      ch_ia_registrar: { Args: { p: Json; p_ticket: number }; Returns: Json }
+      ch_iniciais: { Args: { p_nome: string }; Returns: string }
+      ch_justificativa_salvar: { Args: { p: Json }; Returns: number }
+      ch_kanban_padrao: { Args: never; Returns: Json }
+      ch_kanban_padrao_salvar: { Args: { p_colunas: Json }; Returns: undefined }
+      ch_lista_extras: { Args: never; Returns: Json }
+      ch_macro_salvar: { Args: { p: Json }; Returns: number }
+      ch_macros_lista: { Args: never; Returns: Json }
+      ch_nome_usuario: { Args: { p: string }; Returns: string }
+      ch_notificacoes_ler: { Args: { p_ids: number[] }; Returns: undefined }
+      ch_notificacoes_lista: { Args: never; Returns: Json }
+      ch_notificar: {
+        Args: {
+          p_texto: string
+          p_ticket: number
+          p_titulo: string
+          p_usuarios: string[]
+        }
+        Returns: number
+      }
+      ch_painel: { Args: never; Returns: Json }
+      ch_pode_ler: { Args: never; Returns: boolean }
+      ch_pode_ver_ticket: {
+        Args: { p_equipe: number; p_responsavel: string; p_setor: number }
+        Returns: boolean
+      }
+      ch_regra_condicao: {
+        Args: {
+          c: Json
+          t: Database["portal_atendimento"]["Tables"]["ch_tickets"]["Row"]
+        }
+        Returns: boolean
+      }
+      ch_regra_salvar: { Args: { p: Json }; Returns: number }
+      ch_responsaveis: { Args: never; Returns: Json }
+      ch_servico_equipe: { Args: { p_servico: number }; Returns: number }
+      ch_servico_salvar: { Args: { p: Json }; Returns: number }
+      ch_setor_padroes_salvar: {
+        Args: { p_equipe: number; p_setor: number; p_sla_horas: number }
+        Returns: undefined
+      }
+      ch_sla_horas: {
+        Args: { p_servico: number; p_setor: number; p_urgencia: number }
+        Returns: {
+          resposta: number
+          solucao: number
+        }[]
+      }
+      ch_solucao_da_resposta: { Args: { p_ticket: number }; Returns: string }
+      ch_somar_horas_uteis: {
+        Args: { p_horas: number; p_inicio: string; p_setor: number }
+        Returns: string
+      }
+      ch_status_de: {
+        Args: { p_categoria: string; p_nome?: string }
+        Returns: number
+      }
+      ch_status_lista: { Args: never; Returns: Json }
+      ch_status_ordenar: { Args: { p_ids: number[] }; Returns: undefined }
+      ch_status_salvar: { Args: { p: Json }; Returns: number }
+      ch_ticket_acao: { Args: { p: Json; p_id: number }; Returns: number }
+      ch_ticket_atualizar: {
+        Args: { p: Json; p_id: number }
+        Returns: undefined
+      }
+      ch_ticket_clonar: { Args: { p: Json; p_id: number }; Returns: number }
+      ch_ticket_criar: { Args: { p: Json }; Returns: number }
+      ch_ticket_detalhe: { Args: { p_id: number }; Returns: Json }
+      ch_ticket_empreendimento: { Args: { p_id: number }; Returns: Json }
+      ch_ticket_empreendimento_definir: {
+        Args: { p_empreendimento: number; p_id: number }
+        Returns: undefined
+      }
+      ch_ticket_excluir: { Args: { p_id: number }; Returns: undefined }
+      ch_ticket_mesclar: {
+        Args: { p_destino: number; p_origem: number }
+        Returns: undefined
+      }
+      ch_ticket_seguir: {
+        Args: { p_id: number; p_seguir: boolean }
+        Returns: undefined
+      }
+      ch_ticket_solucoes: { Args: { p_id: number }; Returns: Json }
+      ch_ticket_visivel: {
+        Args: { p_id: number }
+        Returns: {
+          assumido_em: string | null
+          assunto: string
+          atualizado_em: string
+          campos: Json
+          categoria_id: number | null
+          cc: string[]
+          clonado_de_id: number | null
+          conversa_id: number | null
+          criado_em: string
+          criado_por: string | null
+          email_conta_id: number | null
+          email_thread_id: string | null
+          empreendimento_id: number | null
+          empreendimento_origem: string | null
+          encerrado_em: string | null
+          equipe_id: number | null
+          excluido_em: string | null
+          excluido_por: string | null
+          id: number
+          justificativa_id: number | null
+          mesclado_em_id: number | null
+          numero_id: number | null
+          origem: string
+          primeira_resposta_em: string | null
+          recebido_em: string
+          responsavel_id: string | null
+          servico_id: number | null
+          setor_id: number
+          sla_manual: boolean
+          sla_pausado_desde: string | null
+          sla_resposta_ate: string | null
+          sla_solucao_ate: string | null
+          solicitante_contato: string | null
+          solicitante_nome: string
+          solicitante_pessoa_id: number | null
+          solucao_aplicada: string | null
+          status_id: number
+          tags: string[]
+          urgencia_id: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ch_tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ch_top_solicitantes: { Args: { p_dias?: number }; Returns: Json }
+      ch_urgencia_salvar: { Args: { p: Json }; Returns: number }
+      ch_visao_excluir: { Args: { p_id: number }; Returns: undefined }
+      ch_visao_json: {
+        Args: {
+          v: Database["portal_atendimento"]["Tables"]["ch_visoes"]["Row"]
+        }
+        Returns: Json
+      }
+      ch_visao_salvar: { Args: { p: Json }; Returns: number }
+      ch_visoes_disponiveis: { Args: never; Returns: Json }
+      ch_visoes_equipes: { Args: never; Returns: Json }
+      ch_visoes_lista: { Args: never; Returns: Json }
       concluir_troca_senha: { Args: never; Returns: undefined }
       criar_perfil: {
         Args: { p_abaixo_de: string; p_descricao: string; p_label: string }
@@ -1890,6 +4950,44 @@ export type Database = {
           user_id: string
         }[]
       }
+      md_anexo_resultado: { Args: { p: Json }; Returns: undefined }
+      md_anexos_pegar: {
+        Args: { p_limite: number; p_origem: string }
+        Returns: Json
+      }
+      md_anexos_tentar_de_novo: { Args: never; Returns: number }
+      md_config_ler: { Args: never; Returns: Json }
+      md_config_salvar: { Args: { p: Json }; Returns: undefined }
+      md_cron_chave: { Args: never; Returns: string }
+      md_execucoes_lista: { Args: { p_so_erros?: boolean }; Returns: Json }
+      md_exigir_super: { Args: never; Returns: undefined }
+      md_filtros_opcoes: { Args: never; Returns: Json }
+      md_ler_credencial: { Args: never; Returns: Json }
+      md_na_agenda: {
+        Args: {
+          c: Database["portal_atendimento"]["Tables"]["md_config"]["Row"]
+          p_agora: string
+        }
+        Returns: boolean
+      }
+      md_pode_ver: { Args: never; Returns: boolean }
+      md_recomecar: { Args: never; Returns: undefined }
+      md_rodada_concluir: { Args: { p: Json }; Returns: Json }
+      md_rodada_iniciar: { Args: { p_origem: string }; Returns: Json }
+      md_rodada_proxima: {
+        Args: {
+          c: Database["portal_atendimento"]["Tables"]["md_config"]["Row"]
+        }
+        Returns: Json
+      }
+      md_sem_acento: { Args: { p: string }; Returns: string }
+      md_situacao: { Args: never; Returns: Json }
+      md_teste_registrar: { Args: { p: Json }; Returns: undefined }
+      md_ticket_anexos: { Args: { p_id: number }; Returns: Json }
+      md_ticket_detalhe: { Args: { p_id: number }; Returns: Json }
+      md_tickets_lista: { Args: { p: Json }; Returns: Json }
+      md_token_salvar: { Args: { p_token: string }; Returns: string }
+      md_upsert_pagina: { Args: { p: Json }; Returns: number }
       mover_consulta_sql: {
         Args: { p_direcao: string; p_id: string }
         Returns: undefined
@@ -1920,8 +5018,6 @@ export type Database = {
         Returns: string
       }
       registrar_acesso: { Args: never; Returns: undefined }
-      security_apos_troca_senha: { Args: never; Returns: undefined }
-      sessao_atual_confiavel: { Args: never; Returns: boolean }
       registrar_auditoria: {
         Args: {
           p_acao: string
@@ -2003,6 +5099,72 @@ export type Database = {
         Args: { p_alteracoes: Json; p_perfil: string }
         Returns: undefined
       }
+      security_apos_troca_senha: { Args: never; Returns: undefined }
+      security_auth_begin: {
+        Args: {
+          p_domain_allowed?: boolean
+          p_email: string
+          p_ip: string
+          p_kind: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      security_auth_finish: {
+        Args: {
+          p_attempt_id: string
+          p_email: string
+          p_ip: string
+          p_result: string
+          p_session_id?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      security_block_ip: {
+        Args: { p_ip_hash: string; p_minutes: number; p_reason: string }
+        Returns: undefined
+      }
+      security_cfg: { Args: { p_key: string }; Returns: number }
+      security_cleanup: { Args: never; Returns: undefined }
+      security_hash: {
+        Args: { p_kind: string; p_value: string }
+        Returns: string
+      }
+      security_ip_prefix: { Args: { p_ip: string }; Returns: string }
+      security_lock_minutes: { Args: { p_level: number }; Returns: number }
+      security_log_event: {
+        Args: {
+          p_detail?: Json
+          p_email: string
+          p_ip: string
+          p_ip_hash: string
+          p_reason: string
+          p_request_id: string
+          p_risk: number
+          p_severity: string
+          p_type: string
+          p_user_hash: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      security_mask_email: { Args: { p_email: string }; Returns: string }
+      security_normalize_email: { Args: { p_email: string }; Returns: string }
+      security_password_verification_hook: {
+        Args: { event: Json }
+        Returns: Json
+      }
+      security_register_failure: {
+        Args: { p_from_hook: boolean; p_user_hash: string }
+        Returns: boolean
+      }
+      security_sessao_valida: {
+        Args: { p_amr: Json; p_session_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      sessao_atual_confiavel: { Args: never; Returns: boolean }
+      sessao_confiavel: { Args: never; Returns: boolean }
       substituir_segredo_integracao: {
         Args: { p_key: string; p_segredo: string }
         Returns: undefined
@@ -2957,6 +6119,195 @@ export type Database = {
           primeira_falha_em?: string | null
           ultima_falha_em?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      auth_gateway_config: {
+        Row: {
+          chave_hmac: string
+          cooldown_base_s: number
+          cooldown_max_s: number
+          distribuido_bloqueio_conta_min: number
+          distribuido_ips: number
+          distribuido_janela_min: number
+          id: boolean
+          ip_conta_janela_min: number
+          ip_conta_limite: number
+          ip_por_15min: number
+          ip_por_hora: number
+          ip_por_minuto: number
+          rajada_janela_s: number
+          rajada_tentativas: number
+          recuperacao_por_conta_hora: number
+          recuperacao_por_ip_hora: number
+          retencao_eventos_dias: number
+          retencao_tentativas_dias: number
+          risco_bloqueio: number
+          risco_bloqueio_min: number
+          risco_cooldown: number
+          risco_critico: number
+          risco_critico_min: number
+          spray_bloqueio_ip_min: number
+          spray_contas: number
+          spray_janela_min: number
+        }
+        Insert: {
+          chave_hmac?: string
+          cooldown_base_s?: number
+          cooldown_max_s?: number
+          distribuido_bloqueio_conta_min?: number
+          distribuido_ips?: number
+          distribuido_janela_min?: number
+          id?: boolean
+          ip_conta_janela_min?: number
+          ip_conta_limite?: number
+          ip_por_15min?: number
+          ip_por_hora?: number
+          ip_por_minuto?: number
+          rajada_janela_s?: number
+          rajada_tentativas?: number
+          recuperacao_por_conta_hora?: number
+          recuperacao_por_ip_hora?: number
+          retencao_eventos_dias?: number
+          retencao_tentativas_dias?: number
+          risco_bloqueio?: number
+          risco_bloqueio_min?: number
+          risco_cooldown?: number
+          risco_critico?: number
+          risco_critico_min?: number
+          spray_bloqueio_ip_min?: number
+          spray_contas?: number
+          spray_janela_min?: number
+        }
+        Update: {
+          chave_hmac?: string
+          cooldown_base_s?: number
+          cooldown_max_s?: number
+          distribuido_bloqueio_conta_min?: number
+          distribuido_ips?: number
+          distribuido_janela_min?: number
+          id?: boolean
+          ip_conta_janela_min?: number
+          ip_conta_limite?: number
+          ip_por_15min?: number
+          ip_por_hora?: number
+          ip_por_minuto?: number
+          rajada_janela_s?: number
+          rajada_tentativas?: number
+          recuperacao_por_conta_hora?: number
+          recuperacao_por_ip_hora?: number
+          retencao_eventos_dias?: number
+          retencao_tentativas_dias?: number
+          risco_bloqueio?: number
+          risco_bloqueio_min?: number
+          risco_cooldown?: number
+          risco_critico?: number
+          risco_critico_min?: number
+          spray_bloqueio_ip_min?: number
+          spray_contas?: number
+          spray_janela_min?: number
+        }
+        Relationships: []
+      }
+      auth_gateway_conta: {
+        Row: {
+          atualizado_em: string
+          conta_hash: string
+          email_mascarado: string | null
+          falhas_consecutivas: number
+          proxima_tentativa_em: string | null
+          risco: number
+          ultima_falha_em: string | null
+          ultimo_sucesso_em: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          conta_hash: string
+          email_mascarado?: string | null
+          falhas_consecutivas?: number
+          proxima_tentativa_em?: string | null
+          risco?: number
+          ultima_falha_em?: string | null
+          ultimo_sucesso_em?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          conta_hash?: string
+          email_mascarado?: string | null
+          falhas_consecutivas?: number
+          proxima_tentativa_em?: string | null
+          risco?: number
+          ultima_falha_em?: string | null
+          ultimo_sucesso_em?: string | null
+        }
+        Relationships: []
+      }
+      auth_gateway_eventos: {
+        Row: {
+          app: string
+          conta_hash: string | null
+          detalhe: Json | null
+          email_mascarado: string | null
+          id: number
+          ip_hash: string | null
+          momento: string
+          risco: number | null
+          tipo: string
+        }
+        Insert: {
+          app?: string
+          conta_hash?: string | null
+          detalhe?: Json | null
+          email_mascarado?: string | null
+          id?: never
+          ip_hash?: string | null
+          momento?: string
+          risco?: number | null
+          tipo: string
+        }
+        Update: {
+          app?: string
+          conta_hash?: string | null
+          detalhe?: Json | null
+          email_mascarado?: string | null
+          id?: never
+          ip_hash?: string | null
+          momento?: string
+          risco?: number | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      auth_gateway_tentativas: {
+        Row: {
+          app: string
+          codigo: string | null
+          conta_hash: string
+          id: number
+          ip_hash: string | null
+          momento: string
+          resultado: string
+          tipo: string
+        }
+        Insert: {
+          app?: string
+          codigo?: string | null
+          conta_hash: string
+          id?: never
+          ip_hash?: string | null
+          momento?: string
+          resultado?: string
+          tipo?: string
+        }
+        Update: {
+          app?: string
+          codigo?: string | null
+          conta_hash?: string
+          id?: never
+          ip_hash?: string | null
+          momento?: string
+          resultado?: string
+          tipo?: string
         }
         Relationships: []
       }
@@ -7361,6 +10712,39 @@ export type Database = {
         }
         Relationships: []
       }
+      totvs_config: {
+        Row: {
+          api_url: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          password: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          api_url: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          password?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          api_url?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          password?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       totvs_consulta_fornecedor_config: {
         Row: {
           api_url: string
@@ -8021,6 +11405,7 @@ export type Database = {
       }
       wa_campanha_destinatarios: {
         Row: {
+          anonimizado_em: string | null
           assinado_em: string | null
           bloco: string | null
           campanha_id: string
@@ -8040,6 +11425,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anonimizado_em?: string | null
           assinado_em?: string | null
           bloco?: string | null
           campanha_id: string
@@ -8059,6 +11445,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anonimizado_em?: string | null
           assinado_em?: string | null
           bloco?: string | null
           campanha_id?: string
@@ -8135,6 +11522,36 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_opt_outs: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          id: string
+          motivo: string | null
+          origem: string
+          tipo: string
+          valor: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          motivo?: string | null
+          origem?: string
+          tipo: string
+          valor: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          motivo?: string | null
+          origem?: string
+          tipo?: string
+          valor?: string
+        }
+        Relationships: []
+      }
       wa_project_users: {
         Row: {
           adicionado_por: string | null
@@ -8159,6 +11576,24 @@ export type Database = {
           trocar_senha?: boolean
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      wa_retencao_config: {
+        Row: {
+          campanhas_abertas_meses: number
+          destinatarios_meses: number
+          id: boolean
+        }
+        Insert: {
+          campanhas_abertas_meses?: number
+          destinatarios_meses?: number
+          id?: boolean
+        }
+        Update: {
+          campanhas_abertas_meses?: number
+          destinatarios_meses?: number
+          id?: boolean
         }
         Relationships: []
       }
@@ -8650,6 +12085,49 @@ export type Database = {
         Args: { p_email: string; p_user_id: string }
         Returns: undefined
       }
+      auth_gateway_bloquear: {
+        Args: { p_chave: string; p_minutos: number }
+        Returns: string
+      }
+      auth_gateway_concluir: {
+        Args: {
+          p_app?: string
+          p_codigo?: string
+          p_email: string
+          p_ip: string
+          p_resultado: string
+          p_tentativa_id: number
+          p_user_agent: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      auth_gateway_desbloquear: {
+        Args: { p_email: string }
+        Returns: undefined
+      }
+      auth_gateway_evento: {
+        Args: {
+          p_app: string
+          p_conta_hash: string
+          p_detalhe?: Json
+          p_email: string
+          p_ip_hash: string
+          p_risco: number
+          p_tipo: string
+        }
+        Returns: undefined
+      }
+      auth_gateway_hash: { Args: { p_texto: string }; Returns: string }
+      auth_gateway_mascarar: { Args: { p_email: string }; Returns: string }
+      auth_gateway_recuperacao: {
+        Args: { p_app?: string; p_email: string; p_ip: string }
+        Returns: Json
+      }
+      auth_gateway_reservar: {
+        Args: { p_app?: string; p_email: string; p_ip: string }
+        Returns: Json
+      }
       auth_pre_login: { Args: { p_email: string; p_ip: string }; Returns: Json }
       auth_registrar_resultado: {
         Args: {
@@ -8968,6 +12446,7 @@ export type Database = {
       }
       pa_sou_super_admin: { Args: never; Returns: boolean }
       pode_acessar_app: { Args: { p_app: string }; Returns: boolean }
+      portal_inteligente_meu_acesso: { Args: never; Returns: Json }
       registrar_resposta_kit_porcelanato: {
         Args: {
           _bloco: string
@@ -9118,13 +12597,43 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      wa_anonimizar_campanha: {
+        Args: { p_campanha_id: string }
+        Returns: number
+      }
+      wa_anonimizar_linhas: { Args: { p_ids: string[] }; Returns: number }
+      wa_anonimizar_titular: {
+        Args: { p_cpf?: string; p_email?: string; p_telefone?: string }
+        Returns: number
+      }
       wa_conta_liberada: { Args: never; Returns: boolean }
       wa_eh_admin: { Args: never; Returns: boolean }
+      wa_norm_tel: { Args: { p: string }; Returns: string }
       wa_retencao_executar: {
         Args: never
         Returns: {
           apagados: number
           tabela: string
+        }[]
+      }
+      wa_segredo_existe: { Args: { p_nome: string }; Returns: boolean }
+      wa_segredo_gravar: {
+        Args: { p_descricao?: string; p_nome: string; p_valor: string }
+        Returns: string
+      }
+      wa_segredo_ler: { Args: { p_nome: string }; Returns: string }
+      wa_titular_ocorrencias: {
+        Args: { p_cpf?: string; p_email?: string; p_telefone?: string }
+        Returns: {
+          anonimizado_em: string
+          campanha_criada_em: string
+          campanha_id: string
+          campanha_nome: string
+          destinatario_id: string
+          empreendimento: string
+          enviado_em: string
+          papel: string
+          status: string
         }[]
       }
     }

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Database, FileCode2, MessageCircle } from "lucide-react";
+import { Archive, Database, FileCode2, MessageCircle } from "lucide-react";
 import { lazy } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router";
 import { Breadcrumb } from "../../../components/Breadcrumb";
@@ -13,6 +13,9 @@ import "./Integracoes.css";
 
 const IntegracaoZenvia = lazy(() =>
   import("../../atendimento/pages/IntegracaoZenvia").then((m) => ({ default: m.IntegracaoZenvia })),
+);
+const IntegracaoMovidesk = lazy(() =>
+  import("../../movidesk/IntegracaoMovidesk").then((m) => ({ default: m.IntegracaoMovidesk })),
 );
 const IntegracaoConsultas = lazy(() =>
   import("./integracoes/IntegracaoConsultas").then((m) => ({ default: m.IntegracaoConsultas })),
@@ -42,6 +45,7 @@ const SECTIONS: Section[] = [
   { path: "totvs", label: "TOTVS RM", icon: Database, permission: "configure_integrations" },
   { path: "consultas", label: "Consultas SQL", icon: FileCode2, permission: "configure_integrations" },
   { path: "zenvia", label: "Zenvia WhatsApp", icon: MessageCircle, permission: "atendimento_zenvia" },
+  { path: "movidesk", label: "Movidesk", icon: Archive, permission: "integracao_movidesk" },
 ];
 
 export function Integracoes() {
@@ -80,6 +84,7 @@ export function Integracoes() {
         <Route path="totvs" element={<IntegracaoTotvs />} />
         <Route path="consultas" element={<IntegracaoConsultas />} />
         <Route path="zenvia" element={hasPermission("atendimento_zenvia") ? <IntegracaoZenvia /> : <NotFound />} />
+        <Route path="movidesk" element={hasPermission("integracao_movidesk") ? <IntegracaoMovidesk /> : <NotFound />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

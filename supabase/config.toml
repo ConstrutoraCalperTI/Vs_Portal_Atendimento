@@ -56,3 +56,7 @@ verify_jwt = false
 # CalperDESK: empreendimentos do site www.calper.com.br (lê a página e guarda em cache). Só @calper.com.br logado.
 [functions.portal_atendimento-calper-site]
 verify_jwt = true
+
+# Gestão Tickets Movidesk: chamada pelo pg_cron com a chave do Vault (x-movidesk-chave); o manual confere o Super admin na função.
+[functions.portal_atendimento-movidesk]
+verify_jwt = false

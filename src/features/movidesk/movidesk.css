@@ -1,0 +1,113 @@
+/* Gestão Tickets Movidesk e Integrações › Movidesk (mockup docs/mockups/tickets-movidesk.html, aprovado em 14/10/2026).
+   Tokens do portal (src/index.css); nada de paleta própria. */
+
+.md-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--sidebar);
+  color: #fff;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.md-hero small { display: block; color: var(--sidebar-text); font-size: 12px; }
+.md-hero h2 { margin: 0; font-size: 20px; color: #fff; }
+.md-hero__meta { color: #d6d7dc; font-size: 13px; }
+.md-hero .btn--outline { background: transparent; color: #fff; border-color: #4a4b52; }
+.md-hero .btn--outline:hover:not(:disabled) { background: var(--sidebar-hover); }
+.md-spacer { flex: 1; }
+
+.md-card { margin-bottom: 16px; }
+.md-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.md-head h2, .md-head h3 { margin: 0; font-size: 16px; }
+.md-head small { display: block; color: var(--muted); font-size: 12px; }
+
+.md-filtros { padding: 14px 18px 18px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.md-filtros .field { margin: 0; min-width: 0; }
+.md-filtros__texto { grid-column: span 2; }
+
+.md-tabela-wrap { overflow-x: auto; }
+.md-tabela { width: 100%; border-collapse: collapse; }
+.md-tabela th {
+  background: var(--table-head);
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.md-tabela td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
+.md-tabela tbody tr { cursor: pointer; }
+.md-tabela tbody tr:hover td { background: var(--page); }
+.md-tabela tbody tr:focus-visible { outline: 3px solid var(--brand); outline-offset: -3px; }
+.md-num { color: var(--brand); font-weight: 700; }
+.md-sub { display: block; color: var(--muted); font-size: 12px; }
+.md-assunto { font-weight: 600; overflow-wrap: anywhere; }
+.md-sla { display: block; font-size: 12px; font-weight: 600; margin-top: 4px; }
+.md-sla--ok { color: var(--success-fg); }
+.md-sla--bad { color: var(--danger-fg); }
+.md-sla--info { color: var(--info-fg); }
+.md-sla--off { color: var(--neutral-fg); }
+.md-vazio { text-align: center; color: var(--muted); padding: 28px 16px; }
+
+.md-pag { display: flex; align-items: center; gap: 8px; padding: 12px 18px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+
+/* Detalhe (gaveta) */
+.md-props { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.md-props span { display: block; color: var(--muted); font-size: 12px; }
+.md-secao { margin: 18px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.md-acao { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+.md-acao--interna { background: var(--warning-bg); border-color: transparent; }
+.md-acao header { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 4px; }
+.md-acao p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.md-anexos { display: grid; gap: 6px; margin-top: 8px; }
+.md-anexo { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.md-anexo button { background: none; border: 0; padding: 0; color: var(--brand); font-weight: 600; text-decoration: underline; cursor: pointer; text-align: left; overflow-wrap: anywhere; }
+.md-hist { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 4px; }
+
+/* Integração */
+.md-grade2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.md-form { padding: 16px 18px; display: grid; gap: 14px; }
+.md-form .field { margin: 0; }
+.md-linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.md-dois { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.md-nota { background: var(--info-bg); color: var(--info-fg); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.md-alerta { background: var(--warning-bg); color: var(--warning-strong); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.md-mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+textarea.md-mono { resize: vertical; }
+.md-rota { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; }
+.md-rota code { display: block; background: var(--table-head); border: 1px solid var(--line); border-radius: 6px; padding: 8px; word-break: break-all; color: var(--ink); }
+
+.md-etapas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px 18px; }
+.md-etapa { border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.md-etapa--on { border-color: var(--brand); box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--brand) 45%, transparent); }
+.md-etapa h4 { margin: 0 0 2px; font-size: 14px; }
+.md-barra { height: 8px; border-radius: 99px; background: var(--neutral-bg); overflow: hidden; margin: 8px 0; }
+.md-barra i { display: block; height: 100%; background: var(--brand); }
+.md-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 0 18px 16px; }
+.md-kpi { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.md-kpi b { display: block; font-size: 20px; }
+.md-kpi span { font-size: 12px; color: var(--muted); }
+.md-dias { display: flex; gap: 6px; flex-wrap: wrap; }
+.md-dias label { display: flex; align-items: center; gap: 4px; border: 1px solid var(--input-border); border-radius: 8px; padding: 5px 9px; font-size: 13px; cursor: pointer; }
+.md-switch { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+
+@media (max-width: 1100px) {
+  .md-filtros { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .md-grade2 { grid-template-columns: minmax(0, 1fr); }
+  .md-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .md-filtros, .md-dois, .md-etapas, .md-props { grid-template-columns: minmax(0, 1fr); }
+  .md-filtros__texto { grid-column: auto; }
+  .md-tabela thead { display: none; }
+  .md-tabela, .md-tabela tbody, .md-tabela tr, .md-tabela td { display: block; }
+  .md-tabela tr { border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .md-tabela td { border: 0; padding: 3px 14px; }
+}
