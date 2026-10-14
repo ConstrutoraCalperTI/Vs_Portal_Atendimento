@@ -1,6 +1,7 @@
-import { Plus, Settings2 } from "lucide-react";
+import { CircleCheckBig, CircleDot, Flag, Inbox, MessageSquareReply, Plus, Settings2, Timer, Users, Wrench } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { useSalvarPadroesSetor, useSalvarServico } from "../hooks";
 import { ComCadastros, linhaProps, mensagem, Rodape, Situacao } from "./comum";
 import { CANAIS, caminhoServico, CORES_URGENCIA, type Cadastros, type Canal, type Servico, type SetorCad, type SlaServico } from "./types";
@@ -71,11 +72,11 @@ function Conteudo({ cad }: { cad: Cadastros }) {
           <table className="cad-table">
             <thead>
               <tr>
-                <th>Serviço</th>
-                <th>Equipe responsável</th>
-                <th>SLA solução ({urgPadrao?.nome ?? "padrão"})</th>
-                <th>Disponível em</th>
-                <th>Situação</th>
+                <th><ThLabel icon={Wrench}>Serviço</ThLabel></th>
+                <th><ThLabel icon={Users}>Equipe responsável</ThLabel></th>
+                <th><ThLabel icon={Timer}>SLA solução ({urgPadrao?.nome ?? "padrão"})</ThLabel></th>
+                <th><ThLabel icon={Inbox}>Disponível em</ThLabel></th>
+                <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
               </tr>
             </thead>
             <tbody>
@@ -247,9 +248,9 @@ function EditorServico({ cad, servico, onFechar }: { cad: Cadastros; servico: Se
         <table className="cad-sla">
           <thead>
             <tr>
-              <th>Urgência</th>
-              <th>1ª resposta</th>
-              <th>Solução</th>
+              <th><ThLabel icon={Flag}>Urgência</ThLabel></th>
+              <th><ThLabel icon={MessageSquareReply}>1ª resposta</ThLabel></th>
+              <th><ThLabel icon={CircleCheckBig}>Solução</ThLabel></th>
             </tr>
           </thead>
           <tbody>

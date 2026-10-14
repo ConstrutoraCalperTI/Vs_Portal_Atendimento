@@ -1,6 +1,6 @@
 .sidebar {
   /* Largura pensada para o rótulo mais longo do menu caber inteiro. */
-  width: 252px;
+  width: 280px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -15,6 +15,8 @@
   min-height: 0;
   width: 100%;
   overflow-y: auto;
+  /* Barra fina: a padrão do Windows comia ~17px da largura e cortava os rótulos. */
+  scrollbar-width: thin;
   padding: 20px 12px 12px;
 }
 

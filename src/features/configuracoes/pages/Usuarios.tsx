@@ -1,6 +1,6 @@
 import { ChangeOwnPasswordDialog } from "../../auth/ChangeOwnPasswordDialog";
 import * as Tabs from "@radix-ui/react-tabs";
-import { Lock, Plus, Search, UserRound, Users as UsersIcon } from "lucide-react";
+import { CircleDot, KeyRound, Lock, MonitorSmartphone, Plus, Search, Shield, UserRound, Users as UsersIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
@@ -126,6 +126,7 @@ export function Usuarios({ nav }: { nav?: ReactNode } = {}) {
     {
       id: "user",
       header: "Usuário",
+      icon: UserRound,
       cell: (row) => (
         <div className="users__identity">
           <UserAvatar name={row.name} />
@@ -140,16 +141,18 @@ export function Usuarios({ nav }: { nav?: ReactNode } = {}) {
         </div>
       ),
     },
-    { id: "role", header: "Perfil", cell: (row) => <RoleBadge role={row.role} label={row.roleLabel} /> },
-    { id: "status", header: "Status", cell: (row) => <UserStatusBadge status={row.status} /> },
+    { id: "role", header: "Perfil", icon: Shield, cell: (row) => <RoleBadge role={row.role} label={row.roleLabel} /> },
+    { id: "status", header: "Status", icon: CircleDot, cell: (row) => <UserStatusBadge status={row.status} /> },
     {
       id: "lastAccess",
       header: "Último acesso",
+      icon: MonitorSmartphone,
       cell: (row) => <span className="users__muted">{formatLastAccess(row.lastAccessAt)}</span>,
     },
     {
       id: "password",
       header: "Senha",
+      icon: KeyRound,
       cell: (row) =>
         row.mustChangePassword ? (
           <StatusBadge variant="warning">Troca exigida</StatusBadge>

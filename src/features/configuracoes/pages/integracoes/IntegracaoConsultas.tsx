@@ -1,5 +1,5 @@
 import * as Switch from "@radix-ui/react-switch";
-import { ArrowDown, ArrowUp, FileCode2, Info, Pencil, Play, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, FileCode2, FlaskConical, Hash, Info, Pencil, Play, Plus, Shapes, Tag, ToggleRight, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatDateTime } from "../../../../utils/dates";
@@ -75,6 +75,7 @@ export function IntegracaoConsultas() {
     {
       id: "order",
       header: "Ordem",
+      icon: ArrowUpDown,
       width: "92px",
       cell: (row) => {
         const index = rows?.indexOf(row) ?? 0;
@@ -102,10 +103,11 @@ export function IntegracaoConsultas() {
         );
       },
     },
-    { id: "code", header: "Código", cell: (row) => <code className="sql-query__code">{row.code}</code> },
+    { id: "code", header: "Código", icon: Hash, cell: (row) => <code className="sql-query__code">{row.code}</code> },
     {
       id: "name",
       header: "Nome",
+      icon: Tag,
       cell: (row) => (
         <div className="sql-query__name">
           <span>{row.name}</span>
@@ -119,10 +121,11 @@ export function IntegracaoConsultas() {
         </div>
       ),
     },
-    { id: "type", header: "Tipo", cell: (row) => <StatusBadge variant="neutral">{SQL_QUERY_TYPE_LABELS[row.type]}</StatusBadge> },
+    { id: "type", header: "Tipo", icon: Shapes, cell: (row) => <StatusBadge variant="neutral">{SQL_QUERY_TYPE_LABELS[row.type]}</StatusBadge> },
     {
       id: "status",
       header: "Status",
+      icon: ToggleRight,
       width: "80px",
       cell: (row) => (
         <Switch.Root
@@ -139,6 +142,7 @@ export function IntegracaoConsultas() {
     {
       id: "lastTest",
       header: "Último teste",
+      icon: FlaskConical,
       cell: (row) =>
         row.lastTest ? (
           <span className={`sql-query__test ${row.lastTest.ok ? "integration-card__ok" : "integration-card__fail"}`} title={row.lastTest.message}>

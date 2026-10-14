@@ -1,6 +1,42 @@
-import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Building2,
+  CalendarClock,
+  CalendarDays,
+  CalendarRange,
+  CircleCheckBig,
+  CircleDot,
+  CircleX,
+  Clock,
+  Columns3,
+  Diff,
+  FolderTree,
+  Gauge,
+  Hash,
+  Hourglass,
+  Inbox,
+  Layers,
+  MessagesSquare,
+  Minus,
+  Percent,
+  Repeat2,
+  Sparkles,
+  Target,
+  Timer,
+  TrendingUp,
+  TrendingUpDown,
+  Trophy,
+  TriangleAlert,
+  UserCheck,
+  UserMinus,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { Panel } from "../../components/ds/Panel";
+import { ThLabel } from "../../components/ds/ThLabel";
 import { iconeDe, type Tema } from "./icones";
 // O Panel vem direto do arquivo (sem o índice do design system), então os estilos .ds-* precisam ser carregados
 // aqui; sem isso, abrir o Gerencial antes da Visão geral deixava os cards de KPI um embaixo do outro.
@@ -109,9 +145,49 @@ export function Secao({ titulo, subtitulo, aside, children, className, icone }: 
 export interface Coluna<T> {
   chave: string;
   label: string;
+  /** Ícone do cabeçalho; sem ele, vale o sugerido pelo rótulo (iconeDaColuna). */
+  icone?: LucideIcon;
   num?: boolean;
   valor: (linha: T) => string | number | null;
   render?: (linha: T) => ReactNode;
+}
+
+// Ícone do cabeçalho pelo rótulo da coluna (a primeira regra que casar vence), para as telas não precisarem
+// declarar um por um. A ordem importa: "SLA vencido" é SLA, "Resolvidos por agente" é resolvidos.
+const ICONES_COLUNA: [RegExp, LucideIcon][] = [
+  [/^#$|posi[çc][ãa]o|ranking/i, Trophy],
+  [/^sla|sla de/i, Timer],
+  [/vencid|fora do prazo/i, TriangleAlert],
+  [/cancelad/i, CircleX],
+  [/sem resp/i, UserMinus],
+  [/parad|mais antigo/i, Hourglass],
+  [/reabertura/i, Repeat2],
+  [/taxa|participa[çc][ãa]o|atingimento|\(%\)/i, Percent],
+  [/^tmr$|tempo/i, Clock],
+  [/intera[çc]/i, MessagesSquare],
+  [/resolvid|resolu[çc][ãa]o/i, CircleCheckBig],
+  [/backlog/i, Layers],
+  [/entradas/i, TrendingUp],
+  [/varia[çc][ãa]o|δ|diferen[çc]a|desvio/i, TrendingUpDown],
+  [/carga|capacidade/i, Gauge],
+  [/meta|realizado/i, Target],
+  [/agente/i, UserCheck],
+  [/equipe|grupo/i, Users],
+  [/departamento|setor/i, Building2],
+  [/categoria/i, FolderTree],
+  [/servi[çc]o/i, Wrench],
+  [/canal|origem/i, Inbox],
+  [/triagem|\(ia\)/i, Sparkles],
+  [/situa[çc][ãa]o|status/i, CircleDot],
+  [/m[êe]s|data|\bdias?\b/i, CalendarDays],
+  [/per[íi]odo|anterior|atual/i, CalendarRange],
+  [/hora/i, CalendarClock],
+  [/indicador|kpi|comparativo/i, Diff],
+  [/tickets?|quantidade|total/i, Hash],
+];
+
+export function iconeDaColuna(label: string): LucideIcon {
+  return ICONES_COLUNA.find(([re]) => re.test(label))?.[1] ?? Columns3;
 }
 
 interface TabelaProps<T> {
@@ -146,7 +222,7 @@ export function Tabela<T>({ colunas, linhas, chave, ordemInicial, totais, vazio 
             {colunas.map((c) => (
               <th key={c.chave} className={c.num ? "num" : undefined} aria-sort={ordem.chave === c.chave ? (ordem.desc ? "descending" : "ascending") : undefined}>
                 <button type="button" className="ger-ordenar" onClick={() => setOrdem({ chave: c.chave, desc: ordem.chave === c.chave ? !ordem.desc : Boolean(c.num) })}>
-                  {c.label}
+                  <ThLabel icon={c.icone ?? iconeDaColuna(c.label)}>{c.label}</ThLabel>
                   {ordem.chave === c.chave ? (ordem.desc ? " ↓" : " ↑") : ""}
                 </button>
               </th>

@@ -1,7 +1,8 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { CheckCircle2, Play, X, XCircle } from "lucide-react";
+import { CheckCircle2, Columns3, Play, X, XCircle } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../../components/ds/ThLabel";
 import { useReturnFocus } from "../../components/useReturnFocus";
 import { useTestSqlQuery } from "../../hooks/useSqlQueries";
 import { useTotvsConnection } from "../../hooks/useTotvs";
@@ -135,7 +136,7 @@ function TestPanel({ query }: { query: SqlQuery }) {
                       <tr>
                         {result.columns.map((column) => (
                           <th key={column} scope="col">
-                            {column}
+                            <ThLabel icon={Columns3}>{column}</ThLabel>
                           </th>
                         ))}
                       </tr>

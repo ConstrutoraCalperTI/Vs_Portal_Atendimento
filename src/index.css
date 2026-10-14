@@ -557,3 +557,16 @@ html [data-sonner-toaster][data-sonner-theme="light"] {
   --ds-rail-w: 302px;
   --ds-main-max: 1800px;
 }
+
+/* ---------- Título de coluna com ícone (ThLabel) ---------- */
+.th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.th-label__icon {
+  flex-shrink: 0;
+  color: var(--muted);
+}

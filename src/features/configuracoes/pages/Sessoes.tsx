@@ -1,4 +1,4 @@
-import { Info, MonitorOff } from "lucide-react";
+import { CalendarSync, Info, LogIn, Monitor, MonitorOff, Network, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
@@ -38,6 +38,7 @@ export function Sessoes() {
     {
       id: "user",
       header: "Usuário",
+      icon: User,
       cell: (row) => (
         <div className="sessions__identity">
           <UserAvatar name={row.userName} />
@@ -48,12 +49,13 @@ export function Sessoes() {
         </div>
       ),
     },
-    { id: "device", header: "Dispositivo", cell: (row) => row.device },
-    { id: "location", header: "IP de origem", cell: (row) => <span className="sessions__muted">{row.location}</span> },
-    { id: "started", header: "Início", cell: (row) => <span className="sessions__nowrap">{formatDateTime(row.startedAt)}</span> },
+    { id: "device", header: "Dispositivo", icon: Monitor, cell: (row) => row.device },
+    { id: "location", header: "IP de origem", icon: Network, cell: (row) => <span className="sessions__muted">{row.location}</span> },
+    { id: "started", header: "Início", icon: LogIn, cell: (row) => <span className="sessions__nowrap">{formatDateTime(row.startedAt)}</span> },
     {
       id: "activity",
       header: "Última atividade",
+      icon: CalendarSync,
       cell: (row) => (
         <span className="sessions__activity">
           {isNow(row.lastActivityAt) && <span className="sessions__online" aria-hidden="true" />}

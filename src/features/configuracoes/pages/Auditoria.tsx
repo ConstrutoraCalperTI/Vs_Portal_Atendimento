@@ -1,4 +1,4 @@
-import { Download, FileSearch, Search } from "lucide-react";
+import { Activity, AlignLeft, CalendarClock, Download, FileSearch, Inbox, LayoutGrid, Search, User } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -120,18 +120,20 @@ export function Auditoria() {
     {
       id: "at",
       header: "Data e hora",
+      icon: CalendarClock,
       width: "150px",
       cell: (row) => <span className="audit__nowrap">{formatDateTime(row.at)}</span>,
     },
-    { id: "actor", header: "Usuário", cell: (row) => <span className="audit__strong">{row.actorName}</span> },
-    { id: "module", header: "Módulo", cell: (row) => AUDIT_MODULE_LABELS[row.module] },
+    { id: "actor", header: "Usuário", icon: User, cell: (row) => <span className="audit__strong">{row.actorName}</span> },
+    { id: "module", header: "Módulo", icon: LayoutGrid, cell: (row) => AUDIT_MODULE_LABELS[row.module] },
     {
       id: "action",
       header: "Ação",
+      icon: Activity,
       cell: (row) => <StatusBadge variant={ACTION_VARIANTS[row.action]}>{AUDIT_ACTION_LABELS[row.action]}</StatusBadge>,
     },
-    { id: "description", header: "Descrição", cell: (row) => row.description },
-    { id: "origin", header: "Origem", cell: (row) => <span className="audit__muted">{row.origin}</span> },
+    { id: "description", header: "Descrição", icon: AlignLeft, cell: (row) => row.description },
+    { id: "origin", header: "Origem", icon: Inbox, cell: (row) => <span className="audit__muted">{row.origin}</span> },
   ];
 
   return (

@@ -1,5 +1,6 @@
-import { Braces, Download, FileSpreadsheet, FileText, Globe, Printer } from "lucide-react";
+import { AlignLeft, Braces, Download, FileDown, FileSpreadsheet, FileText, Globe, Printer } from "lucide-react";
 import { useState } from "react";
+import { ThLabel } from "../../../components/ds/ThLabel";
 import { APP_SCHEMA } from "../../../config/app";
 import { SUPABASE_URL } from "../../../lib/supabase";
 import { Secao } from "../componentes";
@@ -53,9 +54,9 @@ export function Exportacoes() {
           <table className="ger-tabela">
             <thead>
               <tr>
-                <th>Relatório</th>
-                <th>Conteúdo</th>
-                <th>Baixar</th>
+                <th><ThLabel icon={FileText}>Relatório</ThLabel></th>
+                <th><ThLabel icon={AlignLeft}>Conteúdo</ThLabel></th>
+                <th><ThLabel icon={FileDown}>Baixar</ThLabel></th>
               </tr>
             </thead>
             <tbody>

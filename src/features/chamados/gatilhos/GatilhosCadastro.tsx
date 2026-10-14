@@ -1,8 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, History, Plus, Trash2, Zap } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, ChartColumn, CircleCheckBig, CircleDot, Clock, History, Plus, Tag, Ticket, Trash2, Zap } from "lucide-react";
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { getMenuItem } from "../../../config/menuRegistry";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
@@ -163,11 +164,11 @@ function Lista({ gatilhos, dados, onAbrir, onNovo, onExecucoes }: { gatilhos: Ga
           <thead>
             <tr>
               <th aria-label="Ordem" />
-              <th>Nome</th>
-              <th>Quando dispara</th>
-              <th>Faz</th>
-              <th>Últimos 7 dias</th>
-              <th>Situação</th>
+              <th><ThLabel icon={Tag}>Nome</ThLabel></th>
+              <th><ThLabel icon={Zap}>Quando dispara</ThLabel></th>
+              <th><ThLabel icon={Activity}>Faz</ThLabel></th>
+              <th><ThLabel icon={ChartColumn}>Últimos 7 dias</ThLabel></th>
+              <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
             </tr>
           </thead>
           <tbody>
@@ -814,11 +815,11 @@ function Execucoes({ gatilhos, inicial, onVoltar }: { gatilhos: Gatilho[]; inici
         <table className="cad-table gt-tabela gt-exec">
           <thead>
             <tr>
-              <th>Quando</th>
-              <th>Gatilho</th>
-              <th>Ticket</th>
-              <th>Disparo</th>
-              <th>Resultado</th>
+              <th><ThLabel icon={Clock}>Quando</ThLabel></th>
+              <th><ThLabel icon={Zap}>Gatilho</ThLabel></th>
+              <th><ThLabel icon={Ticket}>Ticket</ThLabel></th>
+              <th><ThLabel icon={Activity}>Disparo</ThLabel></th>
+              <th><ThLabel icon={CircleCheckBig}>Resultado</ThLabel></th>
             </tr>
           </thead>
           <tbody>

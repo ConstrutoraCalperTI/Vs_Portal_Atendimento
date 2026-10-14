@@ -1,9 +1,10 @@
 import * as Switch from "@radix-ui/react-switch";
-import { AppWindow, Info, Plus, RefreshCw, Search, ShieldCheck, TriangleAlert, UserPlus } from "lucide-react";
+import { AppWindow, Info, KeyRound, LogIn, Plus, RefreshCw, Search, ShieldCheck, TriangleAlert, User, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../../components/Breadcrumb";
 import { PageSkeleton } from "../../../components/PageSkeleton";
+import { ThLabel } from "../../../components/ds";
 import { getMenuItem } from "../../../config/menuRegistry";
 import { formatRelative } from "../../../utils/dates";
 import { configBreadcrumb } from "../components/configBreadcrumb";
@@ -460,10 +461,10 @@ function AppDetail({ app }: { app: AppAccessApp }) {
                       }
                     />
                   </th>
-                  <th>Usuário</th>
-                  <th>Último login na Calper</th>
-                  <th>Cadastro no aplicativo</th>
-                  <th>Pode entrar</th>
+                  <th><ThLabel icon={User}>Usuário</ThLabel></th>
+                  <th><ThLabel icon={LogIn}>Último login na Calper</ThLabel></th>
+                  <th><ThLabel icon={AppWindow}>Cadastro no aplicativo</ThLabel></th>
+                  <th><ThLabel icon={KeyRound}>Pode entrar</ThLabel></th>
                 </tr>
               </thead>
               <tbody>

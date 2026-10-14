@@ -1,13 +1,17 @@
 .app-shell {
+  /* A janela não rola: só o .app-main (e o menu) rolam por dentro. */
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 .app-body {
   flex: 1;
   display: flex;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* Link de acessibilidade: aparece só quando recebe foco pelo teclado. */
@@ -41,6 +45,9 @@
 }
 
 .app-main {
+  /* Âncora dos elementos absolutos da página (ex.: .visually-hidden). Sem ela, eles se
+     posicionavam pelo documento e o esticavam, deixando uma faixa em branco ao rolar. */
+  position: relative;
   flex: 1;
   min-width: 0;
   overflow-y: auto;

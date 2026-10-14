@@ -1,7 +1,8 @@
 import * as Switch from "@radix-ui/react-switch";
-import { Building2, Info, Plus, X } from "lucide-react";
+import { Building2, CircleDot, Info, Phone, Plus, UserCheck, Users, X } from "lucide-react";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
@@ -45,11 +46,11 @@ export function Setores() {
             <table className="at-tab">
               <thead>
                 <tr>
-                  <th>Setor</th>
-                  <th>Números WhatsApp</th>
-                  <th>Gestão</th>
-                  <th className="n">Atendentes</th>
-                  <th>Situação</th>
+                  <th><ThLabel icon={Building2}>Setor</ThLabel></th>
+                  <th><ThLabel icon={Phone}>Números WhatsApp</ThLabel></th>
+                  <th><ThLabel icon={UserCheck}>Gestão</ThLabel></th>
+                  <th className="n"><ThLabel icon={Users}>Atendentes</ThLabel></th>
+                  <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
                 </tr>
               </thead>
               <tbody>

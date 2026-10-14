@@ -1,7 +1,8 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { RefreshCw, UserCheck, X } from "lucide-react";
+import { ArrowUpDown, Building2, CalendarPlus, CircleCheckBig, Clock, Hash, Hourglass, Inbox, ListOrdered, MessageSquare, Phone, RefreshCw, Ticket, User, UserCheck, Wifi, X } from "lucide-react";
 import { Fragment, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import "../../configuracoes/components/Sheet.css";
 import { useAcaoConversa, useConversas, useMonitorAtendentes, useMonitorConversas, useMonitorIndicadores } from "../hooks/useAtendimento";
@@ -132,12 +133,12 @@ export function Monitor({ ctx, setorId, onAbrir }: { ctx: Contexto; setorId: num
             <table className="at-tab">
               <thead>
                 <tr>
-                  <th>Atendente</th>
-                  <th className="c">Online</th>
-                  <th className="c">Disponível</th>
-                  <th className="n">Em atendimento</th>
-                  <th className="n">Atendidas hoje</th>
-                  <th className="n">Tempo médio</th>
+                  <th><ThLabel icon={UserCheck}>Atendente</ThLabel></th>
+                  <th className="c"><ThLabel icon={Wifi}>Online</ThLabel></th>
+                  <th className="c"><ThLabel icon={CircleCheckBig}>Disponível</ThLabel></th>
+                  <th className="n"><ThLabel icon={MessageSquare}>Em atendimento</ThLabel></th>
+                  <th className="n"><ThLabel icon={Hash}>Atendidas hoje</ThLabel></th>
+                  <th className="n"><ThLabel icon={Clock}>Tempo médio</ThLabel></th>
                 </tr>
               </thead>
               <tbody>
@@ -186,15 +187,15 @@ export function Monitor({ ctx, setorId, onAbrir }: { ctx: Contexto; setorId: num
           <table className="at-tab">
             <thead>
               <tr>
-                <th>Posição</th>
-                <th>Ticket</th>
-                {variosSetores && <th>Setor</th>}
-                <th>Cliente</th>
-                <th>Telefone</th>
-                <th>Número</th>
-                <th>Última mensagem</th>
-                <th>Entrou na fila</th>
-                <th>Tempo de espera</th>
+                <th><ThLabel icon={ArrowUpDown}>Posição</ThLabel></th>
+                <th><ThLabel icon={Ticket}>Ticket</ThLabel></th>
+                {variosSetores && <th><ThLabel icon={Building2}>Setor</ThLabel></th>}
+                <th><ThLabel icon={User}>Cliente</ThLabel></th>
+                <th><ThLabel icon={Phone}>Telefone</ThLabel></th>
+                <th><ThLabel icon={Inbox}>Número</ThLabel></th>
+                <th><ThLabel icon={MessageSquare}>Última mensagem</ThLabel></th>
+                <th><ThLabel icon={ListOrdered}>Entrou na fila</ThLabel></th>
+                <th><ThLabel icon={Hourglass}>Tempo de espera</ThLabel></th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -235,14 +236,14 @@ export function Monitor({ ctx, setorId, onAbrir }: { ctx: Contexto; setorId: num
           <table className="at-tab">
             <thead>
               <tr>
-                <th>Ticket</th>
-                {variosSetores && <th>Setor</th>}
-                <th>Cliente</th>
-                <th>Telefone</th>
-                <th>Atendente</th>
-                <th>Início</th>
-                <th>Duração</th>
-                <th>Cliente esperando há</th>
+                <th><ThLabel icon={Ticket}>Ticket</ThLabel></th>
+                {variosSetores && <th><ThLabel icon={Building2}>Setor</ThLabel></th>}
+                <th><ThLabel icon={User}>Cliente</ThLabel></th>
+                <th><ThLabel icon={Phone}>Telefone</ThLabel></th>
+                <th><ThLabel icon={UserCheck}>Atendente</ThLabel></th>
+                <th><ThLabel icon={CalendarPlus}>Início</ThLabel></th>
+                <th><ThLabel icon={Clock}>Duração</ThLabel></th>
+                <th><ThLabel icon={Hourglass}>Cliente esperando há</ThLabel></th>
                 <th>Ações</th>
               </tr>
             </thead>

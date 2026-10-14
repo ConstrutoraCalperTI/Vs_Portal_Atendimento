@@ -1,5 +1,7 @@
+import { Inbox, Ticket, Timer, UserCheck } from "lucide-react";
 import { Pill } from "./Pill";
 import { slaLabel, slaTone } from "./sla";
+import { ThLabel } from "./ThLabel";
 
 export interface QueueTableRow {
   id: number;
@@ -27,10 +29,10 @@ export function QueueTable({ rows, onOpen, emptyMessage = "Nenhum ticket encontr
       <table className="ds-table">
         <thead>
           <tr>
-            <th scope="col">TICKET / CATEGORIA</th>
-            <th scope="col">ORIGEM</th>
-            <th scope="col">RESPONSÁVEL</th>
-            <th scope="col">SLA DE SOLUÇÃO</th>
+            <th scope="col"><ThLabel icon={Ticket}>TICKET / CATEGORIA</ThLabel></th>
+            <th scope="col"><ThLabel icon={Inbox}>ORIGEM</ThLabel></th>
+            <th scope="col"><ThLabel icon={UserCheck}>RESPONSÁVEL</ThLabel></th>
+            <th scope="col"><ThLabel icon={Timer}>SLA DE SOLUÇÃO</ThLabel></th>
           </tr>
         </thead>
         <tbody>

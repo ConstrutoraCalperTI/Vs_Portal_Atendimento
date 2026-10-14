@@ -1,8 +1,9 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { CheckCircle2, CircleCheck, CircleX, Mail, MoreVertical, Plus, RefreshCw, XCircle, Info, KeyRound } from "lucide-react";
+import { Building2, CheckCircle2, CircleCheck, CircleDot, CircleX, Clock, Hash, Info, KeyRound, Mail, MoreVertical, Plus, RefreshCw, Server, Tag, ToggleRight, XCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { useAccess } from "../../configuracoes/access/useAccess";
 import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
@@ -197,14 +198,14 @@ function Lista({ contas, supervisor, onAbrir }: { contas: ContaEmail[]; supervis
                     <input type="checkbox" aria-label="Marcar todas" checked={todasMarcadas} onChange={() => setMarcadas(todasMarcadas ? new Set() : new Set(visiveis.map((c) => c.id)))} />
                   )}
                 </th>
-                <th>Nome</th>
-                <th>Endereço ↑</th>
-                <th>Setor</th>
-                <th>Provedor</th>
-                <th>Status de conexão</th>
-                <th className="n">E-mails na fila</th>
-                <th>Última leitura</th>
-                <th className="c">Habilitado</th>
+                <th><ThLabel icon={Tag}>Nome</ThLabel></th>
+                <th><ThLabel icon={Mail}>Endereço ↑</ThLabel></th>
+                <th><ThLabel icon={Building2}>Setor</ThLabel></th>
+                <th><ThLabel icon={Server}>Provedor</ThLabel></th>
+                <th><ThLabel icon={CircleDot}>Status de conexão</ThLabel></th>
+                <th className="n"><ThLabel icon={Hash}>E-mails na fila</ThLabel></th>
+                <th><ThLabel icon={Clock}>Última leitura</ThLabel></th>
+                <th className="c"><ThLabel icon={ToggleRight}>Habilitado</ThLabel></th>
               </tr>
             </thead>
             <tbody>

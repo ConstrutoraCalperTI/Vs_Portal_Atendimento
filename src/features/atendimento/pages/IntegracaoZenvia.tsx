@@ -1,7 +1,8 @@
 import * as Switch from "@radix-ui/react-switch";
-import { CheckCircle2, CircleAlert, KeyRound, Link2, RefreshCw, Send } from "lucide-react";
+import { Building2, CheckCircle2, CircleAlert, KeyRound, Link2, Phone, RefreshCw, Send } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { ThLabel } from "../../../components/ds";
 import { PageSkeleton } from "../../../components/PageSkeleton";
 import { formatDateTime } from "../../../utils/dates";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
@@ -129,9 +130,9 @@ function Tela({ c }: { c: ConexaoZenvia }) {
           <table className="at-tab">
             <thead>
               <tr>
-                <th>Número</th>
-                <th>Setor</th>
-                <th>Na conta do token?</th>
+                <th><ThLabel icon={Phone}>Número</ThLabel></th>
+                <th><ThLabel icon={Building2}>Setor</ThLabel></th>
+                <th><ThLabel icon={KeyRound}>Na conta do token?</ThLabel></th>
               </tr>
             </thead>
             <tbody>
