@@ -1,19 +1,26 @@
 /* CalperDESK: visual do app "Seu Imóvel" do Superapp (styles.css + components/portal/*), em CSS puro.
    Mockup aprovado: docs/mockups/calperdesk.html. Tudo debaixo de .cd para não vazar no portal. */
 .cd {
-  --cd-1: #1a1f3a;
-  --cd-2: #131831;
-  --cd-3: #0a0e1f;
+  /* Paleta do design system Calper (src/index.css): grafite da sidebar (--sidebar/--sidebar-hover) no fundo e
+     vermelho Calper (--brand) no destaque. Os tokens "ouro" mantêm o nome antigo, mas são o destaque vermelho:
+     --cd-ouro é um vermelho clareado para texto sobre o grafite (6:1); botões usam --cd-acao (#d6293b, texto branco). */
+  --cd-1: #232429;
+  --cd-2: #17181c;
+  --cd-3: #0f1013;
   --cd-vidro: rgba(255, 255, 255, 0.05);
   --cd-vidro-h: rgba(255, 255, 255, 0.1);
   --cd-borda: rgba(255, 255, 255, 0.1);
   --cd-txt: rgba(255, 255, 255, 0.92);
   --cd-txt-2: rgba(255, 255, 255, 0.72);
   --cd-txt-3: rgba(255, 255, 255, 0.58);
-  --cd-ouro: #fcd34d;
-  --cd-ouro-b: rgba(252, 211, 77, 0.3);
-  --cd-ouro-bg1: rgba(252, 211, 77, 0.12);
-  --cd-ouro-bg2: rgba(245, 158, 11, 0.05);
+  --cd-ouro: #f26b78;
+  --cd-ouro-b: rgba(214, 41, 59, 0.55);
+  --cd-ouro-bg1: rgba(214, 41, 59, 0.16);
+  --cd-ouro-bg2: rgba(214, 41, 59, 0.05);
+  --cd-acao: #d6293b;
+  --cd-acao-h: #a91d2c;
+  --cd-acao-txt: #fff;
+  --cd-acao-sombra: 0 10px 24px -10px rgba(214, 41, 59, 0.7);
   --cd-ok: #34d399;
   --cd-info: #7dd3fc;
   --cd-aviso: #fbbf24;
@@ -49,8 +56,8 @@
 .cd-hdr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 22px 20px 14px; }
 .cd-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; min-width: 0; }
 .cd-logo__icone { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; color: var(--cd-ouro);
-  border: 1px solid var(--cd-ouro-b); background: linear-gradient(135deg, rgba(252, 211, 77, 0.25), rgba(245, 158, 11, 0.1));
-  box-shadow: 0 0 20px -8px rgba(252, 211, 77, 0.4); }
+  border: 1px solid var(--cd-ouro-b); background: linear-gradient(135deg, rgba(214, 41, 59, 0.28), rgba(214, 41, 59, 0.1));
+  box-shadow: 0 0 20px -8px rgba(214, 41, 59, 0.45); }
 .cd-logo__nome { font-size: 20px; letter-spacing: -0.02em; white-space: nowrap; }
 .cd-logo__nome span { font-weight: 300; color: rgba(255, 255, 255, 0.85); }
 .cd-logo__nome b { font-weight: 800; }
@@ -67,8 +74,8 @@
 /* Cartão de identificação */
 .cd-ident { margin: 0 20px 16px; border-radius: 16px; border: 1px solid var(--cd-borda); background: var(--cd-vidro); padding: 12px 14px;
   display: flex; gap: 12px; align-items: center; }
-.cd-av { width: 44px; height: 44px; flex: none; border-radius: 99px; display: grid; place-items: center; font-weight: 700; color: #3b2600;
-  background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+.cd-av { width: 44px; height: 44px; flex: none; border-radius: 99px; display: grid; place-items: center; font-weight: 700; color: var(--cd-acao-txt);
+  background: var(--cd-acao); }
 .cd-ident b { display: block; font-size: 14px; }
 .cd-ident > div > span { display: block; font-size: 12px; color: var(--cd-txt-2); overflow-wrap: anywhere; }
 .cd-ident em { display: block; font-style: normal; font-size: 10px; color: var(--cd-ok); letter-spacing: 0.04em; margin-top: 2px; }
@@ -87,11 +94,12 @@
 
 /* Botões */
 .cd-btn-abrir { margin: 0 20px 18px; width: calc(100% - 40px); height: 58px; border: 0; border-radius: 16px;
-  background: linear-gradient(135deg, #fcd34d, #f59e0b); color: #3b2600; font-weight: 800; font-size: 16px; letter-spacing: 0.02em;
-  display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 12px 28px -12px rgba(245, 158, 11, 0.8); text-decoration: none; }
-.cd-btn-ouro { width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: linear-gradient(135deg, #fcd34d, #f59e0b); color: #3b2600;
-  font-weight: 700; font-size: 15px; box-shadow: 0 10px 24px -10px rgba(245, 158, 11, 0.7); display: inline-flex; align-items: center;
+  background: var(--cd-acao); color: var(--cd-acao-txt); font-weight: 800; font-size: 16px; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 12px 28px -12px rgba(214, 41, 59, 0.8); text-decoration: none; }
+.cd-btn-ouro { width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--cd-acao); color: var(--cd-acao-txt);
+  font-weight: 700; font-size: 15px; box-shadow: var(--cd-acao-sombra); display: inline-flex; align-items: center;
   justify-content: center; gap: 8px; text-decoration: none; padding: 0 16px; }
+.cd-btn-abrir:hover, .cd-btn-ouro:hover:not(:disabled) { background: var(--cd-acao-h); }
 .cd-btn-vidro { width: 100%; min-height: 44px; border-radius: 14px; border: 1px solid var(--cd-borda); background: var(--cd-vidro); color: #fff;
   font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 0 14px; }
 .cd-btn-vidro:hover { background: var(--cd-vidro-h); }
@@ -99,7 +107,7 @@
 
 /* Carrossel de avisos (HeroCarousel) */
 .cd-hero { margin: 0 20px 18px; aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; position: relative; border: 1px solid var(--cd-borda);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); background: radial-gradient(120% 90% at 80% 10%, #3b4a8a 0%, #1f2752 45%, #11152c 100%); }
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); background: radial-gradient(120% 90% at 80% 10%, #4a2a30 0%, #26272c 45%, #121316 100%); }
 .cd-hero--manutencao { background: radial-gradient(120% 90% at 80% 10%, #8a6a3b 0%, #3f2f1f 45%, #18120b 100%); }
 .cd-hero--alerta { background: radial-gradient(120% 90% at 80% 10%, #8a3b4a 0%, #521f2b 45%, #2c1116 100%); }
 .cd-hero--resolvido { background: radial-gradient(120% 90% at 80% 10%, #2f7a5c 0%, #1b4636 45%, #0d241b 100%); }
@@ -140,7 +148,7 @@
 .cd-campo { width: 100%; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.24); background: rgba(255, 255, 255, 0.06);
   padding: 11px 12px; color: #fff; font-size: 15px; }
 .cd-campo::placeholder { color: rgba(255, 255, 255, 0.45); }
-.cd-campo:focus { border-color: var(--cd-ouro-b); outline: none; box-shadow: 0 0 0 3px rgba(252, 211, 77, 0.15); }
+.cd-campo:focus { border-color: var(--cd-ouro-b); outline: none; box-shadow: 0 0 0 3px rgba(214, 41, 59, 0.22); }
 .cd-campo[aria-invalid="true"] { border-color: var(--cd-perigo); }
 textarea.cd-campo { min-height: 110px; resize: vertical; }
 .cd-erro { display: block; color: var(--cd-perigo); font-size: 12px; margin-top: 4px; }
@@ -155,7 +163,7 @@ textarea.cd-campo { min-height: 110px; resize: vertical; }
 .cd-ro b { font-weight: 500; text-align: right; overflow-wrap: anywhere; }
 
 /* Menu de tipo de serviço */
-.cd-menu { border-radius: 12px; border: 1px solid var(--cd-ouro-b); background: rgba(10, 14, 31, 0.6); overflow: hidden; }
+.cd-menu { border-radius: 12px; border: 1px solid var(--cd-ouro-b); background: rgba(15, 16, 19, 0.6); overflow: hidden; }
 .cd-menu__trilha { padding: 10px 12px; font-size: 12px; color: var(--cd-ouro); border-bottom: 1px solid var(--cd-borda); display: flex; justify-content: space-between; gap: 8px; }
 .cd-menu__op { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px; border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06); background: none; text-align: left; font-size: 15px; color: #fff; }
@@ -179,7 +187,7 @@ textarea.cd-campo { min-height: 110px; resize: vertical; }
 .cd-anexar label:focus-within { outline: 2px solid var(--cd-ouro); outline-offset: 2px; }
 .cd-anexar input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .cd-anexos { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-.cd-mini { position: relative; width: 64px; height: 64px; border-radius: 10px; background: linear-gradient(135deg, #334155, #1e293b);
+.cd-mini { position: relative; width: 64px; height: 64px; border-radius: 10px; background: linear-gradient(135deg, #3a3a42, #232429);
   display: grid; place-items: center; font-size: 11px; border: 1px solid var(--cd-borda); overflow: hidden; text-align: center; padding: 2px; }
 .cd-mini img { width: 100%; height: 100%; object-fit: cover; }
 .cd-mini__x { position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; border-radius: 99px; border: 0; background: var(--cd-vermelho);
@@ -210,7 +218,7 @@ a.cd-card:hover, button.cd-card:hover { background: var(--cd-vidro-h); }
 .cd-tl { padding: 0 20px 12px; display: grid; gap: 10px; }
 .cd-msg { max-width: 85%; border-radius: 14px; padding: 9px 12px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
 .cd-msg small { display: block; font-size: 10px; color: var(--cd-txt-3); margin-top: 4px; white-space: normal; }
-.cd-msg--eu { justify-self: end; background: rgba(252, 211, 77, 0.14); border: 1px solid var(--cd-ouro-b); }
+.cd-msg--eu { justify-self: end; background: var(--cd-ouro-bg1); border: 1px solid var(--cd-ouro-b); }
 .cd-msg--ti { justify-self: start; background: var(--cd-vidro); border: 1px solid var(--cd-borda); }
 .cd-msg--ti b { font-size: 11px; color: var(--cd-info); display: block; margin-bottom: 2px; }
 .cd-msg .cd-anexos { margin-top: 6px; }
@@ -227,7 +235,7 @@ a.cd-card:hover, button.cd-card:hover { background: var(--cd-vidro-h); }
 .cd-responder textarea.cd-campo { min-height: 46px; max-height: 140px; border-radius: 22px; resize: none; padding: 12px 14px; }
 .cd-redondo { width: 46px; height: 46px; flex: none; border-radius: 99px; border: 1px solid var(--cd-borda); background: var(--cd-vidro);
   display: grid; place-items: center; color: #fff; cursor: pointer; }
-.cd-redondo--ouro { background: linear-gradient(135deg, #fcd34d, #f59e0b); border: 0; color: #3b2600; }
+.cd-redondo--ouro { background: var(--cd-acao); border: 0; color: var(--cd-acao-txt); }
 .cd-redondo input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* Confirmação */
@@ -262,14 +270,14 @@ button.cd-tile { font: inherit; cursor: pointer; }
 .cd-tile--off:hover { opacity: 0.7; }
 .cd-tile--feito { border-color: rgba(52, 211, 153, 0.35); }
 .cd-tile > .cd-tile__emoji { font-size: 28px; line-height: 1; letter-spacing: 0; }
-.cd-tile--ouro > small { color: rgba(252, 211, 77, 0.8); }
+.cd-tile--ouro > small { color: var(--cd-ouro); }
 
-.cd-hero--foto { background: #11152c; }
+.cd-hero--foto { background: var(--cd-2); }
 .cd-hero__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cd-hero--foto .cd-hero__txt p { -webkit-line-clamp: 1; line-clamp: 1; }
 
 /* Folha de escolha do setor (sobe de baixo, como no celular). */
-.cd-folha { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; background: rgba(5, 8, 20, 0.6); backdrop-filter: blur(2px); }
+.cd-folha { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; background: rgba(8, 8, 10, 0.6); backdrop-filter: blur(2px); }
 .cd-folha__caixa { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; padding: 10px 20px 24px; border-radius: 22px 22px 0 0;
   background: linear-gradient(160deg, var(--cd-1) 0%, var(--cd-2) 60%, var(--cd-3) 100%); border: 1px solid var(--cd-borda); border-bottom: 0;
   animation: cd-sobe 0.2s ease-out; }
@@ -284,7 +292,7 @@ button.cd-tile { font: inherit; cursor: pointer; }
 .cd-emps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 20px 24px; }
 .cd-emp { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 1px solid var(--cd-borda); background: var(--cd-vidro); color: #fff; text-decoration: none; }
 .cd-emp:hover { border-color: var(--cd-ouro-b); }
-.cd-emp__foto { position: relative; display: block; aspect-ratio: 4 / 3; background: #11152c; }
+.cd-emp__foto { position: relative; display: block; aspect-ratio: 4 / 3; background: var(--cd-2); }
 .cd-emp__sem { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; }
 .cd-emp__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cd-emp__txt { padding: 8px 10px 10px; display: grid; gap: 2px; }
@@ -308,17 +316,12 @@ button.cd-tile { font: inherit; cursor: pointer; }
 }
 
 /* ---------- Modo Técnico (mockup docs/mockups/calperdesk-tecnico.html, aprovado em 13/10/2026) ---------- */
-/* Tema: o mesmo app, com verde-água no lugar do dourado e fundo azul-petróleo. */
-.cd--tec { --cd-1: #0f2e33; --cd-2: #0b2226; --cd-3: #061417; --cd-ouro: #5eead4; --cd-ouro-b: rgba(94, 234, 212, 0.32);
-  --cd-ouro-bg1: rgba(94, 234, 212, 0.12); --cd-ouro-bg2: rgba(20, 184, 166, 0.05); }
-.cd--tec .cd-btn-ouro, .cd--tec .cd-redondo--ouro { background: linear-gradient(135deg, #5eead4, #14b8a6); color: #042f2e; box-shadow: 0 10px 24px -10px rgba(20, 184, 166, 0.7); }
-.cd--tec .cd-campo:focus { box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.18); }
+/* Tema: desde 14/10/2026 o Técnico usa a mesma paleta Calper do colaborador; o selo "Técnico" no cabeçalho marca o modo. */
 
 /* Login: Colaborador × Técnico */
 .cd-seg { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--cd-borda); margin: 0 0 16px; }
 .cd-seg button { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--cd-txt-2); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.cd-seg button[aria-selected="true"] { background: linear-gradient(135deg, #fcd34d, #f59e0b); color: #3b2600; }
-.cd--tec .cd-seg button[aria-selected="true"] { background: linear-gradient(135deg, #5eead4, #14b8a6); color: #042f2e; }
+.cd-seg button[aria-selected="true"] { background: var(--cd-acao); color: var(--cd-acao-txt); }
 .cd-login__tec { border-radius: 12px; border: 1px solid var(--cd-ouro-b); background: var(--cd-ouro-bg1); padding: 10px 12px; font-size: 13px; margin: 0 0 12px; }
 
 .cd-selo { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 11px; border-radius: 99px; font-size: 11px; font-weight: 700;
@@ -356,7 +359,7 @@ button.cd-tile { font: inherit; cursor: pointer; }
 .cd-vencido { color: var(--cd-perigo); font-weight: 600; }
 .cd-tk__pe { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--cd-txt-3); }
 .cd-tk__pe b { color: var(--cd-txt); }
-.cd-btn-mini { min-height: 32px; padding: 0 12px; border-radius: 10px; border: 0; background: linear-gradient(135deg, #5eead4, #14b8a6); color: #042f2e;
+.cd-btn-mini { min-height: 32px; padding: 0 12px; border-radius: 10px; border: 0; background: var(--cd-acao); color: var(--cd-acao-txt);
   font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 
 /* Detalhe do técnico */

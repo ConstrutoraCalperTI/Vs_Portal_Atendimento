@@ -222,7 +222,7 @@ function TecLista({ onColaborador }: { onColaborador: () => void }) {
   const quadros: { q: Quadro; rotulo: string; cor: string }[] = [
     { q: "todos", rotulo: "Todos abertos", cor: "#94a3b8" },
     { q: "sem", rotulo: "Sem atribuição", cor: "#fb923c" },
-    { q: "meus", rotulo: "Atribuídos a mim", cor: "#5eead4" },
+    { q: "meus", rotulo: "Atribuídos a mim", cor: "#f26b78" },
     { q: "concluidos", rotulo: "Concluídos (30 dias)", cor: "#34d399" },
   ];
   const rapidos: { r: Rapido; rotulo: string }[] = [
