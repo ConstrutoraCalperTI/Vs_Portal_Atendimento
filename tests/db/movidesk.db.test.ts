@@ -251,3 +251,21 @@ describe("anexos", () => {
     expect(await codigoErro(asUser(db.admin, claims(operador), (c) => c.query("select portal_atendimento.md_ticket_anexos(300)")))).toBe("FORBIDDEN");
   });
 });
+describe("safeupdate do PostgREST", () => {
+  // O papel authenticator carrega pg-safeupdate: UPDATE/DELETE sem WHERE é recusado pela API (a SQL do painel passa).
+  it("nenhuma função md_* faz UPDATE ou DELETE sem WHERE", async () => {
+    const { rows } = await db.admin.query(
+      "select p.proname, p.prosrc from pg_proc p where p.pronamespace = 'portal_atendimento'::regnamespace and p.proname like 'md\\_%'",
+    );
+    const semWhere: string[] = [];
+    for (const r of rows as { proname: string; prosrc: string }[]) {
+      const corpo = r.prosrc.replace(/--[^\n]*/g, "");
+      for (const comando of corpo.split(";")) {
+        if (/\b(update\s+portal_atendimento\.\w+\s+(as\s+\w+\s+)?set|delete\s+from\s+portal_atendimento\.\w+)\b/i.test(comando) && !/\bwhere\b/i.test(comando)) {
+          semWhere.push(`${r.proname}: ${comando.trim().slice(0, 60)}`);
+        }
+      }
+    }
+    expect(semWhere).toEqual([]);
+  });
+});
