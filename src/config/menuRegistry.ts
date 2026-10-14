@@ -49,6 +49,8 @@ interface MenuItemDefinition {
   /** Identificador da permissão que libera o item. */
   id: string;
   label: string;
+  /** Nome só na sidebar, quando diferente do `label` (título, caminho e matriz de permissões usam o `label`). */
+  menuLabel?: string;
   path: string;
   icon: LucideIcon;
   group: MenuGroup;
@@ -82,6 +84,8 @@ const definitions = [
   {
     id: "gestao_chamados",
     label: "Gestão de Chamados",
+    // Só a lateral mostra "Gestão de Tickets" (pedido do Wagner, 14/10/2026); título, caminho e textos seguem com o label.
+    menuLabel: "Gestão de Tickets",
     path: "/gestao-chamados",
     icon: Ticket,
     group: "principal",
