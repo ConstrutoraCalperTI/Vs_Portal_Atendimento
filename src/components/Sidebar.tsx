@@ -35,10 +35,12 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
         ) : (
           <ul>
             {mainItems.map((item) => {
+              // Nome na lateral: menuLabel quando houver (ex.: Gestão de Tickets), senão o label.
+              const nome = item.menuLabel ?? item.label;
               // Item com seções (ex.: Módulo exemplo) vira grupo; as seções liberadas são os subitens.
               const sections = routeChildrenOf(item.id).filter((section) => hasPermission(section.id));
               if (sections.length > 0) {
-                const group: NavGroupData = { id: item.id, label: item.label, icon: item.icon, rootPath: item.path, items: sections };
+                const group: NavGroupData = { id: item.id, label: nome, icon: item.icon, rootPath: item.path, items: sections };
                 return collapsed ? <NavFlyout key={item.id} group={group} /> : <NavGroup key={item.id} group={group} />;
               }
               return (
@@ -46,11 +48,11 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
                   <NavLink
                     to={item.path}
                     className={({ isActive }) => `sidebar__item${isActive ? " sidebar__item--active" : ""}`}
-                    title={collapsed ? item.label : undefined}
-                    aria-label={collapsed ? item.label : undefined}
+                    title={collapsed ? nome : undefined}
+                    aria-label={collapsed ? nome : undefined}
                   >
                     <item.icon size={18} aria-hidden="true" />
-                    {!collapsed && <span>{item.label}</span>}
+                    {!collapsed && <span>{nome}</span>}
                   </NavLink>
                 </li>
               );

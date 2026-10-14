@@ -1,5 +1,5 @@
 import { Cloud, HardDrive, LogOut, Menu, UserRound } from "lucide-react";
-import { APP_NAME, COMPANY_NAME } from "../config/app";
+import { APP_TOPBAR_NAME, COMPANY_NAME } from "../config/app";
 import { SinoAvisos } from "../features/chamados/gatilhos/SinoAvisos";
 import { DevUserSwitcher } from "../features/configuracoes/access/DevUserSwitcher";
 import { useAccess } from "../features/configuracoes/access/useAccess";
@@ -35,7 +35,7 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
 
         <div className="topbar__divider" aria-hidden="true" />
 
-        <span className="topbar__title">{APP_NAME.toUpperCase()}</span>
+        <span className="topbar__title">{APP_TOPBAR_NAME.toUpperCase()}</span>
       </div>
 
       <div className="topbar__right">

@@ -1,6 +1,8 @@
 /** Empresa e nome do sistema: cabeçalho da sidebar, topo, título da aba e login. */
 export const COMPANY_NAME = "Calper Construtora";
 export const APP_NAME = "Portal Atendimento";
+/** Nome no topo do portal (pedido do Wagner, 14/10/2026). Login, título da aba e mensagens seguem com APP_NAME. */
+export const APP_TOPBAR_NAME = "Portal de Tickets";
 
 /**
  * Schema do aplicativo no Supabase compartilhado da Calper. É também a chave dele na tela
