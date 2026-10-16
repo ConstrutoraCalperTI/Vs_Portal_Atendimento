@@ -24,6 +24,7 @@ import { ComPainel, useAtualizarTicket } from "../../dashboard/useDashboardData"
 import type { DashboardPayload } from "../../dashboard/types";
 import { ServiceError } from "../../configuracoes/services/types";
 import { useEmpreendimentos } from "../empreendimentos/hooks";
+import { A_IDENTIFICAR } from "../setorSolicitante";
 import { useListaExtras, useSalvarVisao, useStatusTickets, useVisoesDisponiveis } from "../hooks";
 import { rotuloStatus, type StatusTicket } from "../status/types";
 import { atendeCondicoes, colunaDoTicket, ordenarTickets } from "../visoes/avaliar";
@@ -511,6 +512,8 @@ function Celula({ coluna, t, x, campos, meuId, servicoNome }: { coluna: ColunaLi
       ) : (
         vazio
       );
+    case "setor_solicitante":
+      return x?.setor_solicitante ? <>{x.setor_solicitante}</> : <span className="ch-badge ch-badge--warning">{A_IDENTIFICAR}</span>;
   }
 }
 
@@ -551,6 +554,7 @@ function valorOrdem(coluna: ColunaLista, t: DashboardTicket, x: Extras, campos: 
     case "prazo_solucao": return data(x?.sla_solucao_ate);
     case "encerrado": return data(x?.encerrado_em ?? t.closed_at);
     case "empreendimento": return texto(x?.empreendimento);
+    case "setor_solicitante": return texto(x?.setor_solicitante);
   }
 }
 
@@ -592,6 +596,7 @@ function valoresFiltro(coluna: ColunaFiltro, t: DashboardTicket, x: Extras, camp
     case "prazo_solucao": return dia(x?.sla_solucao_ate);
     case "encerrado": return dia(x?.encerrado_em ?? t.closed_at);
     case "empreendimento": return txt(x?.empreendimento);
+    case "setor_solicitante": return [x?.setor_solicitante?.trim() || A_IDENTIFICAR];
   }
 }
 

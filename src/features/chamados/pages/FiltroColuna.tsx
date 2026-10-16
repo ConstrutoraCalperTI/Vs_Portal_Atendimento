@@ -2,6 +2,7 @@ import * as Popover from "@radix-ui/react-popover";
 import {
   AlarmClock,
   AtSign,
+  Building,
   Building2,
   CalendarCheck,
   CalendarPlus,
@@ -59,6 +60,7 @@ const ICONES: Record<ColunaPadrao, LucideIcon> = {
   prazo_solucao: CalendarCheck,
   encerrado: CircleCheckBig,
   empreendimento: HardHat,
+  setor_solicitante: Building,
 };
 
 export function iconeColuna(c: ColunaFiltro): LucideIcon {

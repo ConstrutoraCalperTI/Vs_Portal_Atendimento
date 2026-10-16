@@ -413,7 +413,7 @@ function FormConta({
                 <label className="field__label" htmlFor={`${ids}-setor`}>Setor (opcional)</label>
                 <select id={`${ids}-setor`} className="input" value={d.setorId ?? ""} onChange={(e) => muda("setorId", e.target.value ? Number(e.target.value) : null)}>
                   <option value="">Sem setor (vincular depois)</option>
-                  {setores.map((s) => (
+                  {setores.filter((s) => s.recebeChamados || s.id === d.setorId).map((s) => (
                     <option key={s.id} value={s.id}>{s.nome}</option>
                   ))}
                 </select>

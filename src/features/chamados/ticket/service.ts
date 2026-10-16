@@ -16,6 +16,7 @@ import { CADASTROS_INICIAIS, MACROS_INICIAIS } from "../cadastros/seed";
 import { gatilhoAtende, gatilhosDoEvento, type AutorGatilho, type ContextoGatilho } from "../gatilhos/motor";
 import { gatilhosMock, jaExecutou, notificarMock, proximoId, registrarExecucao } from "../gatilhos/store";
 import { ACOES, type Gatilho, type TipoDisparo } from "../gatilhos/types";
+import { nomeSetorMock, setorSolicitanteMock } from "../setorSolicitante";
 import { statusFields, STATUS_INICIAIS } from "../status/seed";
 import { CATEGORIAS_ENCERRADAS } from "../status/types";
 import type { NovaAcao, PatchTicket, Responsavel, SolucaoAnterior, TicketDetalhe } from "./types";
@@ -91,6 +92,8 @@ function construir(t: DashboardTicket): TicketDetalhe {
     origem: ORIGEM[t.origin] ?? "agente",
     recebidoEm: t.recebido_em,
     solicitante: { pessoaId: null, nome: t.requester, contato: `${t.requester.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, ".")}@calper.com.br`, departamento: null },
+    setorSolicitanteId: setorSolicitanteMock.get(t.id) ?? null,
+    setorSolicitante: nomeSetorMock(setorSolicitanteMock.get(t.id) ?? null),
     setorId: 1,
     equipeId: CAD.equipes.find((e) => e.nome === t.team)?.id ?? null,
     responsavelId: t.owner?.id ?? null,

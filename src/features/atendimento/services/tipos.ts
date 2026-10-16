@@ -50,6 +50,8 @@ export interface Setor extends RegrasSetor {
   id: number;
   nome: string;
   ativo: boolean;
+  /** Atende chamados (fila, serviços, CalperDESK). Desmarcado: só identifica o setor de quem pede. */
+  recebeChamados: boolean;
   /** Papel de quem está logado neste setor. */
   papel: Papel;
   numeros: NumeroSetor[];
@@ -75,6 +77,7 @@ export interface SetorSalvar {
   id?: number;
   nome: string;
   ativo: boolean;
+  recebeChamados: boolean;
   numeros: string[];
   gestores: string[];
 }

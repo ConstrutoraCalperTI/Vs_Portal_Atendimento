@@ -1,6 +1,6 @@
 # Plano — "Receber chamado" no setor + "Setor do solicitante" no ticket
 
-Status: **aguardando aprovação** · 16/10/2026
+Status: **aprovado e implementado** · 16/10/2026 (migration `20261016100000_portal_atendimento_setor_solicitante.sql`)
 
 ## 1. O pedido, em uma frase
 
@@ -59,35 +59,48 @@ E todo ticket passa a mostrar o campo **Setor** (do solicitante). Sem vínculo �
 ## 4. Fases (checklist binário)
 
 **F1 — Banco**
-- [ ] Migração `recebe_chamados` + backfill por uso
-- [ ] `at_pessoas.setor_id` + `ch_tickets.setor_solicitante_id` + índices
-- [ ] Trigger de preenchimento na criação do ticket + backfill
-- [ ] RPCs: setor salvar/contexto, seletores filtrados, trava de desmarcar, trocar setor no ticket, pessoa com setor
-- [ ] Aplicar no Supabase e conferir com consultas
+- [x] Migração `recebe_chamados` + carga (TI, CFTV, Administrativo, Financeiro)
+- [x] `at_pessoas.setor_id` + `ch_tickets.setor_solicitante_id` + índices
+- [x] Gatilho de preenchimento na criação do ticket (5 canais) + carga dos tickets existentes
+- [x] RPCs: `at_setor_salvar`/`at_contexto` com a flag; `ch_cadastros`, `at_equipes_setores`, `cd_admin_painel` filtrando; trava ao desmarcar; `ch_ticket_setor_solicitante_definir`; `at_pessoa_setor_definir`; `ch_setores_opcoes`
+- [x] Regra: setor que não recebe não aparece no CalperDESK (`cd_visivel`)
+- [x] Aplicado no Supabase e testado como usuário (transação desfeita)
 
 **F2 — Setores e números**
-- [ ] Coluna "Receber chamado" na tabela
-- [ ] Switch no formulário + mensagens de bloqueio
+- [x] Coluna "Receber chamado" na tabela
+- [x] Chave no formulário + mensagens de bloqueio
 
 **F3 — Ticket**
-- [ ] Campo "Setor" no ticket com "A identificar"
-- [ ] Coluna e filtro na lista de tickets
-- [ ] Campo "Setor" no cadastro de Pessoas
+- [x] Campo "Setor" no ticket com "A identificar" (troca atualiza a pessoa)
+- [x] Coluna "Setor do solicitante" na Lista (filtro da coluna inclui "A identificar")
+- [x] Campo "Setor" no cadastro de Pessoas
+- [x] Contas de e-mail e Serviços só oferecem setor que recebe
 
 **F4 — Carga da planilha**
-- [ ] De-para grupo → setor aprovado
-- [ ] Importação executada + relatório (vinculados / criados / sem setor / conflitos)
+- [x] Setores internos criados (sem receber): Obra, Obra - Arte Wave, Obra - Arte Jardim, Obra - Arte Design, Orçamento e Planejamento, Suprimentos, Incorporação, Jurídico, Projetos Executivos, CRC, Instalações, Presidência, RH, Alumínio, Esquadria, COP
+- [x] Nomes corrigidos: Compliance, RI - Relacionamento Com Investidor
+- [x] Importação: 250 e-mails → 244 pessoas novas, 233 com setor; 23 de 44 tickets já identificados
 
 **F5 — Validação**
-- [ ] Abrir ticket pelos 5 canais e conferir o Setor
-- [ ] `tsc` + build sem erro
+- [x] `npm run build` sem erro
+- [ ] Abrir um chamado real por canal (e-mail, WhatsApp, CalperDESK) e conferir o Setor — **validar em produção**
 
-## 5. Decisões que preciso de você
+## 5. Decisões do Wagner (16/10/2026)
 
-1. **Grupos da planilha sem setor** (OBRA, JURIDICO, SUPRIMENTOS, INCORPORAÇÃO, CRC, RH, PRESIDENCIA…):
-   a) criar como setores novos **só solicitantes** (recomendado), b) agrupar num setor existente, ou c) deixar "A identificar".
-2. **Grupos parecidos**: FISCAL → "Contabilidade / Fiscal"? ADMINISTRATIVO DE OBRA → "Administrativo" ou setor próprio? Arte Wave/Jardim/Design → "Engenharia"?
-3. **E-mail em dois grupos** (8 casos): usar o primeiro, ou listar para você decidir?
-4. **Backfill da flag**: confirma "marca só os setores já em uso como atendimento" (deve ficar TI e CFTV, e o que mais tiver serviço/ticket)?
-5. Quando o agente trocar o Setor no ticket, **atualiza também o cadastro da pessoa**? (Recomendo: pergunta na hora — "aplicar também ao cadastro?")
-6. Aproveito para corrigir os nomes **"Complience" → "Compliance"** e **"Relecionamento" → "Relacionamento"**?
+1. Grupos da planilha sem setor → criar como setores internos, sem receber chamado.
+2. FISCAL → "Contabilidade / Fiscal". Administrativo de obra → fica no setor de cada obra (setores "Obra - <nome>").
+3. Conflitos da planilha → listados para decisão (abaixo).
+4. Recebem chamado: TI, CFTV, Administrativo e Financeiro.
+5. Trocar o setor no ticket atualiza também o cadastro da pessoa.
+6. Corrigir "Complience" e "Relecionamento".
+
+## 6. Pendências da planilha (ficaram "A identificar")
+
+| Caso | Pessoas |
+|---|---|
+| Administrativo de obra (falta o setor da obra) | Cesar Ferreira, Marcus Tasca, Diego Liberato Gonçalves, Marcos Genésio (Murano), Gilberto Leite, Domicio Melo (Nexus), Pablo Barenco, João Silva |
+| E-mail em dois grupos | arte.wave@ (Instalações / Obra) |
+| Sem grupo na planilha | Victor Motta, Ricardo Ranauro, Carlyton Silva, Isabelle Passeri, Roberto Quintanilha, Joao Coelho, Lucas Pinho (Arte Design?), Natalia Taiane |
+| Não importados (e-mail inválido) | Roberto P. Medeiros (sem domínio), Kailane Mello (sem e-mail), Gabriel Leitão, Matheus Almeida, Roney Souza, Pedro Souza (e-mails de teste) |
+| Não importados (caixa compartilhada) | suporte.ti@ listada em Contratos (Carla Oliveira, Blenda Medeiros) |
+| E-mail corrigido na carga | lucas.branco@ (tinha espaço), joao.santos@ (tinha "..") |

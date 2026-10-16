@@ -91,6 +91,8 @@ export interface PessoaDetalhe extends Omit<PessoaDados, "relacoes"> {
   ultimoContatoEm: string | null;
   criadoEm: string;
   criadoPor: string | null;
+  /** Setor da pessoa (migration 20261016100000): vai para o ticket na abertura. Nulo = "A identificar". */
+  setorId?: number | null;
   relacoes: Relacao[];
   anexos: Anexo[];
   historico: ItemHistorico[];

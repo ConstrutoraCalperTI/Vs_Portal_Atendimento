@@ -33,6 +33,7 @@ import { LinhaDoTempo } from "./LinhaDoTempo";
 const ConversaAoVivo = lazy(() => import("../../atendimento/pages/ConversaAoVivo").then((m) => ({ default: m.ConversaAoVivo })));
 import { ServicoBusca } from "./ServicoBusca";
 import { CampoEmpreendimento } from "../empreendimentos/CampoEmpreendimento";
+import { CampoSetorSolicitante } from "./CampoSetorSolicitante";
 import "./Ticket.css";
 
 // Gestão de Chamados › Tickets › #número (mockup aprovado docs/mockups/tela-ticket.html): classificar à
@@ -500,6 +501,7 @@ function PainelCampos({ d, cad, responsaveis, meuId, bloqueado, onAlterarPrazo, 
                 </div>
               </div>
             </div>
+            <CampoSetorSolicitante d={d} bloqueado={bloqueado} />
             <div className="field">
               <span className="field__label tk-req" id={servicoRotuloId}>
                 Serviço

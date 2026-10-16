@@ -15,6 +15,7 @@ import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { PageHeader } from "../../configuracoes/components/PageHeader";
 import { ServiceError } from "../../configuracoes/services/types";
+import { A_IDENTIFICAR, useDefinirSetorNaPessoa, useSetoresOpcoes } from "../../chamados/setorSolicitante";
 import "../../configuracoes/components/Sheet.css";
 import { useAnexarPessoa, useBuscaPessoas, useExcluirPessoa, useMesclarPessoa, usePessoa, usePessoas, useRemoverAnexo, useSalvarPessoa } from "../hooks/useCadastros";
 import {
@@ -228,6 +229,9 @@ function Ficha({ pessoa, onFechar, onAbrir }: { pessoa: PessoaDetalhe | null; on
   const [erro, setErro] = useState<{ campo?: string; mensagem: string } | null>(null);
   const [confirmarExcluir, setConfirmarExcluir] = useState(false);
   const [mesclar, setMesclar] = useState(false);
+  const [setorId, setSetorId] = useState<number | null>(pessoa?.setorId ?? null);
+  const setores = useSetoresOpcoes();
+  const definirSetor = useDefinirSetorNaPessoa();
   const muda = <K extends keyof PessoaDados>(k: K, v: PessoaDados[K]) => setD((x) => ({ ...x, [k]: v }));
   const empresa = d.tipo !== "pessoa";
 
@@ -241,6 +245,7 @@ function Ficha({ pessoa, onFechar, onAbrir }: { pessoa: PessoaDetalhe | null; on
         contatos: d.contatos.filter((c) => c.valor.trim()),
         relacoes: rel.map((r) => ({ pessoaId: r.pessoaId, cargo: r.cargo })),
       });
+      if (d.tipo === "pessoa" && setorId !== (pessoa?.setorId ?? null)) await definirSetor.mutateAsync({ pessoaId: id, setorId });
       return id;
     } catch (e) {
       if (e instanceof ServiceError) {
@@ -353,6 +358,19 @@ function Ficha({ pessoa, onFechar, onAbrir }: { pessoa: PessoaDetalhe | null; on
                     ))}
                   </select>
                 </div>
+                {!empresa && (
+                  <div className="field">
+                    <label className="field__label" htmlFor={`${ids}-setor`}>Setor</label>
+                    <select id={`${ids}-setor`} className="input" value={setorId ?? ""} disabled={setores.isPending} onChange={(e) => setSetorId(e.target.value ? Number(e.target.value) : null)}>
+                      <option value="">{A_IDENTIFICAR}</option>
+                      {(setores.data ?? []).map((s) => (
+                        <option key={s.id} value={s.id}>{s.nome}</option>
+                      ))}
+                    </select>
+                    {erroDe("setorId")}
+                    <span className="field__help">Vai para o campo Setor dos chamados que ela abrir. Os chamados abertos dela sem setor também recebem.</span>
+                  </div>
+                )}
                 {empresa && (
                   <div className="field">
                     <label className="field__label" htmlFor={`${ids}-dom`}>Domínios de e-mail da empresa</label>

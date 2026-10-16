@@ -44,6 +44,9 @@ export interface TicketDetalhe {
   origem: OrigemTicket;
   recebidoEm: string;
   solicitante: { pessoaId: number | null; nome: string; contato: string | null; departamento: string | null };
+  /** Setor de quem pediu (migration 20261016100000). Nulo = "A identificar". */
+  setorSolicitanteId: number | null;
+  setorSolicitante: string | null;
   setorId: number;
   equipeId: number | null;
   responsavelId: string | null;

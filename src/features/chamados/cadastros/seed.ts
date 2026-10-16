@@ -30,9 +30,9 @@ function servico(id: number, paiId: number | null, setorId: number, nivel: numbe
 
 export const CADASTROS_INICIAIS: Cadastros = {
   setores: [
-    { id: 1, nome: "TI", ativo: true, slaPadraoHoras: 8, equipePadraoId: null },
-    { id: 2, nome: "CFTV", ativo: true, slaPadraoHoras: 8, equipePadraoId: 8 },
-    { id: 3, nome: "Administrativo", ativo: true, slaPadraoHoras: 8, equipePadraoId: 9 },
+    { id: 1, nome: "TI", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: null },
+    { id: 2, nome: "CFTV", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: 8 },
+    { id: 3, nome: "Administrativo", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: 9 },
   ],
   equipes: [
     { id: 6, nome: "Sistemas", setorId: 1, ativa: true, descricaoIa: "Sistemas e software: ERP Sienge, portais internos, acessos e senhas de sistemas." },

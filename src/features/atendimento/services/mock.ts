@@ -33,6 +33,7 @@ interface SetorMock {
   id: number;
   nome: string;
   ativo: boolean;
+  recebeChamados: boolean;
   msgBoasVindas: string;
   msgForaHorario: string;
   msgEncerramento: string;
@@ -55,14 +56,14 @@ const regrasPadrao = { limiteSimultaneo: 5, atendenteSemRespostaMin: 30, encerra
 
 const setores: SetorMock[] = [
   {
-    id: 1, nome: "Financeiro", ativo: true, ...regrasPadrao,
+    id: 1, nome: "Financeiro", ativo: true, recebeChamados: true, ...regrasPadrao,
     msgBoasVindas: "Olá! Você falou com o Financeiro da Calper. Em instantes alguém da equipe vai te atender. 🙂",
     msgForaHorario: "Recebemos sua mensagem! O Financeiro atende de segunda a sexta, das 8h às 18h.",
     msgEncerramento: "Atendimento do Financeiro encerrado. Se precisar, é só mandar nova mensagem.",
     numeros: [{ id: 1, numero: "5521999990002", ativo: true, naConta: true }], gestores: ["u-marcos"], horarios: horarios("18:00", null),
   },
   {
-    id: 2, nome: "Relacionamento com o cliente", ativo: true, ...regrasPadrao,
+    id: 2, nome: "Relacionamento com o cliente", ativo: true, recebeChamados: true, ...regrasPadrao,
     msgBoasVindas: "Olá! Aqui é o Relacionamento com o Cliente Calper. Já já falamos com você. 🙂",
     msgForaHorario: "Recebemos sua mensagem! Atendemos de segunda a sexta, das 8h às 20h, e sábado das 9h às 13h.",
     msgEncerramento: "Atendimento encerrado. Obrigado por falar com a Calper!",
@@ -70,7 +71,7 @@ const setores: SetorMock[] = [
     gestores: ["u-paula"], horarios: horarios("20:00", ["09:00", "13:00"]),
   },
   {
-    id: 3, nome: "Assistência técnica", ativo: true, ...regrasPadrao,
+    id: 3, nome: "Assistência técnica", ativo: true, recebeChamados: true, ...regrasPadrao,
     msgBoasVindas: "Olá! Assistência técnica Calper. Conte o que aconteceu e, se puder, envie fotos. 🙂",
     msgForaHorario: "Recebemos sua mensagem! A Assistência técnica atende de segunda a sexta, das 8h às 17h.",
     msgEncerramento: "Chamado encerrado. Qualquer coisa, é só escrever de novo.",
@@ -226,7 +227,7 @@ export const mockContexto = {
         .filter((x): x is { s: SetorMock; papel: Papel } => x.papel !== null)
         .sort((a, b) => a.s.nome.localeCompare(b.s.nome, "pt-BR"))
         .map(({ s, papel }) => ({
-          id: s.id, nome: s.nome, ativo: s.ativo, papel,
+          id: s.id, nome: s.nome, ativo: s.ativo, recebeChamados: s.recebeChamados, papel,
           msgBoasVindas: s.msgBoasVindas, msgForaHorario: s.msgForaHorario, msgEncerramento: s.msgEncerramento,
           limiteSimultaneo: s.limiteSimultaneo, atendenteSemRespostaMin: s.atendenteSemRespostaMin, encerrarAposHoras: s.encerrarAposHoras,
           alertaFilaMin: s.alertaFilaMin, alertaClienteMin: s.alertaClienteMin,
@@ -267,10 +268,10 @@ export const mockContexto = {
     }
     let s = setores.find((x) => x.id === p.id);
     if (!s) {
-      s = { id: Math.max(0, ...setores.map((x) => x.id)) + 1, nome, ativo: p.ativo, ...regrasPadrao, msgBoasVindas: "Olá! Recebemos sua mensagem e em instantes alguém da nossa equipe vai te atender. 🙂", msgForaHorario: "Recebemos sua mensagem! Estamos fora do horário de atendimento. Assim que abrirmos, falamos com você.", msgEncerramento: "Atendimento encerrado. Se precisar de algo, é só mandar uma nova mensagem. Obrigado!", numeros: [], gestores: [], horarios: horarios("18:00", null) };
+      s = { id: Math.max(0, ...setores.map((x) => x.id)) + 1, nome, ativo: p.ativo, recebeChamados: p.recebeChamados, ...regrasPadrao, msgBoasVindas: "Olá! Recebemos sua mensagem e em instantes alguém da nossa equipe vai te atender. 🙂", msgForaHorario: "Recebemos sua mensagem! Estamos fora do horário de atendimento. Assim que abrirmos, falamos com você.", msgEncerramento: "Atendimento encerrado. Se precisar de algo, é só mandar uma nova mensagem. Obrigado!", numeros: [], gestores: [], horarios: horarios("18:00", null) };
       setores.push(s);
     }
-    Object.assign(s, { nome, ativo: p.ativo, gestores: [...new Set(p.gestores)] });
+    Object.assign(s, { nome, ativo: p.ativo, recebeChamados: p.recebeChamados, gestores: [...new Set(p.gestores)] });
     for (const n of s.numeros) n.ativo = numeros.includes(n.numero);
     for (const n of numeros) {
       const outroInativo = setores.flatMap((x) => x.numeros.map((y) => ({ x, y }))).find(({ y }) => y.numero === n);

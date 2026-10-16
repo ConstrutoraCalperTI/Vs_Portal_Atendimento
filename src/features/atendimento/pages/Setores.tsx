@@ -1,5 +1,5 @@
 import * as Switch from "@radix-ui/react-switch";
-import { Building2, CircleDot, Info, Phone, Plus, UserCheck, Users, X } from "lucide-react";
+import { Building2, CircleDot, Info, Phone, Plus, Ticket, UserCheck, Users, X } from "lucide-react";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ThLabel } from "../../../components/ds";
@@ -50,12 +50,13 @@ export function Setores() {
                   <th><ThLabel icon={Phone}>Números WhatsApp</ThLabel></th>
                   <th><ThLabel icon={UserCheck}>Gestão</ThLabel></th>
                   <th className="n"><ThLabel icon={Users}>Atendentes</ThLabel></th>
+                  <th><ThLabel icon={Ticket}>Receber chamado</ThLabel></th>
                   <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
                 </tr>
               </thead>
               <tbody>
                 {setores.length === 0 && (
-                  <tr><td colSpan={5} className="at-vazio">Nenhum setor ainda. Cadastre o primeiro ao lado.</td></tr>
+                  <tr><td colSpan={6} className="at-vazio">Nenhum setor ainda. Cadastre o primeiro ao lado.</td></tr>
                 )}
                 {setores.map((s) => (
                   <tr
@@ -69,6 +70,7 @@ export function Setores() {
                     <td>{s.numeros.length ? s.numeros.map((n) => <div key={n.id}>{telefone(n.numero)}</div>) : "—"}</td>
                     <td>{s.gestores.map((g) => g.nome).join(", ") || "—"}</td>
                     <td className="n">{s.atendentes.length}</td>
+                    <td>{s.recebeChamados ? <span className="at-selo s-fim">Sim</span> : <span title="Só solicitante: identifica o setor de quem abre o chamado">—</span>}</td>
                     <td><span className={`at-selo ${s.ativo ? "s-fim" : ""}`} style={s.ativo ? undefined : { background: "var(--neutral-bg)", color: "var(--neutral-fg)" }}>{s.ativo ? "Ativo" : "Inativo"}</span></td>
                   </tr>
                 ))}
@@ -94,6 +96,7 @@ function FormSetor({ setor, onSalvo, onCancelar }: { setor: Setor | null; onSalv
   const candidatos = useCandidatos(true);
   const [nome, setNome] = useState(setor?.nome ?? "");
   const [ativo, setAtivo] = useState(setor?.ativo ?? true);
+  const [recebe, setRecebe] = useState(setor?.recebeChamados ?? false);
   const [numeros, setNumeros] = useState<string[]>(() => (setor?.numeros.length ? setor.numeros.map((n) => telefone(n.numero)) : [""]));
   const [gestores, setGestores] = useState<Pessoa[]>(setor?.gestores ?? []);
   const [erro, setErro] = useState<{ campo?: string; mensagem: string } | null>(null);
@@ -107,7 +110,7 @@ function FormSetor({ setor, onSalvo, onCancelar }: { setor: Setor | null; onSalv
     e.preventDefault();
     setErro(null);
     salvar.mutate(
-      { id: setor?.id, nome, ativo, numeros: numeros.map((n) => n.trim()).filter(Boolean), gestores: gestores.map((g) => g.id) },
+      { id: setor?.id, nome, ativo, recebeChamados: recebe, numeros: numeros.map((n) => n.trim()).filter(Boolean), gestores: gestores.map((g) => g.id) },
       {
         onSuccess: (id) => {
           toast.success(setor ? "Setor salvo" : "Setor criado: agora monte a equipe em Fila e horários");
@@ -208,6 +211,20 @@ function FormSetor({ setor, onSalvo, onCancelar }: { setor: Setor | null; onSalv
           <span>Inativo: o número continua gravando as mensagens, mas nada é respondido e a fila não distribui.</span>
         </div>
       </div>
+
+      <div className="zv-chave">
+        <Switch.Root id={`${ids}-recebe`} className="switch" checked={recebe} onCheckedChange={setRecebe} aria-invalid={erro?.campo === "recebeChamados" || undefined}>
+          <Switch.Thumb className="switch__thumb" />
+        </Switch.Root>
+        <div>
+          <label htmlFor={`${ids}-recebe`}><b>Receber chamado</b></label>
+          <span>
+            Marcado: o setor atende (fila, serviços, equipes e CalperDESK). Desmarcado: só identifica o setor de quem abre o chamado; o ticket mostra esse
+            setor no campo Setor.
+          </span>
+        </div>
+      </div>
+      {erroDe("recebeChamados")}
 
       {erro && !erro.campo && <p className="field__error" role="alert">{erro.mensagem}</p>}
       <div className="at-rodape">

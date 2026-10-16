@@ -5,6 +5,8 @@ export interface SetorCad {
   id: number;
   nome: string;
   ativo: boolean;
+  /** Atende chamados (Setores e números › Receber chamado). Só esses recebem serviços. */
+  recebeChamados: boolean;
   slaPadraoHoras: number;
   equipePadraoId: number | null;
 }

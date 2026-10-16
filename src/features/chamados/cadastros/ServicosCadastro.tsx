@@ -48,7 +48,7 @@ function Conteudo({ cad }: { cad: Cadastros }) {
           <span className="cad-head__spacer" />
           <select className="input" aria-label="Setor" value={setor} onChange={(e) => setSetor(e.target.value)}>
             <option value="">Todos os setores</option>
-            {cad.setores.map((s) => (
+            {cad.setores.filter((s) => s.recebeChamados || cad.servicos.some((v) => v.setorId === s.id)).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nome}
               </option>
@@ -123,7 +123,7 @@ function EditorServico({ cad, servico, onFechar }: { cad: Cadastros; servico: Se
   const salvar = useSalvarServico();
   const [nome, setNome] = useState(servico?.nome ?? "");
   const [paiId, setPaiId] = useState<number | null>(servico?.paiId ?? null);
-  const [setorId, setSetorId] = useState<number>(servico?.setorId ?? cad.setores[0]?.id ?? 0);
+  const [setorId, setSetorId] = useState<number>(servico?.setorId ?? cad.setores.find((s) => s.recebeChamados)?.id ?? cad.setores[0]?.id ?? 0);
   const [equipeId, setEquipeId] = useState<number | null>(servico?.equipeId ?? null);
   const [descricao, setDescricao] = useState(servico?.descricao ?? "");
   const [urgenciaPadraoId, setUrgencia] = useState<number | null>(servico?.urgenciaPadraoId ?? null);
@@ -211,7 +211,7 @@ function EditorServico({ cad, servico, onFechar }: { cad: Cadastros; servico: Se
           <label className="field">
             <span className="field__label">Setor</span>
             <select className="input" value={setorId} onChange={(e) => setSetorId(Number(e.target.value))}>
-              {cad.setores.map((s) => (
+              {cad.setores.filter((s) => s.recebeChamados || s.id === setorId).map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nome}
                 </option>
