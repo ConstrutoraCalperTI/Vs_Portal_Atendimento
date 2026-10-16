@@ -82,13 +82,13 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
           onClick={onCollapse}
           aria-label={collapsed ? "Expandir menu" : undefined}
         >
-          {collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
+          {collapsed ? <IconeMenu id="rodape_expandir" icon={PanelLeftOpen} /> : <IconeMenu id="rodape_recolher" icon={PanelLeftClose} />}
           {!collapsed && <span>Recolher menu</span>}
         </button>
         <ChangeOwnPasswordDialog
           trigger={
             <button type="button" className="sidebar__footer-item" aria-label={collapsed ? "Alterar senha" : undefined} title={collapsed ? "Alterar senha" : undefined}>
-              <KeyRound size={18} aria-hidden="true" />
+              <IconeMenu id="rodape_senha" icon={KeyRound} />
               {!collapsed && <span>Alterar senha</span>}
             </button>
           }
@@ -100,7 +100,7 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
           disabled={signingOut}
           onClick={() => void handleSignOut()}
         >
-          <LogOut size={18} aria-hidden="true" />
+          <IconeMenu id="rodape_sair" icon={LogOut} />
           {!collapsed && <span>Sair</span>}
         </button>
       </div>

@@ -274,5 +274,37 @@ export const ICONES_MENU: Record<string, { nome: string; data: IconifyIcon }> = 
       "width": 24,
       "height": 24
     }
+  },
+  "rodape_recolher": {
+    "nome": "flat-color-icons:previous",
+    "data": {
+      "body": "<path fill=\"#2196F3\" d=\"m30.9 43l3.1-3.1L18.1 24L34 8.1L30.9 5L12 24z\"/>",
+      "width": 48,
+      "height": 48
+    }
+  },
+  "rodape_expandir": {
+    "nome": "flat-color-icons:next",
+    "data": {
+      "body": "<path fill=\"#2196F3\" d=\"M17.1 5L14 8.1L29.9 24L14 39.9l3.1 3.1L36 24z\"/>",
+      "width": 48,
+      "height": 48
+    }
+  },
+  "rodape_senha": {
+    "nome": "flat-color-icons:key",
+    "data": {
+      "body": "<g fill=\"#FFA000\"><path d=\"m30 41l-4 4h-4l-4-4V21h12v8l-2 2l2 2v2l-2 2l2 2z\"/><path d=\"M38 7.8c-.5-1.8-2-3.1-3.7-3.6C31.9 3.7 28.2 3 24 3s-7.9.7-10.3 1.2C12 4.7 10.5 6 10 7.8c-.5 1.7-1 4.1-1 6.7s.5 5 1 6.7c.5 1.8 1.9 3.1 3.7 3.5c2.4.6 6.1 1.3 10.3 1.3s7.9-.7 10.3-1.2c1.8-.4 3.2-1.8 3.7-3.5s1-4.1 1-6.7c0-2.7-.5-5.1-1-6.8M29 13H19c-1.1 0-2-.9-2-2V9c0-.6 3.1-1 7-1s7 .4 7 1v2c0 1.1-.9 2-2 2\"/></g><path fill=\"#D68600\" d=\"M23 26h2v19h-2z\"/>",
+      "width": 48,
+      "height": 48
+    }
+  },
+  "rodape_sair": {
+    "nome": "flat-color-icons:export",
+    "data": {
+      "body": "<path fill=\"#FFCCBC\" d=\"M7 40V8c0-2.2 1.8-4 4-4h24c2.2 0 4 1.8 4 4v32c0 2.2-1.8 4-4 4H11c-2.2 0-4-1.8-4-4\"/><g fill=\"#FF5722\"><path d=\"M42.7 24L32 33V15z\"/><path d=\"M14 21h23v6H14z\"/></g>",
+      "width": 48,
+      "height": 48
+    }
   }
 };

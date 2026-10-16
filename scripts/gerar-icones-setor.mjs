@@ -79,6 +79,11 @@ const MENU = [
   ["integracao_movidesk", "fluent-color:book-database-24"],
   ["view_audit_logs", "fluent-color:history-24"],
   ["manage_sessions", "fluent-color:shield-checkmark-24"],
+  // Rodapé do menu (ids próprios, fora do menuRegistry).
+  ["rodape_recolher", "flat-color-icons:previous"],
+  ["rodape_expandir", "flat-color-icons:next"],
+  ["rodape_senha", "flat-color-icons:key"],
+  ["rodape_sair", "flat-color-icons:export"],
 ];
 
 const colecoes = new Map();
