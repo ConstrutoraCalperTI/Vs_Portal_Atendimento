@@ -1,3 +1,4 @@
+import { addIcon, Icon as Iconify } from "@iconify/react";
 import * as Popover from "@radix-ui/react-popover";
 import { ChevronRight, KeyRound, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
 import { useState } from "react";
@@ -6,7 +7,16 @@ import { CONFIG_ROOT_PATH, menuGroups, menuItemsByGroup, routeChildrenOf, type M
 import { useAccess } from "../features/configuracoes/access/useAccess";
 import { ChangeOwnPasswordDialog } from "../features/auth/ChangeOwnPasswordDialog";
 import { useSignOut } from "../features/auth/useSignOut";
+import { ICONES_MENU } from "./iconesMenu.data";
 import "./Sidebar.css";
+
+// Ícones coloridos do 1º nível (embutidos: a CSP não deixa o Iconify buscar na API). Sem ícone colorido, o do menuRegistry.
+for (const i of Object.values(ICONES_MENU)) addIcon(i.nome, i.data);
+
+function IconeMenu({ id, icon: Fallback }: { id: string; icon: LucideIcon }) {
+  const colorido = ICONES_MENU[id];
+  return colorido ? <Iconify icon={colorido.nome} width={20} height={20} aria-hidden="true" /> : <Fallback size={18} aria-hidden="true" />;
+}
 
 interface SidebarProps {
   collapsed: boolean;
@@ -51,7 +61,7 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
                     title={collapsed ? nome : undefined}
                     aria-label={collapsed ? nome : undefined}
                   >
-                    <item.icon size={18} aria-hidden="true" />
+                    <IconeMenu id={item.id} icon={item.icon} />
                     {!collapsed && <span>{nome}</span>}
                   </NavLink>
                 </li>
@@ -140,7 +150,6 @@ function NavGroup({ group }: { group: NavGroupData }) {
   const inside = useIsInside(group.rootPath);
   const [open, setOpen] = useState(inside);
   const [wasInside, setWasInside] = useState(inside);
-  const Icon = group.icon;
   const listId = `sidebar-${group.id}-items`;
 
   // Ajuste durante a renderização: ao entrar na área do grupo, ele expande.
@@ -153,7 +162,7 @@ function NavGroup({ group }: { group: NavGroupData }) {
     <li>
       <div className={`sidebar__group${inside ? " sidebar__group--active" : ""}`}>
         <Link to={group.rootPath} className="sidebar__group-link" aria-current={inside ? "true" : undefined}>
-          <Icon size={18} aria-hidden="true" />
+          <IconeMenu id={group.id} icon={group.icon} />
           <span>{group.label}</span>
         </Link>
         <button
@@ -180,14 +189,13 @@ function NavGroup({ group }: { group: NavGroupData }) {
 function NavFlyout({ group }: { group: NavGroupData }) {
   const inside = useIsInside(group.rootPath);
   const [open, setOpen] = useState(false);
-  const Icon = group.icon;
 
   return (
     <li>
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger asChild>
           <button type="button" className={`sidebar__item${inside ? " sidebar__item--active" : ""}`} aria-label={group.label}>
-            <Icon size={18} aria-hidden="true" />
+            <IconeMenu id={group.id} icon={group.icon} />
           </button>
         </Popover.Trigger>
         <Popover.Portal>
