@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { IconeIlustrativo } from "../../../components/ds/IconeColorido";
 import "./EmptyState.css";
 
 interface EmptyStateProps {
@@ -13,7 +14,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
   return (
     <div className="empty-state">
       <div className="empty-state__icon">
-        <Icon size={22} aria-hidden="true" />
+        <IconeIlustrativo icon={Icon} size={22} />
       </div>
       <h3>{title}</h3>
       {description && <p>{description}</p>}

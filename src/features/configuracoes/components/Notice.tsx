@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { IconeIlustrativo } from "../../../components/ds/IconeColorido";
 import "./Notice.css";
 
 interface NoticeProps {
@@ -11,7 +12,7 @@ interface NoticeProps {
 export function Notice({ icon: Icon, children }: NoticeProps) {
   return (
     <div className="notice" role="note">
-      <Icon size={18} aria-hidden="true" />
+      <IconeIlustrativo icon={Icon} size={18} />
       <div>{children}</div>
     </div>
   );

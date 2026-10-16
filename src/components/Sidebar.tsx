@@ -1,4 +1,3 @@
-import { addIcon, Icon as Iconify } from "@iconify/react";
 import * as Popover from "@radix-ui/react-popover";
 import { ChevronRight, KeyRound, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
 import { useState } from "react";
@@ -7,16 +6,8 @@ import { CONFIG_ROOT_PATH, menuGroups, menuItemsByGroup, routeChildrenOf, type M
 import { useAccess } from "../features/configuracoes/access/useAccess";
 import { ChangeOwnPasswordDialog } from "../features/auth/ChangeOwnPasswordDialog";
 import { useSignOut } from "../features/auth/useSignOut";
-import { ICONES_MENU } from "./iconesMenu.data";
+import { IconeDoMenu as IconeMenu } from "./ds/IconeColorido";
 import "./Sidebar.css";
-
-// Ícones coloridos dos itens e subitens (embutidos: a CSP não deixa o Iconify buscar na API). Sem ícone colorido, o do menuRegistry.
-for (const i of Object.values(ICONES_MENU)) addIcon(i.nome, i.data);
-
-function IconeMenu({ id, icon: Fallback, tamanho = 20 }: { id: string; icon: LucideIcon; tamanho?: number }) {
-  const colorido = ICONES_MENU[id];
-  return colorido ? <Iconify icon={colorido.nome} width={tamanho} height={tamanho} aria-hidden="true" /> : <Fallback size={tamanho - 2} aria-hidden="true" />;
-}
 
 interface SidebarProps {
   collapsed: boolean;
