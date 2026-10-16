@@ -219,8 +219,8 @@ function FormSetor({ setor, onSalvo, onCancelar }: { setor: Setor | null; onSalv
         <div>
           <label htmlFor={`${ids}-recebe`}><b>Receber chamado</b></label>
           <span>
-            Marcado: o setor atende (fila, serviços, equipes e CalperDESK). Desmarcado: só identifica o setor de quem abre o chamado; o ticket mostra esse
-            setor no campo Setor.
+            Marcado: o setor atende e aparece no CalperDESK como opção para abrir chamado. Desmarcado: sai do app e só identifica o setor de quem abre
+            o chamado (campo Setor do ticket).
           </span>
         </div>
       </div>
