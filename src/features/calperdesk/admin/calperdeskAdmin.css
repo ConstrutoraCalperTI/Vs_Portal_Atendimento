@@ -18,7 +18,15 @@
 .cdadm-botoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .cdadm-acoes { white-space: nowrap; text-align: right; }
 .cdadm-acoes .btn { padding: 0 8px; min-height: 30px; }
-.cdadm-icone { width: 56px; text-align: center; font-size: 18px; }
+.cdadm-icone { width: 56px; text-align: center; font-size: 18px; display: grid; place-items: center; padding: 0; cursor: pointer; }
+.cdadm-icones { display: grid; gap: 10px; width: min(340px, calc(100vw - 32px)); }
+.cdadm-icones__grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cdadm-icones__grade button { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid transparent; border-radius: 8px; background: none; cursor: pointer; }
+.cdadm-icones__grade button:hover,
+.cdadm-icones__grade button:focus-visible { background: var(--neutral-bg, #f4f4f5); }
+.cdadm-icones__grade button[aria-selected="true"] { border-color: var(--primary, #d42b3a); }
+.cdadm-icones__emoji { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.cdadm-icones__emoji .input { width: 64px; text-align: center; }
 .cdadm-ordem { width: 70px; }
 .cdadm-tag { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; background: #f1f1f3; color: #52525b; white-space: nowrap; }
 .cdadm-tag--ok { background: #e8f6ed; color: #166534; }

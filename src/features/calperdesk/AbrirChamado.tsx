@@ -6,6 +6,7 @@ import { Carregando, SubCabecalho, useCd } from "./CalperDeskApp";
 import { Miniaturas, useAnexos } from "./anexos";
 import { calperdesk, formatarTelefone, type Servico, type TipoUrgencia } from "./service";
 import { prazo } from "./Telas";
+import { IconeSetor } from "./IconeSetor";
 
 const TIPOS_ARQUIVO = "image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv";
 /** "Tipo urgência" (Wagner, 13/10/2026), do menos para o mais urgente. */
@@ -131,7 +132,7 @@ export function AbrirChamado() {
 
   return (
     <>
-      <SubCabecalho titulo="Abrir chamado" sub={<>Departamento: <b style={{ color: "var(--cd-ouro)" }}>{setor.icone} {setor.nome}</b></>} voltar="/app" />
+      <SubCabecalho titulo="Abrir chamado" sub={<>Departamento: <b style={{ color: "var(--cd-ouro)", display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle" }}><IconeSetor valor={setor.icone} tamanho={18} /> {setor.nome}</b></>} voltar="/app" />
       <form className="cd-sec" onSubmit={enviar} noValidate>
         {erro && !erro.campo && <p className="cd-alerta" role="alert">{erro.texto}</p>}
         <span className="cd-rot" style={{ marginTop: 0 }}>

@@ -1,3 +1,4 @@
+import * as Popover from "@radix-ui/react-popover";
 import * as Switch from "@radix-ui/react-switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlignLeft, ArrowUpDown, Building2, CalendarRange, Copy, ExternalLink, Eye, Hash, Info, LayoutDashboard, Lightbulb, Megaphone, Pencil, Plus, Smartphone, Smile, Trash2, Wrench } from "lucide-react";
@@ -10,6 +11,8 @@ import { ThLabel } from "../../../components/ds";
 import { ConfirmDialog } from "../../configuracoes/components/ConfirmDialog";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { Notice } from "../../configuracoes/components/Notice";
+import { ICONES_SETOR } from "../iconesSetor.data";
+import { ICONE_PADRAO, IconeSetor } from "../IconeSetor";
 import { calperdesk, formatarTelefone, type AvisoAdmin, type PainelCalperdesk, type Quadros, type SetorApp, type SolucaoAdmin } from "../service";
 import "../../atendimento/pages/Atendimento.css";
 import "./calperdeskAdmin.css";
@@ -278,7 +281,7 @@ function LinhaSetor({ s }: { s: SetorApp }) {
         <b>{s.nome}</b>
       </td>
       <td>
-        <input className="input cdadm-icone" value={icone} maxLength={4} placeholder="🎫" aria-label={`Ícone de ${s.nome}`} onChange={(e) => setIcone(e.target.value)} />
+        <SeletorIcone valor={icone} nome={s.nome} onChange={setIcone} />
       </td>
       <td>
         <input className="input" value={descricao} maxLength={200} placeholder="O que esse departamento atende" aria-label={`Texto de ajuda de ${s.nome}`} onChange={(e) => setDescricao(e.target.value)} />
@@ -300,6 +303,41 @@ function LinhaSetor({ s }: { s: SetorApp }) {
         )}
       </td>
     </tr>
+  );
+}
+
+/** Ícone do departamento: grade dos ícones coloridos (Iconify, embutidos) ou um emoji digitado. */
+function SeletorIcone({ valor, nome, onChange }: { valor: string; nome: string; onChange: (v: string) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const [emoji, setEmoji] = useState(valor.includes(":") ? "" : valor);
+  const escolher = (v: string) => {
+    onChange(v);
+    setAberto(false);
+  };
+  return (
+    <Popover.Root open={aberto} onOpenChange={setAberto}>
+      <Popover.Trigger asChild>
+        <button type="button" className="input cdadm-icone" aria-label={`Ícone de ${nome}: trocar`} title="Trocar ícone">
+          <IconeSetor valor={valor || ICONE_PADRAO} tamanho={24} />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content className="ch-filtropop cdadm-icones" align="start" sideOffset={6} collisionPadding={12} aria-label={`Ícone de ${nome}`}>
+          <div className="cdadm-icones__grade" role="listbox" aria-label="Ícones">
+            {ICONES_SETOR.map((i) => (
+              <button key={i.nome} type="button" role="option" aria-selected={valor === i.nome} title={i.rotulo} aria-label={i.rotulo} onClick={() => escolher(i.nome)}>
+                <IconeSetor valor={i.nome} tamanho={28} />
+              </button>
+            ))}
+          </div>
+          <label className="cdadm-icones__emoji">
+            <span>Ou um emoji</span>
+            <input className="input" value={emoji} maxLength={4} placeholder="🎫" onChange={(e) => setEmoji(e.target.value)} onKeyDown={(e) => e.key === "Enter" && emoji.trim() && escolher(emoji.trim())} />
+            <button type="button" className="btn btn--outline btn--sm" disabled={!emoji.trim()} onClick={() => escolher(emoji.trim())}>Usar</button>
+          </label>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 

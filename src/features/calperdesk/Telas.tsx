@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { Cabecalho, Carregando, SubCabecalho, useCd } from "./CalperDeskApp";
 import { calperdesk, formatarTelefone, iniciais, type Aviso, type ChamadoResumo, type Departamento, type Empreendimento } from "./service";
+import { IconeSetor } from "./IconeSetor";
 
 // ---------- utilitários de exibição ----------
 
@@ -126,7 +127,7 @@ function SeletorSetor({ setores, atual, motivo, onEscolher, onFechar }: { setore
             {setores.map((s, i) => (
               <button key={s.id} type="button" className={`cd-depto${s.id === atual ? " cd-depto--on" : ""}`} autoFocus={i === 0} onClick={() => onEscolher(s)}>
                 <span className="cd-depto__icone" aria-hidden="true">
-                  {s.icone}
+                  <IconeSetor valor={s.icone} tamanho={34} />
                 </span>
                 <span>
                   <b>{s.nome}</b>
@@ -187,7 +188,7 @@ function Carrossel({ avisos, setor }: { avisos: Aviso[]; setor: Departamento | n
     return (
       <div className="cd-hero">
         <div className="cd-hero__arte" aria-hidden="true">
-          {setor?.icone ?? "🏢"}
+          <IconeSetor valor={setor?.icone} tamanho={56} />
         </div>
         <div className="cd-hero__txt">
           <small>Calper</small>
@@ -290,7 +291,7 @@ export function Inicio() {
         <button type="button" className={`cd-tile${setor ? " cd-tile--feito" : " cd-tile--ouro"}`} onClick={() => setFolha({ motivo: null, depois: null })}>
           {setor ? (
             <span className="cd-tile__emoji" aria-hidden="true">
-              {setor.icone}
+              <IconeSetor valor={setor.icone} tamanho={32} />
             </span>
           ) : (
             <Building2 size={30} strokeWidth={1.5} aria-hidden="true" />
