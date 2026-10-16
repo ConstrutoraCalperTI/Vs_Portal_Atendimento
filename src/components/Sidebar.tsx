@@ -10,12 +10,12 @@ import { useSignOut } from "../features/auth/useSignOut";
 import { ICONES_MENU } from "./iconesMenu.data";
 import "./Sidebar.css";
 
-// Ícones coloridos do 1º nível (embutidos: a CSP não deixa o Iconify buscar na API). Sem ícone colorido, o do menuRegistry.
+// Ícones coloridos dos itens e subitens (embutidos: a CSP não deixa o Iconify buscar na API). Sem ícone colorido, o do menuRegistry.
 for (const i of Object.values(ICONES_MENU)) addIcon(i.nome, i.data);
 
-function IconeMenu({ id, icon: Fallback }: { id: string; icon: LucideIcon }) {
+function IconeMenu({ id, icon: Fallback, tamanho = 20 }: { id: string; icon: LucideIcon; tamanho?: number }) {
   const colorido = ICONES_MENU[id];
-  return colorido ? <Iconify icon={colorido.nome} width={20} height={20} aria-hidden="true" /> : <Fallback size={18} aria-hidden="true" />;
+  return colorido ? <Iconify icon={colorido.nome} width={tamanho} height={tamanho} aria-hidden="true" /> : <Fallback size={tamanho - 2} aria-hidden="true" />;
 }
 
 interface SidebarProps {
@@ -136,7 +136,7 @@ function SubItems({ items, onNavigate }: { items: MenuItem[]; onNavigate?: () =>
             onClick={onNavigate}
             className={({ isActive }) => `sidebar__subitem${isActive ? " sidebar__subitem--active" : ""}`}
           >
-            <item.icon size={16} aria-hidden="true" />
+            <IconeMenu id={item.id} icon={item.icon} tamanho={18} />
             <span>{item.label}</span>
           </NavLink>
         </li>
