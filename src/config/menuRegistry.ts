@@ -291,8 +291,8 @@ const definitions = [
     parent: "gestao_atendimento",
     adminOnly: true,
   },
-  // Solicitações Financeiras (docs/Solicitacoes-financeiras/CONTEXTO.md). Fase 1: só os cadastros (Admin e Super admin);
-  // Minhas solicitações, Aprovações e Conferência entram nas Fases 2 a 5. A aprovação por setor fica em Setores e números.
+  // Solicitações Financeiras (docs/Solicitacoes-financeiras/CONTEXTO.md). Minhas solicitações e Nova solicitação para todos;
+  // Aprovações e Conferência entram nas Fases 3 e 5; Cadastros só Admin. A aprovação por setor fica em Setores e números.
   {
     id: "solicitacoes_financeiras",
     label: "Solicitações Financeiras",
@@ -300,7 +300,28 @@ const definitions = [
     icon: Wallet,
     group: "principal",
     description: "Reembolso de despesas, fundo fixo de caixa e adiantamento de numerário, da solicitação ao lançamento no SIENGE.",
-    adminOnly: true,
+    // Todo colaborador pede reembolso e fundo fixo (Fase 2); as telas de cada papel são as seções abaixo.
+    alwaysVisible: true,
+  },
+  {
+    id: "sf_minhas",
+    label: "Minhas solicitações",
+    path: "/financeiro/solicitacoes",
+    icon: FileText,
+    group: "principal",
+    description: "Suas solicitações: rascunhos, aprovação, conferência e pagamento.",
+    parent: "solicitacoes_financeiras",
+    alwaysVisible: true,
+  },
+  {
+    id: "sf_nova",
+    label: "Nova solicitação",
+    path: "/financeiro/nova",
+    icon: FormInput,
+    group: "principal",
+    description: "Reembolso de despesas ou prestação de contas do fundo fixo.",
+    parent: "solicitacoes_financeiras",
+    alwaysVisible: true,
   },
   {
     id: "sf_cadastros",

@@ -1,6 +1,6 @@
 // Gerado por scripts/gerar-icones-setor.mjs (npm run icones:setor). Não edite à mão.
 import type { IconifyIcon } from "@iconify/react";
-import { Activity, AlignLeft, AppWindow, ArrowUpDown, Asterisk, Briefcase, Building, Building2, CalendarClock, CalendarPlus, CalendarRange, ChartColumn, CircleCheckBig, CircleDot, Clock, Columns3, Contact, Crown, Eye, FileCode2, FileDown, FileSearch, FileText, Flag, FolderTree, Gauge, HardDrive, HardHat, Hash, Headset, History, Hourglass, IdCard, Inbox, Info, KeyRound, Layers, LayoutDashboard, LayoutGrid, LayoutPanelTop, Lightbulb, ListChecks, ListOrdered, ListPlus, Lock, LogIn, Mail, Megaphone, MessageSquare, MessageSquareReply, MessagesSquare, MonitorOff, MonitorSmartphone, Paperclip, Percent, Phone, SearchX, Server, Shapes, Smartphone, Smile, Sparkles, Star, Tag, Tags, Ticket, Timer, ToggleRight, TrendingUp, User, UserCheck, UserPen, Users, UsersRound, Wallet, Wifi, Wrench, Zap, type LucideIcon } from "lucide-react";
+import { Activity, AlignLeft, AppWindow, ArrowUpDown, Asterisk, Briefcase, Building, Building2, CalendarClock, CalendarPlus, CalendarRange, ChartColumn, CircleCheckBig, CircleDot, Clock, Columns3, Contact, Crown, Eye, FileCode2, FileDown, FileSearch, FileText, Flag, FolderTree, Gauge, HardDrive, HardHat, Hash, Headset, History, Hourglass, IdCard, Inbox, Info, KeyRound, Layers, LayoutDashboard, LayoutGrid, LayoutPanelTop, Lightbulb, ListChecks, ListOrdered, ListPlus, Lock, LogIn, Mail, Megaphone, MessageSquare, MessageSquareReply, MessagesSquare, MonitorOff, MonitorSmartphone, Paperclip, Percent, Phone, SearchX, Server, Shapes, Smartphone, Smile, Sparkles, Star, Tag, Tags, Ticket, Timer, ToggleRight, TrendingUp, User, UserCheck, UserPen, Users, UsersRound, Wallet, Receipt, Calculator, Wifi, Wrench, Zap, type LucideIcon } from "lucide-react";
 
 /** Ícone Lucide ilustrativo → nome do colorido (Iconify). */
 export const COLORIDO_DE = new Map<LucideIcon, string>([
@@ -79,6 +79,8 @@ export const COLORIDO_DE = new Map<LucideIcon, string>([
   [Users, "fluent-color:people-24"],
   [UsersRound, "fluent-color:people-team-24"],
   [Wallet, "flat-color-icons:money-transfer"],
+  [Receipt, "fluent-color:receipt-24"],
+  [Calculator, "flat-color-icons:calculator"],
   [Wifi, "fluent-color:wifi-24"],
   [Wrench, "fluent-color:wrench-24"],
   [Zap, "flat-color-icons:flash-on"],
@@ -457,6 +459,11 @@ export const DADOS_COLORIDOS: Record<string, IconifyIcon> = {
   },
   "flat-color-icons:money-transfer": {
     "body": "<path fill=\"#78909C\" d=\"M40 41H8c-2.2 0-4-1.8-4-4V16.1c0-1.3.6-2.5 1.7-3.3L24 0l18.3 12.8c1.1.7 1.7 2 1.7 3.3V37c0 2.2-1.8 4-4 4\"/><path fill=\"#AED581\" d=\"M14 1h20v31H14z\"/><g fill=\"#558B2F\"><path d=\"M13 0v33h22V0zm20 31H15V2h18z\"/><path d=\"M34 3c0 1.7-.3 3-2 3s-3-1.3-3-3s1.3-2 3-2s2 .3 2 2M16 1c1.7 0 3 .3 3 2s-1.3 3-3 3s-2-1.3-2-3s.3-2 2-2\"/><circle cx=\"24\" cy=\"8\" r=\"2\"/><circle cx=\"24\" cy=\"20\" r=\"6\"/></g><path fill=\"#CFD8DC\" d=\"M40 41H8c-2.2 0-4-1.8-4-4V17l20 13l20-13v20c0 2.2-1.8 4-4 4\"/>",
+    "width": 48,
+    "height": 48
+  },
+  "flat-color-icons:calculator": {
+    "body": "<path fill=\"#616161\" d=\"M40 16H8v24c0 2.2 1.8 4 4 4h24c2.2 0 4-1.8 4-4z\"/><path fill=\"#424242\" d=\"M36 4H12C9.8 4 8 5.8 8 8v9h32V8c0-2.2-1.8-4-4-4\"/><path fill=\"#9CCC65\" d=\"M36 14H12c-.6 0-1-.4-1-1V8c0-.6.4-1 1-1h24c.6 0 1 .4 1 1v5c0 .6-.4 1-1 1\"/><path fill=\"#33691E\" d=\"M33 10h2v2h-2zm-4 0h2v2h-2z\"/><path fill=\"#FF5252\" d=\"M36 23h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1\"/><path fill=\"#E0E0E0\" d=\"M15 23h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m-14 6h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m-14 6h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m-14 6h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m7 0h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1\"/><path fill=\"#BDBDBD\" d=\"M36 29h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m0 6h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1m0 6h-3c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h3c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1\"/>",
     "width": 48,
     "height": 48
   },

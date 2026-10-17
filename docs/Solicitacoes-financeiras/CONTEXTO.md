@@ -170,3 +170,11 @@ Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
 - Telas: aba **Aprovação financeira** e coluna **Aprovação** em Setores e números; menu **Solicitações Financeiras › Cadastros financeiros** (Admin e Super admin; o grupo fica só para admin até a Fase 2 liberar as telas do colaborador).
 - Componentes: `StatusChip`, `ApprovalTimeline`, `FormSection`, `Field`, `OcrField`, `CadeiaPrevia` em `src/features/financeiro/components/`; tokens `--violet-bg`, `--violet-fg`, `--viewer`.
 - Testes: `tests/db/financeiro.db.test.ts` (4 usuários) e `tests/financeiro-cadeia.test.ts`.
+
+### Fase 2 — Formulários e envio (17/10/2026)
+- Migration `20261017110000_portal_atendimento_sf_formularios.sql`: `sf_rascunho_criar` (número já na criação; fundo fixo exige valor cadastrado e calcula saldo inicial = saldo final anterior + reposição recebida quando a anterior foi paga), `sf_rascunho_salvar` (linhas por id; a que some é apagada com os anexos), `sf_anexo_registrar`/`sf_anexo_remover`, `sf_checagens` (R01, R03, R06 por arquivo, R08, R09, R10 — as que não dependem da leitura), `sf_enviar(id, aceite)`, `sf_cancelar`, `sf_detalhe`, `sf_minhas`.
+- `sf_montar_cadeia(setor, tipo, valor, solicitante)` é a regra única da cadeia (pula a etapa do próprio solicitante). O envio a congela em `sf_aprovacao`; devolvida → reenvio abre ciclo novo recomeçando do nível 1. Sequencial: só o 1º nível exigido fica "aguardando" (prazo = setor.sf_prazo_horas); paralelo/qualquer um: todos.
+- Aceite: data/hora, IP (`x-forwarded-for`) e navegador (`user-agent`) dos cabeçalhos da requisição; registrado também em `sf_evento`.
+- Storage `sf-comprovantes`: caminho `<usuário>/<solicitação>/<arquivo>`; gravar/apagar só o dono com a solicitação editável; ler = `sf_pode_ver`. Arquivo até 10 MB (JPG, PNG, HEIC, WEBP, PDF); SHA-256 calculado no navegador.
+- Telas: Minhas solicitações (`/financeiro/solicitacoes`), Nova solicitação (`/financeiro/nova` e `/financeiro/solicitacoes/nova/reembolso|fundo-fixo`), formulário e visão (`/financeiro/solicitacoes/:id`). Rascunho salvo 1,2 s após a última mudança. Grupo do menu visível para todos; Cadastros continua só Admin.
+- Adiantamento: cartão visível e desabilitado ("Disponível em breve") até a Fase 5B.
