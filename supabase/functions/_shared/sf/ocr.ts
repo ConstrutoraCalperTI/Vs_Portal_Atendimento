@@ -20,6 +20,12 @@ export interface Leitura {
   favorecido: string | null;
   cnpj_cpf_emissor: string | null;
   chave_acesso: string | null;
+  /** Número do documento (NF, recibo) ou do pedido de compras, como impresso. */
+  numero_documento: string | null;
+  /** Condição de pagamento impressa no pedido/proposta/e-mail (ex.: "50% sinal - 50% na entrega"). */
+  condicao_pagamento: string | null;
+  /** Referência a pedido impressa na nota (ex.: "PED 001298"). */
+  referencia_pedido: string | null;
   itens: { descricao: string; valor: number | null }[];
   motivo_sugestoes: { categoria_id: number; texto: string; confianca: number }[];
   legibilidade: { data: number; valor: number; favorecido: number };
@@ -30,7 +36,7 @@ export interface Leitura {
 export const ESQUEMA_LEITURA = {
   type: "object",
   additionalProperties: false,
-  required: ["tipo_documento", "data", "valor_total", "favorecido", "cnpj_cpf_emissor", "chave_acesso", "itens", "motivo_sugestoes", "legibilidade", "alertas"],
+  required: ["tipo_documento", "data", "valor_total", "favorecido", "cnpj_cpf_emissor", "chave_acesso", "numero_documento", "condicao_pagamento", "referencia_pedido", "itens", "motivo_sugestoes", "legibilidade", "alertas"],
   properties: {
     tipo_documento: { type: "string", enum: ["nfe", "nfce", "cupom", "recibo", "outro"] },
     data: { type: ["string", "null"], description: "Data de emissão impressa, no formato AAAA-MM-DD." },
@@ -38,6 +44,9 @@ export const ESQUEMA_LEITURA = {
     favorecido: { type: ["string", "null"], description: "Nome do emissor (razão social ou nome) como impresso." },
     cnpj_cpf_emissor: { type: ["string", "null"], description: "CNPJ ou CPF do emissor como impresso." },
     chave_acesso: { type: ["string", "null"], description: "Chave de acesso de 44 dígitos (NF-e/NFC-e), se impressa." },
+    numero_documento: { type: ["string", "null"], description: "Número da nota, do recibo ou do pedido de compras, como impresso." },
+    condicao_pagamento: { type: ["string", "null"], description: "Condição de pagamento impressa (pedido, proposta ou e-mail), literal." },
+    referencia_pedido: { type: ["string", "null"], description: "Referência a pedido de compras impressa no documento, literal." },
     itens: {
       type: "array",
       items: {
@@ -78,7 +87,10 @@ Regras obrigatórias:
 4. "itens": as linhas de produtos/serviços impressas, com descrição e valor de cada uma.
 5. "motivo_sugestoes": até 3 sugestões de motivo, escolhidas SOMENTE entre as categorias listadas no pedido (use o id).
    "texto" no padrão "Categoria — detalhe curto". "confianca" de 0 a 1. Esta é a única sugestão permitida.
-6. "alertas": códigos curtos para situações que o conferente deve ver, como "possivel_bebida_alcoolica",
+6. "numero_documento": número da nota/recibo ou do pedido de compras. "condicao_pagamento": a condição de pagamento
+   como escrita (ex.: "50% sinal - 50% após a entrega"); não calcule o valor. "referencia_pedido": referência a pedido
+   impressa na nota. Nos documentos em que não existem, devolva null.
+7. "alertas": códigos curtos para situações que o conferente deve ver, como "possivel_bebida_alcoolica",
    "documento_rasurado", "documento_cortado", "mais_de_um_comprovante", "nao_e_comprovante".
 Responda apenas com o JSON do esquema.`;
 
@@ -88,9 +100,9 @@ export function montarPedido(modo: ModoLeitura, categorias: Categoria[]): string
     .join("\n");
   const foco =
     modo === "comprovacao"
-      ? "Este é o documento de comprovação de um adiantamento (nota fiscal ou recibo)."
+      ? "Este é o documento de comprovação de um adiantamento (nota fiscal ou recibo). Transcreva também o número da nota e a referência ao pedido, se impressa."
       : modo === "pedido_compra"
-        ? "Este é um documento de origem (pedido de compras, proposta ou e-mail)."
+        ? "Este é um documento de origem (pedido de compras, proposta ou e-mail). Em \"favorecido\" e \"cnpj_cpf_emissor\" vai o fornecedor; em \"numero_documento\" o número do pedido; em \"valor_total\" o valor total do pedido; transcreva a condição de pagamento."
         : "Este é um comprovante de despesa.";
   return `${foco}\n\nCategorias de motivo ativas (escolha só entre estas):\n${lista || "- (nenhuma)"}\n\nTranscreva o documento anexo.`;
 }
@@ -114,6 +126,9 @@ export function validarLeitura(bruto: unknown): Leitura | null {
     favorecido: texto(r.favorecido),
     cnpj_cpf_emissor: texto(r.cnpj_cpf_emissor),
     chave_acesso: texto(r.chave_acesso),
+    numero_documento: texto(r.numero_documento)?.slice(0, 60) ?? null,
+    condicao_pagamento: texto(r.condicao_pagamento)?.slice(0, 200) ?? null,
+    referencia_pedido: texto(r.referencia_pedido)?.slice(0, 120) ?? null,
     itens: (r.itens as unknown[])
       .filter((i): i is Record<string, unknown> => !!i && typeof i === "object")
       .map((i) => ({ descricao: String(i.descricao ?? "").slice(0, 200), valor: typeof i.valor === "number" ? i.valor : null }))

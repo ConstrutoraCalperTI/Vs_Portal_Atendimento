@@ -58,7 +58,7 @@ export interface ItemConferencia {
 export interface Conferencia {
   podeConferir: boolean;
   itens: ItemConferencia[];
-  gerais: { codigo: string; resultado: string; detalhe: string }[];
+  gerais: { codigo: string; resultado?: string; detalhe: string }[];
 }
 
 export type DecisaoItem = "aceitar" | "ajuste" | "glosar";
@@ -112,7 +112,8 @@ const supabaseConferencia: ConferenciaService = {
 
 // ---------- Modo simulado: trabalha sobre os registros em memória ----------
 const decisoes = new Map<number, { status: Item["statusConferencia"]; glosa: number; obs: string | null }>();
-const FILA: StatusSolicitacao[] = ["em_conferencia", "pendencia_solicitante", "lancamento_gerado", "pagamento_programado"];
+const FILA: StatusSolicitacao[] = ["em_conferencia", "pendencia_solicitante", "lancamento_gerado", "pagamento_programado", "comprovacao_pendente",
+  "comprovacao_em_conferencia", "devolucao_pendente"];
 
 const mockConferencia: ConferenciaService = {
   async fila() {
@@ -122,11 +123,11 @@ const mockConferencia: ConferenciaService = {
     return {
       kpis: {
         aConferir: conta("em_conferencia"), aConferirValor: 0, pendencia: conta("pendencia_solicitante"), lancamentoGerado: conta("lancamento_gerado"),
-        pagamentoProgramado: conta("pagamento_programado"), aComprovar: 0, aComprovarVencidos: 0, pagasMes: 0, pagasMesValor: 0,
+        pagamentoProgramado: conta("pagamento_programado"), aComprovar: conta("comprovacao_pendente") + conta("comprovacao_em_conferencia"), aComprovarVencidos: 0, pagasMes: 0, pagasMesValor: 0,
       },
       lista: lista.map((d) => ({
         id: d.id, numero: d.numero, tipo: d.tipo, status: d.status, solicitante: d.solicitante.nome, setor: d.setor?.nome ?? null, valor: d.totalDespesas,
-        valorAPagar: d.valorAPagar, ultimaAprovacaoEm: d.enviadoEm, pagarAte: d.pagarAte, vencimento: null, itens: d.itens.length,
+        valorAPagar: d.valorAPagar, ultimaAprovacaoEm: d.enviadoEm, pagarAte: d.pagarAte, vencimento: d.adiantamento?.vencimento ?? null, itens: d.itens.length,
         resolvidos: d.itens.filter((i) => ["aceito", "glosado"].includes(decisoes.get(i.id)?.status ?? "")).length,
       })),
     };
@@ -185,7 +186,9 @@ const mockConferencia: ConferenciaService = {
   async marcarPaga(id) {
     await delay();
     const d = registros.get(id);
-    if (d) d.status = "paga";
+    if (!d) return;
+    d.status = d.tipo === "adiantamento" ? "comprovacao_pendente" : "paga";
+    if (d.adiantamento) Object.assign(d.adiantamento, { pagoEm: new Date().toISOString(), statusComprovacao: "pendente" });
   },
 };
 

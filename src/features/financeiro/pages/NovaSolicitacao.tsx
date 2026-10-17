@@ -16,9 +16,9 @@ export function NovaSolicitacao() {
   return <CartoesInicio temFundoFixo={q.data.temFundoFixo} temSetor={q.data.temSetor} />;
 }
 
-const ROTA: Record<string, TipoSolicitacao> = { reembolso: "reembolso", "fundo-fixo": "fundo_fixo" };
+const ROTA: Record<string, TipoSolicitacao> = { reembolso: "reembolso", "fundo-fixo": "fundo_fixo", adiantamento: "adiantamento" };
 
-/** /financeiro/solicitacoes/nova/reembolso e …/fundo-fixo (rotas do PRD): cria o rascunho e abre o formulário. */
+/** /financeiro/solicitacoes/nova/reembolso, …/fundo-fixo e …/adiantamento (rotas do PRD): cria o rascunho e abre o formulário. */
 export function CriarSolicitacao() {
   const { tipo = "" } = useParams();
   const criar = useCriarSolicitacao();

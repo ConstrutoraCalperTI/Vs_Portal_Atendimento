@@ -2,8 +2,9 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { FileText, Printer, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { valorPorExtenso } from "../../../../supabase/functions/_shared/sf/adiantamento.ts";
 import { moeda } from "../cadeia";
-import { dataBR, mesBR } from "../pages/formato";
+import { dataBR, docBR, mesBR } from "../pages/formato";
 import { siengeService } from "../sienge";
 import { solicitacoesService, type Detalhe } from "../solicitacoes";
 
@@ -17,7 +18,10 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
   const [zoom, setZoom] = useState(1);
   const fundo = d.tipo === "fundo_fixo";
   const gestor = [...d.aprovacoes].reverse().find((a) => a.status === "aprovado" && a.ciclo === d.ciclo);
-  const anexos = d.itens.flatMap((i) => i.anexos.map((a) => ({ ...a, valor: i.valor })));
+  const ad = d.tipo === "adiantamento" ? d.adiantamento : undefined;
+  const anexos = ad
+    ? ad.documentos.map((x) => ({ id: x.id, nome: x.nome, path: x.path, valor: null as number | null }))
+    : d.itens.flatMap((i) => i.anexos.map((a) => ({ ...a, valor: i.valor })));
   const baixar = async () => {
     try {
       const blob = await siengeService.pdf(d.id);
@@ -61,6 +65,7 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
                   <div><small>Título:</small><b>{TITULO[d.tipo]}</b></div>
                   <img src="/calper-logo.webp" alt="Calper" height={40} />
                 </div>
+                {ad ? <CorpoAdiantamento d={d} /> : (<>
                 <table className="sf-a4__kv">
                   <tbody>
                     {fundo && <tr><th>VALOR DO FUNDO FIXO:</th><td>{moeda(d.valorFundoFixo ?? 0)}</td><th>SALDO INICIAL:</th><td>{moeda(d.saldoInicial ?? 0)}</td></tr>}
@@ -92,16 +97,17 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
                   <div><b>ACEITE DO FUNCIONÁRIO</b><span>{d.solicitante.nome} · {d.aceiteEm ? new Date(d.aceiteEm).toLocaleString("pt-BR") : "pendente"}</span></div>
                   <div><b>APROVAÇÃO DO GESTOR</b><span>{gestor ? `${gestor.aprovador ?? gestor.papel} · ${gestor.decididoEm ? new Date(gestor.decididoEm).toLocaleString("pt-BR") : ""}` : "pendente"}</span>{gestor?.comentario && <span>"{gestor.comentario}"</span>}</div>
                 </div>
+                </>)}
               </div>
             </div>
             <aside className="sf-modal__lado">
-              <h3>Comprovantes · {anexos.length}</h3>
+              <h3>{ad ? "Documento de origem" : "Comprovantes"} · {anexos.length}</h3>
               <ul className="sf-fila">
                 {anexos.map((a) => (
                   <li key={a.id}>
                     <button type="button" className="sf-fila__item" onClick={() => void abrir(a.path)}>
                       <FileText size={16} aria-hidden="true" />
-                      <span><b>{a.nome}</b><small>{moeda(a.valor ?? 0)}</small></span>
+                      <span><b>{a.nome}</b>{a.valor != null && <small>{moeda(a.valor)}</small>}</span>
                     </button>
                   </li>
                 ))}
@@ -112,5 +118,53 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+const FORMA = { deposito: "DEPÓSITO", boleto: "BOLETO", cheque: "CHEQUE", dinheiro: "DINHEIRO" } as const;
+
+/** Adiantamento de numerário (modelo Calper): o mesmo conteúdo do PDF do servidor. */
+function CorpoAdiantamento({ d }: { d: Detalhe }) {
+  const a = d.adiantamento!;
+  const aprov = d.aprovacoes.filter((x) => x.ciclo === d.ciclo && x.status === "aprovado");
+  const linhas: [string, string, string, string][] = [
+    ["OBRA (EMPRESA PAGADORA):", (a.obra ?? "—").toUpperCase(), "DATA DO PREENCHIMENTO:", dataBR(a.dataPreenchimento)],
+    ["CONTA CAIXA:", a.contaCaixa ?? "—", "CONTA DE PAGAMENTO:", a.contaPagamento ?? "—"],
+    ["CENTRO DE CUSTO:", a.centroCusto ?? "—", "CENTRO DE APURAÇÃO:", a.centroApuracao ?? "—"],
+    ["VALOR:", moeda(a.valor ?? 0), "Nº:", d.numero],
+    ["FAVORECIDO:", (a.favorecido ?? "—").toUpperCase(), "CPF/CNPJ:", docBR(a.favorecidoDoc) || "—"],
+    ["FORMA DE PAGAMENTO:", a.formaPagamento ? FORMA[a.formaPagamento] : "—", "PEDIDO:", a.pedidoNumero ?? "—"],
+    ...(a.formaPagamento === "deposito"
+      ? [["BANCO / AGÊNCIA:", `${a.banco ?? "—"} / ${a.agencia ?? "—"}`, "CONTA / TIPO:", `${a.conta ?? "—"} / ${a.tipoConta === "poupanca" ? "POUPANÇA" : "CORRENTE"}`] as [string, string, string, string]]
+      : []),
+    ["VENCIMENTO:", dataBR(a.vencimento), "COMPROVAR ATÉ:", dataBR(a.prazoComprovacao)],
+    ["FUNCIONÁRIO:", d.solicitante.nome.toUpperCase(), "DEPARTAMENTO:", (d.setor?.nome ?? "—").toUpperCase()],
+  ];
+  return (
+    <>
+      <table className="sf-a4__kv">
+        <tbody>
+          {linhas.map((l) => <tr key={l[0]}><th>{l[0]}</th><td>{l[1]}</td><th>{l[2]}</th><td>{l[3]}</td></tr>)}
+          <tr><th>VALOR POR EXTENSO:</th><td colSpan={3}>{a.valor ? valorPorExtenso(a.valor) : "—"}</td></tr>
+          <tr><th>FINALIDADE:</th><td colSpan={3}>{(a.finalidade ?? "—").toUpperCase()}</td></tr>
+        </tbody>
+      </table>
+      <table className="sf-a4__tab">
+        <thead><tr><th>RATEIO POR TAREFA</th><th>PORCENTAGEM</th><th>VALOR</th></tr></thead>
+        <tbody>
+          {a.rateio.map((r) => <tr key={r.id}><td>{r.tarefa}</td><td className="n">{String(r.porcentagem).replace(".", ",")}%</td><td className="n">{r.valor.toFixed(2).replace(".", ",")}</td></tr>)}
+        </tbody>
+      </table>
+      <div className="sf-a4__info">
+        <p><b>TERMO DE RESPONSABILIDADE:</b> o funcionário assume comprovar este adiantamento com nota fiscal ou recibo até {dataBR(a.prazoComprovacao)}. Sem comprovação no prazo, o gestor é avisado e novos adiantamentos ficam bloqueados. As assinaturas foram substituídas pelo aceite eletrônico e pelas aprovações registradas no Portal.</p>
+      </div>
+      <div className="sf-a4__aceites">
+        <div><b>ACEITE DO FUNCIONÁRIO</b><span>{d.solicitante.nome} · {d.aceiteEm ? new Date(d.aceiteEm).toLocaleString("pt-BR") : "pendente"}</span></div>
+        {aprov.map((x) => (
+          <div key={x.nivel}><b>APROVAÇÃO · {x.papel.toUpperCase()}</b><span>{x.aprovador ?? x.papel} · {x.decididoEm ? new Date(x.decididoEm).toLocaleString("pt-BR") : ""}</span></div>
+        ))}
+        {aprov.length === 0 && <div><b>APROVAÇÕES</b><span>pendentes</span></div>}
+      </div>
+    </>
   );
 }

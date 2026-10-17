@@ -1,6 +1,8 @@
 // Solicitações Financeiras, Fase 5: integração SIENGE (API REST pública). Módulo puro (sem rede): endereço,
 // autenticação Basic, montagem do título a pagar (POST /bills) e leitura das respostas. Campos conforme o Swagger
-// oficial bill-debt-v1 (BillInsert / BillBudgetCategoriesInsert), lido em 17/10/2026.
+// oficial bill-debt-v1 (BillInsert / BillBudgetCategoriesInsert / BillBuildingsCostInsert), lido em 17/10/2026.
+// Adiantamento (Fase 5B): credor = favorecido (CPF/CNPJ); o rateio por tarefa vai em buildingsCost (obra, unidade
+// construtiva e item de orçamento = tarefa) quando o conferente informa a obra e a unidade do SIENGE.
 
 export interface ConfigSienge {
   ativo: boolean;
@@ -31,6 +33,11 @@ export interface PedidoLancamento {
   total: number;
   glosado: number;
   aPagar: number;
+  favorecido?: string | null;
+  finalidade?: string | null;
+  pedidoNumero?: string | null;
+  notaNumero?: string | null;
+  rateio?: { tarefa: string; porcentagem: number | string }[];
 }
 
 export interface EscolhasLancamento {
@@ -38,6 +45,9 @@ export interface EscolhasLancamento {
   centroCustoId: number;
   plano: string;
   vencimento: string;
+  /** Adiantamento: obra e unidade construtiva do SIENGE para apropriar o rateio por tarefa. */
+  obraId?: number | null;
+  unidadeId?: number | null;
 }
 
 export interface TituloSienge {
@@ -55,6 +65,7 @@ export interface TituloSienge {
   notes: string;
   discount: number;
   budgetCategories: { costCenterId: number; paymentCategoriesId: string; percentage: number }[];
+  buildingsCost?: { buildingId: number; buildingUnitId: number; costEstimationSheetId: string; percentage: number }[];
 }
 
 const TIPO: Record<PedidoLancamento["tipo"], string> = { reembolso: "Reembolso", fundo_fixo: "Fundo fixo", adiantamento: "Adiantamento" };
@@ -90,20 +101,38 @@ export function planoDoTipo(c: ConfigSienge, tipo: PedidoLancamento["tipo"]): st
 const dia = (iso: string | null | undefined) => (iso ? iso.slice(0, 10) : null);
 const hoje = () => new Date().toISOString().slice(0, 10);
 
-/** Título a pagar (POST /bills): uma parcela, valor a pagar (já sem as glosas), rateio 100% no centro de custo. */
-export function montarTitulo(p: PedidoLancamento, c: ConfigSienge, e: EscolhasLancamento): TituloSienge {
+/** Rateio por tarefa em apropriação de obra (percentuais somam 100). Vazio sem obra/unidade ou sem rateio. */
+export function apropriacaoObra(p: PedidoLancamento, e: EscolhasLancamento): NonNullable<TituloSienge["buildingsCost"]> {
+  if (!e.obraId || !e.unidadeId || !p.rateio?.length) return [];
+  return p.rateio.map((r) => ({ buildingId: e.obraId!, buildingUnitId: e.unidadeId!, costEstimationSheetId: r.tarefa, percentage: Number(r.porcentagem) }));
+}
+
+/**
+ * Título a pagar (POST /bills): uma parcela, valor a pagar (já sem as glosas), rateio 100% no centro de custo.
+ * documento: número do título (padrão: o número SF; o saldo do adiantamento usa SF-…-S).
+ */
+export function montarTitulo(p: PedidoLancamento, c: ConfigSienge, e: EscolhasLancamento, documento = p.numero): TituloSienge {
   const emissao = dia(p.ultimaAprovacaoEm) ?? hoje();
-  const notas = [
-    `${TIPO[p.tipo]} ${p.numero} - ${p.solicitante}`,
-    p.setor ? `Setor ${p.setor}` : null,
-    p.glosado > 0 ? `Total ${p.total.toFixed(2)} - glosas ${p.glosado.toFixed(2)}` : null,
-    "Lançado pelo Portal de Tickets (Solicitações Financeiras)",
-  ].filter(Boolean).join(" · ");
+  const notas = (p.tipo === "adiantamento"
+    ? [
+        `${documento === p.numero ? "Adiantamento" : "Saldo do pedido (comprovação)"} ${p.numero} - ${p.favorecido ?? p.solicitante}`,
+        p.pedidoNumero ? `Pedido ${p.pedidoNumero}` : null,
+        p.notaNumero ? `Nota ${p.notaNumero}` : null,
+        p.finalidade ?? null,
+        "Lançado pelo Portal de Tickets (Solicitações Financeiras)",
+      ]
+    : [
+        `${TIPO[p.tipo]} ${p.numero} - ${p.solicitante}`,
+        p.setor ? `Setor ${p.setor}` : null,
+        p.glosado > 0 ? `Total ${p.total.toFixed(2)} - glosas ${p.glosado.toFixed(2)}` : null,
+        "Lançado pelo Portal de Tickets (Solicitações Financeiras)",
+      ]).filter(Boolean).join(" · ");
+  const obra = apropriacaoObra(p, e);
   return {
     debtorId: c.empresaId!,
     creditorId: e.credorId,
     documentIdentificationId: c.tipoDocumento!,
-    documentNumber: p.numero.slice(0, 20),
+    documentNumber: documento.slice(0, 20),
     issueDate: emissao,
     installmentsNumber: 1,
     indexId: c.indexadorId!,
@@ -114,7 +143,13 @@ export function montarTitulo(p: PedidoLancamento, c: ConfigSienge, e: EscolhasLa
     notes: notas.slice(0, 500),
     discount: 0,
     budgetCategories: [{ costCenterId: e.centroCustoId, paymentCategoriesId: e.plano, percentage: 100 }],
+    ...(obra.length ? { buildingsCost: obra } : {}),
   };
+}
+
+/** Filtro do credor no GET /creditors: CPF (11 dígitos) ou CNPJ (14). */
+export function filtroCredor(doc: string): string {
+  return doc.length === 14 ? `cnpj=${doc}` : `cpf=${doc}`;
 }
 
 /** Valida as escolhas do conferente antes de chamar a API. */
@@ -122,6 +157,8 @@ export function validarEscolhas(e: Partial<EscolhasLancamento>): string | null {
   if (!e.centroCustoId || !Number.isInteger(e.centroCustoId) || e.centroCustoId <= 0) return "Escolha o centro de custo do SIENGE.";
   if (!e.plano || !/^\d{1,9}$/.test(e.plano)) return "Informe o plano financeiro (só números, sem máscara).";
   if (!e.vencimento || !/^\d{4}-\d{2}-\d{2}$/.test(e.vencimento)) return "Informe o vencimento.";
+  if ((e.obraId != null) !== (e.unidadeId != null)) return "Para apropriar o rateio na obra, informe a obra e a unidade construtiva do SIENGE.";
+  if (e.obraId != null && (!Number.isInteger(e.obraId) || e.obraId <= 0 || !Number.isInteger(e.unidadeId) || (e.unidadeId ?? 0) <= 0)) return "Obra e unidade do SIENGE são códigos numéricos.";
   return null;
 }
 

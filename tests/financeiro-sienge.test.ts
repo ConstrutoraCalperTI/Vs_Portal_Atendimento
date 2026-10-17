@@ -1,7 +1,7 @@
 // Integração SIENGE (Fase 5): título a pagar no formato do Swagger (POST /bills), validações, leitura das respostas.
 import { describe, expect, it } from "vitest";
 import {
-  autorizacao, faltandoNaConfig, idDoTitulo, mensagemSienge, montarTitulo, planoDoTipo, resultados, urlBase, validarEscolhas,
+  apropriacaoObra, autorizacao, faltandoNaConfig, filtroCredor, idDoTitulo, mensagemSienge, montarTitulo, planoDoTipo, resultados, urlBase, validarEscolhas,
   type ConfigSienge, type PedidoLancamento,
 } from "../supabase/functions/_shared/sf/sienge.ts";
 
@@ -41,5 +41,42 @@ describe("SIENGE", () => {
     expect(idDoTitulo({ id: 12 }, null)).toBe(12);
     expect(mensagemSienge(400, JSON.stringify({ clientMessage: "Credor inativo" }))).toBe("SIENGE 400: Credor inativo");
     expect(mensagemSienge(401, "")).toMatch(/usuário ou senha/);
+  });
+});
+
+describe("SIENGE · adiantamento (Fase 5B)", () => {
+  const adt: PedidoLancamento = {
+    ...pedido, numero: "SF-2026-0151", tipo: "adiantamento", cpf: "53520864000109", favorecido: "J.A BLINDAGEM LTDA", finalidade: "Sinal do pedido",
+    pedidoNumero: "001355", total: 658.4, glosado: 0, aPagar: 658.4, rateio: [{ tarefa: "29.02.20", porcentagem: "60.00" }, { tarefa: "29.02.21", porcentagem: 40 }],
+  };
+
+  it("credor pelo CNPJ do favorecido; CPF continua para o colaborador", () => {
+    expect(filtroCredor("53520864000109")).toBe("cnpj=53520864000109");
+    expect(filtroCredor("12345678900")).toBe("cpf=12345678900");
+  });
+
+  it("rateio por tarefa vira apropriação de obra só com obra e unidade", () => {
+    const sem = montarTitulo(adt, cfg, { credorId: 9, centroCustoId: 114, plano: "2010103", vencimento: "2026-10-20" });
+    expect(sem.buildingsCost).toBeUndefined();
+    expect(sem.notes).toContain("Adiantamento SF-2026-0151 - J.A BLINDAGEM LTDA");
+    expect(sem.notes).toContain("Pedido 001355");
+    const com = montarTitulo(adt, cfg, { credorId: 9, centroCustoId: 114, plano: "2010103", vencimento: "2026-10-20", obraId: 12, unidadeId: 1 });
+    expect(com.buildingsCost).toEqual([
+      { buildingId: 12, buildingUnitId: 1, costEstimationSheetId: "29.02.20", percentage: 60 },
+      { buildingId: 12, buildingUnitId: 1, costEstimationSheetId: "29.02.21", percentage: 40 },
+    ]);
+    expect(apropriacaoObra({ ...adt, rateio: [] }, { credorId: 9, centroCustoId: 1, plano: "1", vencimento: "2026-10-20", obraId: 12, unidadeId: 1 })).toEqual([]);
+  });
+
+  it("saldo do pedido usa o documento SF-…-S", () => {
+    const t = montarTitulo({ ...adt, notaNumero: "000874" }, cfg, { credorId: 9, centroCustoId: 114, plano: "2010103", vencimento: "2026-11-01" }, "SF-2026-0151-S");
+    expect(t.documentNumber).toBe("SF-2026-0151-S");
+    expect(t.notes).toContain("Saldo do pedido (comprovação) SF-2026-0151");
+    expect(t.notes).toContain("Nota 000874");
+  });
+
+  it("obra sem unidade é recusada", () => {
+    expect(validarEscolhas({ centroCustoId: 114, plano: "2010103", vencimento: "2026-10-20", obraId: 12, unidadeId: null })).toMatch(/unidade/);
+    expect(validarEscolhas({ centroCustoId: 114, plano: "2010103", vencimento: "2026-10-20", obraId: 12, unidadeId: 3 })).toBeNull();
   });
 });

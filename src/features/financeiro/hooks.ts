@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { financeiroService, type ConfigSetorFinanceiro, type SalvarCategoria, type SalvarRegra } from "./service";
 import { conferenciaService, type DecisaoItem } from "./conferencia";
 import { siengeService, type SalvarSienge } from "./sienge";
+import { adiantamentoService } from "./adiantamento";
 import { aprovacaoService, solicitacoesService, type AbaAprovacao, type Decisao, type TipoSolicitacao } from "./solicitacoes";
 
 const CHAVE = ["financeiro"] as const;
@@ -94,4 +95,10 @@ export function useSituacaoSienge(id: number) {
 export const useSalvarSienge = () => useMuda((p: SalvarSienge) => siengeService.salvar(p));
 export const useSalvarSenhaSienge = () => useMuda((senha: string) => siengeService.salvarSenha(senha));
 export const useTestarSienge = () => useMuda(() => siengeService.testar());
-export const useLancarSienge = () => useMuda((p: { solicitacaoId: number; centroCustoId: number; plano: string; vencimento: string }) => siengeService.lancar(p));
+export const useLancarSienge = () =>
+  useMuda((p: { solicitacaoId: number; centroCustoId: number; plano: string; vencimento: string; obraId?: number | null; unidadeId?: number | null; saldo?: boolean }) =>
+    p.saldo ? adiantamentoService.lancarSaldo(p) : siengeService.lancar(p));
+
+// ---------- Adiantamento (Fase 5B) ----------
+export const useDecidirComprovacao = () => useMuda((p: { id: number; decisao: "aceitar" | "ajuste"; obs: string | null }) => adiantamentoService.decidirComprovacao(p));
+export const useConfirmarDevolucao = () => useMuda((p: { id: number; obs: string | null }) => adiantamentoService.confirmarDevolucao(p));

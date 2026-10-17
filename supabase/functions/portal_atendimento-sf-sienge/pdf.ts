@@ -3,6 +3,7 @@
 // e é o "Baixar PDF" do preview.
 
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from "npm:pdf-lib@1.17.1";
+import { valorPorExtenso } from "../_shared/sf/adiantamento.ts";
 
 export interface DadosPdf {
   numero: string;
@@ -23,6 +24,15 @@ export interface DadosPdf {
   itens: { data: string | null; valor: number | null; descricao: string | null; motivo: string | null }[];
   aprovacoes: { ciclo: number; papel: string; status: string; aprovador: string | null; decididoEm: string | null; comentario: string | null }[];
   ciclo: number;
+  adiantamento?: DadosAdiantamento;
+}
+
+export interface DadosAdiantamento {
+  obra: string | null; contaCaixa: string | null; contaPagamento: string | null; centroCusto: string | null; centroApuracao: string | null;
+  valor: number | string | null; favorecido: string | null; favorecidoDoc: string | null; finalidade: string | null;
+  formaPagamento: string | null; banco: string | null; agencia: string | null; conta: string | null; tipoConta: string | null;
+  vencimento: string | null; prazoComprovacao: string | null; dataPreenchimento: string | null; pedidoNumero: string | null;
+  rateio: { tarefa: string; porcentagem: number | string; valor: number | string }[];
 }
 
 const TITULO = { reembolso: "REEMBOLSO", fundo_fixo: "FUNDO FIXO DE CAIXA", adiantamento: "ADIANTAMENTO DE NUMERÁRIO" } as const;
@@ -73,6 +83,95 @@ export async function gerarPdf(d: DadosPdf): Promise<Uint8Array> {
   pagina.drawRectangle({ x: 595 - M - 8, y: y - 26, width: 8, height: 3, color: vermelho });
   pagina.drawLine({ start: { x: M, y: y - 32 }, end: { x: 595 - M, y: y - 32 }, thickness: 1.5, color: preto });
   y -= 48;
+
+  // Adiantamento de numerário (modelo Calper): campos do formulário, rateio, termo e as aprovações da cadeia.
+  if (d.tipo === "adiantamento" && d.adiantamento) {
+    const a = d.adiantamento;
+    const docFmt = (x: string | null) =>
+      x && /^\d{14}$/.test(x) ? `${x.slice(0, 2)}.${x.slice(2, 5)}.${x.slice(5, 8)}/${x.slice(8, 12)}-${x.slice(12)}` : cpfFmt(x);
+    const forma = { deposito: "DEPÓSITO", boleto: "BOLETO", cheque: "CHEQUE", dinheiro: "DINHEIRO" }[a.formaPagamento ?? ""] ?? "—";
+    const kv: [string, string, string, string][] = [
+      ["OBRA (EMPRESA PAGADORA):", (a.obra ?? "—").toUpperCase(), "DATA DO PREENCHIMENTO:", dataBR(a.dataPreenchimento)],
+      ["CONTA CAIXA:", a.contaCaixa ?? "—", "CONTA DE PAGAMENTO:", a.contaPagamento ?? "—"],
+      ["CENTRO DE CUSTO:", a.centroCusto ?? "—", "CENTRO DE APURAÇÃO:", a.centroApuracao ?? "—"],
+      ["VALOR:", `R$ ${n2(Number(a.valor ?? 0))}`, "Nº:", d.numero],
+      ["FAVORECIDO:", (a.favorecido ?? "—").toUpperCase(), "CPF/CNPJ:", docFmt(a.favorecidoDoc)],
+      ["FORMA DE PAGAMENTO:", forma, "PEDIDO:", a.pedidoNumero ?? "—"],
+      ...(a.formaPagamento === "deposito"
+        ? [["BANCO / AGÊNCIA:", `${a.banco ?? "—"} / ${a.agencia ?? "—"}`, "CONTA / TIPO:", `${a.conta ?? "—"} / ${a.tipoConta === "poupanca" ? "POUPANÇA" : "CORRENTE"}`] as [string, string, string, string]]
+        : []),
+      ["VENCIMENTO:", dataBR(a.vencimento), "COMPROVAR ATÉ:", dataBR(a.prazoComprovacao)],
+      ["FUNCIONÁRIO:", d.solicitante.nome.toUpperCase(), "DEPARTAMENTO:", (d.setor?.nome ?? "—").toUpperCase()],
+    ];
+    const ck = [130, 150, 110, L - 390];
+    for (const linha of kv) {
+      let x = M;
+      linha.forEach((v, i) => {
+        caixa(x, y - 16, ck[i], 16, i % 2 === 0 ? cinza : undefined);
+        texto(corta(v, i % 2 === 0 ? b : f, 8, ck[i] - 8), x + 4, y - 11, 8, i % 2 === 0 ? b : f);
+        x += ck[i];
+      });
+      y -= 16;
+    }
+    // Valor por extenso e finalidade (linha inteira)
+    for (const [rot, val] of [["VALOR POR EXTENSO:", valorPorExtenso(Number(a.valor ?? 0))], ["FINALIDADE:", (a.finalidade ?? "—").toUpperCase()]] as const) {
+      caixa(M, y - 16, ck[0], 16, cinza);
+      texto(rot, M + 4, y - 11, 8, b);
+      caixa(M + ck[0], y - 16, L - ck[0], 16);
+      texto(corta(val, f, 8, L - ck[0] - 8), M + ck[0] + 4, y - 11, 8);
+      y -= 16;
+    }
+    y -= 12;
+    // Rateio por tarefa
+    const cr = [L - 220, 100, 120];
+    const linhaR = (vals: string[], negrito: boolean, fundoCor?: ReturnType<typeof rgb>) => {
+      let x = M;
+      vals.forEach((v, i) => {
+        caixa(x, y - 15, cr[i], 15, fundoCor);
+        const fo = negrito ? b : f;
+        const tt = corta(v, fo, 8.5, cr[i] - 8);
+        texto(tt, i === 0 ? x + 4 : x + cr[i] - 4 - fo.widthOfTextAtSize(tt, 8.5), y - 10.5, 8.5, fo);
+        x += cr[i];
+      });
+      y -= 15;
+    };
+    linhaR(["RATEIO POR TAREFA", "PORCENTAGEM", "VALOR"], true, cinza);
+    for (const r of a.rateio) linhaR([r.tarefa, `${String(r.porcentagem).replace(".", ",")}%`, n2(Number(r.valor))], false);
+    y -= 14;
+    // Termo
+    const termo = limpo(`TERMO DE RESPONSABILIDADE: o funcionário assume comprovar este adiantamento com nota fiscal ou recibo até ${dataBR(a.prazoComprovacao)}. `
+      + "Sem comprovação no prazo, o gestor é avisado e novos adiantamentos ficam bloqueados. As assinaturas foram substituídas pelo aceite eletrônico e pelas aprovações registradas no Portal.");
+    const lt: string[] = [];
+    let atual = "";
+    for (const w of termo.split(" ")) {
+      const tt = atual ? `${atual} ${w}` : w;
+      if (f.widthOfTextAtSize(tt, 8.5) > L - 12) {
+        lt.push(atual);
+        atual = w;
+      } else atual = tt;
+    }
+    lt.push(atual);
+    const hT = lt.length * 11 + 8;
+    caixa(M, y - hT, L, hT);
+    lt.forEach((l, i) => texto(l, M + 6, y - 12 - i * 11, 8.5));
+    y -= hT + 26;
+    // Aceite + aprovações do ciclo (Planejamento, Gerente, Diretor, Presidente)
+    const aprov = d.aprovacoes.filter((x) => x.ciclo === d.ciclo && x.status === "aprovado");
+    const blocosA: [string, string][] = [
+      ["ACEITE DO FUNCIONÁRIO", `${d.solicitante.nome} · ${dataHoraBR(d.aceiteEm)}`],
+      ...aprov.map((x) => [`APROVAÇÃO · ${x.papel.toUpperCase()}`, `${x.aprovador ?? x.papel} · ${dataHoraBR(x.decididoEm)}`] as [string, string]),
+    ];
+    blocosA.forEach(([tt, l1], i) => {
+      if (i % 2 === 0 && i > 0) y -= 44;
+      if (y < M + 40) novaPagina();
+      const x = M + (i % 2) * (L / 2 + 6);
+      const w = L / 2 - 6;
+      pagina.drawLine({ start: { x, y }, end: { x: x + w, y }, thickness: 0.7, color: preto });
+      texto(tt, x, y - 12, 8.5, b);
+      texto(corta(l1, f, 8.5, w), x, y - 24, 8.5);
+    });
+    return await doc.save();
+  }
 
   // Cabeçalho (2 pares por linha)
   const fundo = d.tipo === "fundo_fixo";

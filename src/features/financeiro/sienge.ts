@@ -55,7 +55,7 @@ export interface SiengeService {
   testar(): Promise<{ ok: boolean; passos: { passo: string; ok: boolean; detalhe: string }[] }>;
   listas(): Promise<ListasSienge>;
   situacao(id: number): Promise<SituacaoSienge>;
-  lancar(p: { solicitacaoId: number; centroCustoId: number; plano: string; vencimento: string }): Promise<{ titulo: number; jaExistia: boolean; avisos: string[] }>;
+  lancar(p: { solicitacaoId: number; centroCustoId: number; plano: string; vencimento: string; obraId?: number | null; unidadeId?: number | null }): Promise<{ titulo: number; jaExistia: boolean; avisos: string[] }>;
   pdf(id: number): Promise<Blob>;
 }
 
@@ -109,7 +109,7 @@ const mockSienge: SiengeService = {
     await delay();
     return {
       centrosCusto: [{ id: 114, nome: "ETEHE RESIDENCIAL" }, { id: 120, nome: "ARTE WAVE" }],
-      planos: [{ id: "2010101", nome: "Reembolso de despesas" }, { id: "2010102", nome: "Fundo fixo" }],
+      planos: [{ id: "2010101", nome: "Reembolso de despesas" }, { id: "2010102", nome: "Fundo fixo" }, { id: "2010103", nome: "Adiantamento a fornecedor" }],
       documentos: [{ id: "AV", nome: "Aviso de débito" }],
       padroes: { planoReembolso: cfg.planoReembolso, planoFundoFixo: cfg.planoFundoFixo, planoAdiantamento: cfg.planoAdiantamento, centroCustoPadrao: cfg.centroCustoPadrao },
     };

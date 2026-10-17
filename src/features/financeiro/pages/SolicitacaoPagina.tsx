@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Ban, Check, CornerUpLeft, Eye, Lock, Paperclip, Plus, Send, Trash2, Upload, X } from "lucide-react";
+import { Ban, Check, CornerUpLeft, Eye, Paperclip, Plus, Send, Trash2, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -16,6 +16,9 @@ import { StatusChip } from "../components/StatusChip";
 import { useCancelarSolicitacao, useChecagens, useConferencia, useDecidir, useDetalheExtra, useEnviarSolicitacao, usePendenciaResponder, useSolicitacao } from "../hooks";
 import { solicitacoesService, type Anexo, type Decisao, type Detalhe, type Item, type LinhaEdicao } from "../solicitacoes";
 import { LeituraComprovantes } from "./LeituraComprovantes";
+import { abrirAnexo, CampoValor, Regra, Ro } from "./comuns";
+import { AdiantamentoFormulario } from "./AdiantamentoFormulario";
+import { AvisoComprovacao, DadosAdiantamento, linhaDoTempoAdiantamento } from "./AdiantamentoVisao";
 import { dataBR, mesBR, NOME_TIPO } from "./formato";
 import "../../atendimento/pages/Atendimento.css";
 import "../financeiro.css";
@@ -30,7 +33,12 @@ export function SolicitacaoPagina() {
   if (!Number.isInteger(n) || n <= 0) return <NotFound />;
   if (q.isPending) return <PageSkeleton />;
   if (q.isError) return <ErrorState message="Não foi possível abrir a solicitação." onRetry={() => void q.refetch()} />;
-  return q.data.podeEditar ? <Formulario key={`${q.data.id}-${q.data.status}`} d={q.data} /> : <Visao d={q.data} />;
+  if (q.data.podeEditar) {
+    return q.data.tipo === "adiantamento" && q.data.adiantamento
+      ? <AdiantamentoFormulario key={`${q.data.id}-${q.data.status}`} d={q.data} />
+      : <Formulario key={`${q.data.id}-${q.data.status}`} d={q.data} />;
+  }
+  return <Visao d={q.data} />;
 }
 
 // ---------- Formulário ----------
@@ -349,42 +357,8 @@ function etapasPrevistas(d: Detalhe): EtapaTimeline[] {
   ];
 }
 
-/** Valor em reais digitado com vírgula: guarda o texto enquanto a pessoa digita e entrega o número. */
-function CampoValor({ rotulo, valor, onChange }: { rotulo: string; valor: number | null; onChange: (v: number | null) => void }) {
-  const [texto, setTexto] = useState(valor == null ? "" : valor.toFixed(2).replace(".", ","));
-  return (
-    <input className="input sf-num" inputMode="decimal" aria-label={rotulo} value={texto}
-      onChange={(e) => {
-        const t = e.target.value.replace(/[^\d,.]/g, "");
-        setTexto(t);
-        const n = Number(t.replace(/\./g, "").replace(",", "."));
-        onChange(t === "" || Number.isNaN(n) ? null : n);
-      }}
-      onBlur={() => setTexto(valor == null ? "" : valor.toFixed(2).replace(".", ","))} />
-  );
-}
 
-function Regra({ cod, texto, tom, res }: { cod: string; texto: string; tom: "ok" | "aviso" | "erro"; res: string }) {
-  return (
-    <li>
-      <span className="sf-regras__cod">{cod}</span>
-      <span>{texto}</span>
-      <span className={`sf-chip sf-chip--${tom}`}>{res}</span>
-    </li>
-  );
-}
 
-function Ro({ rotulo, valor, trava }: { rotulo: string; valor: string; trava?: boolean }) {
-  return (
-    <div className="field">
-      <span className="field__label">{rotulo}</span>
-      <span className="sf-ro">
-        {valor}
-        {trava && <Lock size={12} aria-label="Somente leitura" className="sf-ro__trava" />}
-      </span>
-    </div>
-  );
-}
 
 function Anexos({ anexos, linha, onAnexar, onTirar }: { anexos: Anexo[]; linha: number; onAnexar: (f: File) => void; onTirar: (a: Anexo) => void }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -415,13 +389,6 @@ function Anexos({ anexos, linha, onAnexar, onTirar }: { anexos: Anexo[]; linha: 
   );
 }
 
-async function abrirAnexo(a: Anexo) {
-  try {
-    window.open(await solicitacoesService.urlAnexo(a.path), "_blank", "noopener");
-  } catch (e) {
-    toast.error(e instanceof ServiceError ? e.message : "Não foi possível abrir o arquivo.");
-  }
-}
 
 function ResumoCaixa({ d, total }: { d: Detalhe; total: number }) {
   const saldoInicial = d.saldoInicial ?? 0;
@@ -453,11 +420,12 @@ function Visao({ d }: { d: Detalhe }) {
   const [confirmar, setConfirmar] = useState(false);
   const [preview, setPreview] = useState(false);
   const fundo = d.tipo === "fundo_fixo";
+  const adiantamento = d.tipo === "adiantamento" && !!d.adiantamento;
   return (
     <>
       <div className="sf-ph">
         <div>
-          <div className="sf-eyebrow">{NOME_TIPO[d.tipo]}</div>
+          <div className="sf-eyebrow">{adiantamento ? "Adiantamento de numerário" : NOME_TIPO[d.tipo]}</div>
           <h2 className="sf-ph__t">{d.numero} <StatusChip status={d.status} /></h2>
           <p className="sf-ph__s">{d.solicitante.nome} · {d.setor?.nome ?? "Sem setor"}{d.enviadoEm ? ` · enviada em ${new Date(d.enviadoEm).toLocaleString("pt-BR")}` : ""} · ciclo {d.ciclo}</p>
         </div>
@@ -480,8 +448,10 @@ function Visao({ d }: { d: Detalhe }) {
         </div>
       </div>
       {d.status === "pendencia_solicitante" && <Pendencia d={d} />}
+      {adiantamento && <AvisoComprovacao d={d} />}
       <div className="sf-dupla">
         <div className="sf-coluna">
+          {adiantamento ? <DadosAdiantamento d={d} /> : (<>
           <FormSection titulo="Dados">
             <div className="sf-campos">
               <Ro rotulo="Competência" valor={mesBR(d.competencia)} />
@@ -516,6 +486,7 @@ function Visao({ d }: { d: Detalhe }) {
               </table>
             </div>
           </FormSection>
+          </>)}
           <Checagens id={d.id} />
           <Comentarios d={d} />
           <BarraDecisao d={d} />
@@ -523,7 +494,7 @@ function Visao({ d }: { d: Detalhe }) {
         <aside className="sf-lateral">
           <section className="card sf-painel">
             <h3>Linha do tempo</h3>
-            <ApprovalTimeline etapas={linhaDoTempo(d)} />
+            <ApprovalTimeline etapas={adiantamento ? linhaDoTempoAdiantamento(d) : linhaDoTempo(d)} />
           </section>
         </aside>
       </div>

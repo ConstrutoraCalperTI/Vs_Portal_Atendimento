@@ -4,13 +4,15 @@
 //   listas  {}                                             Financeiro/Admin: centros de custo, planos financeiros e tipos de documento
 //   lancar  {solicitacaoId, centroCustoId, plano, vencimento}  Financeiro: credor pelo CPF, procura título com o mesmo número
 //                                                          (idempotência), POST /bills e anexa o PDF do formulário e os comprovantes
+//   lancar_saldo {solicitacaoId, centroCustoId, plano, vencimento}  Financeiro: adiantamento comprovado com nota maior que o
+//                                                          adiantado; título SF-…-S do saldo do pedido contra a nota (anexa a nota)
 //   pdf     {solicitacaoId}                                quem vê a solicitação: PDF do formulário (layout 2026)
 // Credenciais na tabela sf_sienge_config (senha no Vault). Credor inexistente = erro claro, sem cadastro automático.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, errorResponse, fromRpcError, json, PortalError, portalContext, type AdminClient } from "../_shared/portal.ts";
 import {
-  autorizacao, faltandoNaConfig, idDoTitulo, mensagemSienge, montarTitulo, planoDoTipo, resultados, urlBase, validarEscolhas,
+  autorizacao, faltandoNaConfig, filtroCredor, idDoTitulo, mensagemSienge, montarTitulo, planoDoTipo, resultados, urlBase, validarEscolhas,
   type ConfigSienge, type PedidoLancamento,
 } from "../_shared/sf/sienge.ts";
 import { gerarPdf, type DadosPdf } from "./pdf.ts";
@@ -24,6 +26,8 @@ interface Corpo {
   centroCustoId?: number;
   plano?: string;
   vencimento?: string;
+  obraId?: number | null;
+  unidadeId?: number | null;
 }
 
 function comoUsuario(req: Request) {
@@ -83,6 +87,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ code: "INVALID_INPUT", message: "Método não suportado." }, 405);
   let lancando: number | null = null;
+  let lancandoSaldo = false;
   let adminDb: AdminClient | null = null;
   let ator: string | null = null;
   try {
@@ -136,27 +141,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (acao === "lancar") {
+    if (acao === "lancar" || acao === "lancar_saldo") {
+      const saldo = acao === "lancar_saldo";
       const id = Number(corpo.solicitacaoId ?? 0);
       const c = await config(ctx.admin);
       const falta = faltandoNaConfig(c);
       if (falta.length) throw new PortalError("INTEGRATION_NOT_CONFIGURED", `Integração SIENGE incompleta: ${falta.join(", ")} (Configurações › Integrações › SIENGE).`);
-      const ped = await comoUsuario(req).rpc("sf_lancamento_pedido", { p_id: id });
+      const ped = await comoUsuario(req).rpc(saldo ? "sf_lancamento_saldo_pedido" : "sf_lancamento_pedido", { p_id: id });
       if (ped.error) throw fromRpcError(ped.error);
       lancando = id;
-      const p = ped.data as PedidoLancamento & { anexos: { path: string; nome: string; mime: string; ordem: number }[]; centroCustoSetor: string | null };
+      lancandoSaldo = saldo;
+      const p = ped.data as PedidoLancamento & { anexos: { path: string; nome: string; mime: string; ordem: number; finalidade?: string }[]; centroCusto?: number | string | null; plano?: string | null };
+      const documento = saldo ? `${p.numero}-S` : p.numero;
       const escolhas = {
-        centroCustoId: Number(corpo.centroCustoId ?? c.centroCustoPadrao ?? 0),
-        plano: String(corpo.plano ?? planoDoTipo(c, p.tipo) ?? ""),
+        centroCustoId: Number(corpo.centroCustoId ?? (saldo ? p.centroCusto : null) ?? c.centroCustoPadrao ?? 0),
+        plano: String(corpo.plano ?? (saldo ? p.plano : null) ?? planoDoTipo(c, p.tipo) ?? ""),
         vencimento: String(corpo.vencimento ?? p.pagarAte ?? p.vencimento ?? ""),
+        obraId: corpo.obraId == null ? null : Number(corpo.obraId),
+        unidadeId: corpo.unidadeId == null ? null : Number(corpo.unidadeId),
       };
       const invalido = validarEscolhas(escolhas);
       if (invalido) throw new PortalError("INVALID_INPUT", invalido);
 
-      // Credor pelo CPF do solicitante (sem cadastro automático).
-      const cred = resultados<{ id: number; name: string }>((await sienge(c, "GET", `/creditors?cpf=${p.cpf}&limit=5`)).corpo);
+      // Credor: o colaborador pelo CPF; no adiantamento, o favorecido pelo CPF/CNPJ (sem cadastro automático).
+      const cred = resultados<{ id: number; name: string }>((await sienge(c, "GET", `/creditors?${filtroCredor(p.cpf)}&limit=5`)).corpo);
       if (!cred.length) {
-        throw new PortalError("SIENGE_CREDITOR_NOT_FOUND", `${p.solicitante} não está cadastrado como credor no SIENGE (CPF ${p.cpf.slice(0, 3)}.***.***-${p.cpf.slice(-2)}). Cadastre o credor no SIENGE e tente de novo.`);
+        const quem = p.tipo === "adiantamento" ? (p.favorecido ?? "O favorecido") : p.solicitante;
+        const doc = p.cpf.length === 14 ? `CNPJ ${p.cpf.slice(0, 2)}.***.***/****-${p.cpf.slice(-2)}` : `CPF ${p.cpf.slice(0, 3)}.***.***-${p.cpf.slice(-2)}`;
+        throw new PortalError("SIENGE_CREDITOR_NOT_FOUND", `${quem} não está cadastrado como credor no SIENGE (${doc}). Cadastre o credor no SIENGE e tente de novo.`);
       }
       const credorId = cred[0].id;
 
@@ -165,14 +177,14 @@ Deno.serve(async (req) => {
       const de = new Date(Date.now() - 120 * 86_400_000).toISOString().slice(0, 10);
       const procurar = async () =>
         resultados<{ id: number; documentNumber: string }>(
-          (await sienge(c, "GET", `/bills?startDate=${de}&endDate=${ate}&creditorId=${credorId}&documentNumber=${encodeURIComponent(p.numero)}&limit=5`)).corpo,
-        ).find((x) => x.documentNumber === p.numero);
+          (await sienge(c, "GET", `/bills?startDate=${de}&endDate=${ate}&creditorId=${credorId}&documentNumber=${encodeURIComponent(documento)}&limit=5`)).corpo,
+        ).find((x) => x.documentNumber === documento);
       let tituloId = (await procurar())?.id ?? null;
       const jaExistia = tituloId != null;
       if (!tituloId) {
-        const r = await sienge(c, "POST", "/bills", montarTitulo(p, c, { credorId, ...escolhas }));
+        const r = await sienge(c, "POST", "/bills", montarTitulo(p, c, { credorId, ...escolhas }, documento));
         tituloId = idDoTitulo(r.corpo, r.location) ?? (await procurar())?.id ?? null;
-        if (!tituloId) throw new PortalError("SIENGE_ERROR", "O SIENGE aceitou o título, mas não devolveu o número. Confira no SIENGE pelo documento " + p.numero + ".");
+        if (!tituloId) throw new PortalError("SIENGE_ERROR", "O SIENGE aceitou o título, mas não devolveu o número. Confira no SIENGE pelo documento " + documento + ".");
       }
 
       // Anexos: PDF do formulário e comprovantes (falha em anexo não desfaz o título; vira aviso).
@@ -188,19 +200,21 @@ Deno.serve(async (req) => {
           }
         };
         await anexar(`${p.numero}-formulario.pdf`, new Blob([await pdfDe(req, id)], { type: "application/pdf" }), `Formulário ${p.numero} (Portal de Tickets)`);
+        const rotulo = (a: { finalidade?: string; ordem: number }) =>
+          a.finalidade === "documento_origem" ? "Documento de origem" : a.finalidade === "comprovacao" ? "Nota da comprovação" : `Comprovante da linha ${a.ordem}`;
         for (const a of p.anexos) {
           const arq = await ctx.admin.storage.from(BUCKET).download(a.path);
           if (arq.error || !arq.data) {
             avisos.push(`${a.nome}: arquivo não encontrado no portal`);
             continue;
           }
-          await anexar(a.nome, arq.data, `Comprovante da linha ${a.ordem} · ${p.numero}`);
+          await anexar(a.nome, arq.data, `${rotulo(a)} · ${p.numero}`);
         }
       }
 
-      const reg = await ctx.admin.rpc("sf_lancamento_registrar", {
+      const reg = await ctx.admin.rpc(saldo ? "sf_lancamento_saldo_registrar" : "sf_lancamento_registrar", {
         p_id: id, p_ok: true, p_titulo: String(tituloId), p_erro: null,
-        p_detalhe: { credorId, centroCusto: escolhas.centroCustoId, plano: escolhas.plano, vencimento: escolhas.vencimento, atorId: ator, jaExistia, avisos },
+        p_detalhe: { credorId, centroCusto: escolhas.centroCustoId, plano: escolhas.plano, vencimento: escolhas.vencimento, obraId: escolhas.obraId, atorId: ator, jaExistia, avisos },
       });
       if (reg.error) throw fromRpcError(reg.error);
       lancando = null;
@@ -211,7 +225,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     if (lancando != null && adminDb) {
       const msg = error instanceof Error ? error.message : String(error);
-      await adminDb.rpc("sf_lancamento_registrar", { p_id: lancando, p_ok: false, p_titulo: null, p_erro: msg, p_detalhe: { atorId: ator } }).then(() => undefined, () => undefined);
+      await adminDb.rpc(lancandoSaldo ? "sf_lancamento_saldo_registrar" : "sf_lancamento_registrar", { p_id: lancando, p_ok: false, p_titulo: null, p_erro: msg, p_detalhe: { atorId: ator } }).then(() => undefined, () => undefined);
     }
     return errorResponse(error);
   }

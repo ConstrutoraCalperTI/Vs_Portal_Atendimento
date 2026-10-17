@@ -115,6 +115,80 @@ export interface Detalhe {
   eventos: Evento[];
   cadeiaPrevista: EtapaPrevista[] | null;
   categorias: { id: number; nome: string }[];
+  /** Fase 5B: só no adiantamento. */
+  adiantamento?: DadosAdiantamento;
+}
+
+// ---------- Fase 5B: adiantamento de numerário (migration 20261017160000) ----------
+
+export type FormaPagamento = "deposito" | "boleto" | "cheque" | "dinheiro";
+
+export interface ArquivoLido {
+  id: number;
+  nome: string;
+  path: string;
+  mime: string;
+  status: "fila" | "lendo" | "lido" | "ilegivel" | "erro";
+  ocr: LeituraOcr | null;
+  enviado?: boolean;
+}
+
+export interface Comprovacao {
+  id: number;
+  anexoId: number | null;
+  tipoDocumento: LeituraOcr["tipo_documento"] | null;
+  emitente: string | null;
+  emitenteDoc: string | null;
+  emissao: string | null;
+  valor: number;
+  numero: string | null;
+  referencia: string | null;
+  saldoPagar: number;
+  saldoDevolver: number;
+  status: "enviada" | "aceita" | "devolucao" | "ajuste";
+  obs: string | null;
+  conferidaEm: string | null;
+  criadoEm: string;
+}
+
+export interface DadosAdiantamento {
+  obra: string | null;
+  contaCaixa: string | null;
+  contaPagamento: string | null;
+  centroCusto: string | null;
+  centroApuracao: string | null;
+  valor: number | null;
+  favorecido: string | null;
+  favorecidoDoc: string | null;
+  finalidade: string | null;
+  formaPagamento: FormaPagamento | null;
+  banco: string | null;
+  agencia: string | null;
+  conta: string | null;
+  tipoConta: "corrente" | "poupanca" | null;
+  vencimento: string | null;
+  prazoComprovacao: string | null;
+  dataPreenchimento: string | null;
+  pedidoNumero: string | null;
+  pedidoData: string | null;
+  pedidoFornecedor: string | null;
+  pedidoFornecedorDoc: string | null;
+  pedidoValor: number | null;
+  pedidoPercentual: number | null;
+  pedidoCondicao: string | null;
+  statusComprovacao: "pendente" | "enviada" | "aceita" | "devolucao" | "vencida" | null;
+  pagoEm: string | null;
+  siengeSaldoId: string | null;
+  siengeSaldoErro: string | null;
+  prazoDias: number;
+  setorObra: boolean;
+  ehSolicitante: boolean;
+  rateio: { id: number; tarefa: string; porcentagem: number; valor: number }[];
+  documentos: ArquivoLido[];
+  arquivosComprovacao: ArquivoLido[];
+  comprovacoes: Comprovacao[];
+  checagensComprovacao: { codigo: string; resultado: "ok" | "alerta" | "bloqueio"; detalhe: string }[];
+  obras: string[] | null;
 }
 
 export interface Checagem {
@@ -179,9 +253,18 @@ export async function rpc<T>(nome: string, args?: Record<string, unknown>): Prom
 
 const num = (v: unknown) => (v == null ? null : Number(v));
 
+function normalizarAdiantamento(a: DadosAdiantamento): DadosAdiantamento {
+  return {
+    ...a, valor: num(a.valor), pedidoValor: num(a.pedidoValor), pedidoPercentual: num(a.pedidoPercentual),
+    rateio: a.rateio.map((r) => ({ ...r, porcentagem: Number(r.porcentagem), valor: Number(r.valor) })),
+    comprovacoes: a.comprovacoes.map((c) => ({ ...c, valor: Number(c.valor), saldoPagar: Number(c.saldoPagar), saldoDevolver: Number(c.saldoDevolver) })),
+  };
+}
+
 function normalizar(d: Detalhe): Detalhe {
   return {
     ...d,
+    adiantamento: d.adiantamento ? normalizarAdiantamento(d.adiantamento) : undefined,
     valorFundoFixo: num(d.valorFundoFixo), saldoInicial: num(d.saldoInicial), totalDespesas: Number(d.totalDespesas), saldoFinal: num(d.saldoFinal),
     valorGlosado: Number(d.valorGlosado), valorAPagar: num(d.valorAPagar),
     itens: d.itens.map((i) => ({ ...i, valor: num(i.valor) })),
@@ -231,7 +314,8 @@ const supabaseSolicitacoes: SolicitacoesService = {
 // ---------- Modo simulado ----------
 /** Registros do modo simulado (também usados pela conferência simulada). */
 export const registros = new Map<number, Detalhe>();
-const arquivos = new Map<string, Blob>();
+/** Arquivos do modo simulado (também usados pelo adiantamento simulado). */
+export const arquivos = new Map<string, Blob>();
 let proximo = 1;
 let proximoItem = 1;
 
@@ -242,7 +326,35 @@ function exigirEditavel(id: number): Detalhe {
   return d;
 }
 
+/** Adiantamento novo no modo simulado. */
+function adiantamentoVazio(hoje: string): DadosAdiantamento {
+  return {
+    obra: "Obra - Arte Wave", contaCaixa: null, contaPagamento: null, centroCusto: "00.00114", centroApuracao: null, valor: null, favorecido: null, favorecidoDoc: null,
+    finalidade: null, formaPagamento: "deposito", banco: null, agencia: null, conta: null, tipoConta: "corrente", vencimento: null, prazoComprovacao: null,
+    dataPreenchimento: hoje, pedidoNumero: null, pedidoData: null, pedidoFornecedor: null, pedidoFornecedorDoc: null, pedidoValor: null, pedidoPercentual: null,
+    pedidoCondicao: null, statusComprovacao: null, pagoEm: null, siengeSaldoId: null, siengeSaldoErro: null, prazoDias: 30, setorObra: true, ehSolicitante: true, rateio: [],
+    documentos: [], arquivosComprovacao: [], comprovacoes: [], checagensComprovacao: [], obras: ["Obra - Arte Wave", "Obra - ETEHE Residencial"],
+  };
+}
+
+/** Cadeia do adiantamento no modo simulado (mesma regra do banco: planejamento em obra, gerente sempre, diretor e presidente acima da alçada). */
+export function cadeiaAdiantamentoMock(valor: number): EtapaPrevista[] {
+  return [
+    { nivel: 1, papel: "Planejamento", exigido: true, pulado: false, motivo: "despesa de obra", aprovador: "Paulo Mendes", substituto: null },
+    { nivel: 2, papel: "Gerente", exigido: true, pulado: false, motivo: "sempre", aprovador: "Marina Costa", substituto: "Ana Prado" },
+    { nivel: 3, papel: "Diretor", exigido: valor > 5000, pulado: false, motivo: valor > 5000 ? "acima da alçada" : "não exigido para este valor", aprovador: "Roberto Alves", substituto: null },
+    { nivel: 4, papel: "Presidente", exigido: valor > 20000, pulado: false, motivo: valor > 20000 ? "acima da alçada" : "não exigido para este valor", aprovador: null, substituto: null },
+  ];
+}
+
 function recalcular(d: Detalhe) {
+  if (d.tipo === "adiantamento") {
+    d.totalDespesas = d.adiantamento?.valor ?? 0;
+    d.valorAPagar = d.totalDespesas - d.valorGlosado;
+    d.atualizadoEm = new Date().toISOString();
+    d.cadeiaPrevista = cadeiaAdiantamentoMock(d.totalDespesas);
+    return;
+  }
   d.totalDespesas = d.itens.reduce((s, i) => s + (i.valor ?? 0), 0);
   d.valorAPagar = d.totalDespesas - d.valorGlosado;
   if (d.tipo === "fundo_fixo") d.saldoFinal = (d.saldoInicial ?? 0) - d.totalDespesas;
@@ -252,7 +364,25 @@ function recalcular(d: Detalhe) {
   ];
 }
 
+/** A01–A06 no modo simulado (sem A06 de outros registros). */
+export function checarAdiantamentoMock(d: Detalhe): Checagem[] {
+  const a = d.adiantamento!;
+  const lim = a.pedidoValor != null && a.pedidoPercentual != null ? Math.round(a.pedidoValor * a.pedidoPercentual) / 100 : null;
+  const soma = Math.round(a.rateio.reduce((s, r) => s + r.porcentagem, 0) * 100) / 100;
+  const br = (v: number) => v.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return [
+    { codigo: "A01", itemId: null, resultado: a.documentos.length ? "ok" : "bloqueio", detalhe: a.documentos.length ? `${a.documentos.length} documento(s) anexado(s)` : "Anexe o pedido de compras, a proposta ou o e-mail" },
+    { codigo: "A02", itemId: null, resultado: lim != null && a.valor != null && a.valor <= lim ? "ok" : "alerta",
+      detalhe: lim != null && a.valor != null ? `${br(a.valor)} ${a.valor === lim ? "=" : a.valor < lim ? "≤" : ">"} ${br(a.pedidoValor!)} × ${String(a.pedidoPercentual).replace(".", ",")}%` : "Informe o valor do pedido e o percentual da condição" },
+    { codigo: "A03", itemId: null, resultado: a.favorecidoDoc && a.favorecidoDoc === a.pedidoFornecedorDoc ? "ok" : "alerta",
+      detalhe: !a.pedidoFornecedorDoc ? "CNPJ do fornecedor do pedido não informado" : a.favorecidoDoc === a.pedidoFornecedorDoc ? "CNPJ igual ao do fornecedor" : "CPF/CNPJ do favorecido diferente do fornecedor do pedido" },
+    { codigo: "A05", itemId: null, resultado: a.rateio.length && soma === 100 ? "ok" : "bloqueio", detalhe: a.rateio.length ? `Soma ${String(soma).replace(".", ",")}%` : "Inclua ao menos uma tarefa" },
+    { codigo: "A06", itemId: null, resultado: "ok", detalhe: "Pedido sem outro adiantamento · você tem 1 de 3" },
+  ];
+}
+
 function checar(d: Detalhe): Checagem[] {
+  if (d.tipo === "adiantamento") return checarAdiantamentoMock(d);
   const r: Checagem[] = d.itens
     .filter((i) => i.anexos.length === 0)
     .map((i) => ({ codigo: "R01", itemId: i.id, resultado: "bloqueio", detalhe: `Linha ${i.ordem} sem comprovante` }));
@@ -275,14 +405,13 @@ const mockSolicitacoes: SolicitacoesService = {
       temFundoFixo: true,
       temSetor: true,
       lista: lista.map((d) => ({
-        id: d.id, numero: d.numero, tipo: d.tipo, status: d.status, competencia: d.competencia, vencimento: null, valor: d.totalDespesas,
+        id: d.id, numero: d.numero, tipo: d.tipo, status: d.status, competencia: d.competencia, vencimento: d.adiantamento?.vencimento ?? null, valor: d.totalDespesas,
         pagarAte: d.pagarAte, atualizadoEm: d.atualizadoEm, etapa: d.status === "em_aprovacao" ? { papel: "Gestor", nivel: 1, de: 1 } : null,
       })),
     };
   },
   async criar(tipo) {
     await delay();
-    if (tipo === "adiantamento") throw new ServiceError("INVALID_INPUT", "Tipo de solicitação inválido.");
     const id = proximo++;
     const hoje = new Date();
     const de = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
@@ -294,8 +423,10 @@ const mockSolicitacoes: SolicitacoesService = {
       valorFundoFixo: tipo === "fundo_fixo" ? 1000 : null, saldoInicial: tipo === "fundo_fixo" ? 1000 : null, totalDespesas: 0,
       saldoFinal: tipo === "fundo_fixo" ? 1000 : null, valorGlosado: 0, valorAPagar: 0, pagarAte: null, enviadoEm: null, aceiteEm: null,
       criadoEm: hoje.toISOString(), atualizadoEm: hoje.toISOString(), itens: [], aprovacoes: [], eventos: [{ tipo: "criada", em: hoje.toISOString(), ator: currentActor().name, payload: {} }],
+      adiantamento: tipo === "adiantamento" ? adiantamentoVazio(hoje.toISOString().slice(0, 10)) : undefined,
       cadeiaPrevista: [], categorias: ["Material de obra", "Ferramentas", "EPI", "Combustível", "Transporte", "Estacionamento", "Alimentação", "Copa/mantimentos", "Material de escritório", "Outros"].map((nome, i) => ({ id: i + 1, nome })),
     };
+    if (tipo === "adiantamento") Object.assign(d, { competencia: de, periodoDe: null, periodoAte: null });
     recalcular(d);
     registros.set(id, d);
     return id;
@@ -350,6 +481,23 @@ const mockSolicitacoes: SolicitacoesService = {
   async enviar(id) {
     await delay();
     const d = exigirEditavel(id);
+    if (d.tipo === "adiantamento") {
+      const a = d.adiantamento!;
+      if (!a.valor) throw new ServiceError("INVALID_INPUT", "Informe o valor do adiantamento.", "valor");
+      if (!a.favorecido || !a.favorecidoDoc) throw new ServiceError("INVALID_INPUT", "Informe o favorecido e o CPF/CNPJ.", "favorecido");
+      if (!a.finalidade) throw new ServiceError("INVALID_INPUT", "Informe a finalidade.", "finalidade");
+      if (!a.vencimento) throw new ServiceError("INVALID_INPUT", "Informe o vencimento (hoje ou depois).", "vencimento");
+      const b = checarAdiantamentoMock(d).filter((c) => c.resultado === "bloqueio");
+      if (b.length) throw new ServiceError("INVALID_INPUT", `${b[0].codigo}: ${b[0].detalhe}`);
+      d.status = "em_aprovacao";
+      d.enviadoEm = d.aceiteEm = new Date().toISOString();
+      d.aprovacoes = cadeiaAdiantamentoMock(a.valor).map((e, i) => ({
+        ciclo: d.ciclo, nivel: e.nivel, papel: e.papel, status: !e.exigido ? "nao_exigido" : i === 0 ? "aguardando" : "pendente", comentario: null,
+        aprovador: e.aprovador, substituto: e.substituto, prazoEm: i === 0 ? new Date(Date.now() + 48 * 3600_000).toISOString() : null, decididoEm: null,
+      }));
+      d.eventos.push({ tipo: "enviada", em: d.enviadoEm, ator: currentActor().name, payload: {} });
+      return { status: "em_aprovacao", alertas: checarAdiantamentoMock(d).filter((c) => c.resultado === "alerta").length };
+    }
     if (d.itens.length === 0) throw new ServiceError("INVALID_INPUT", "Inclua ao menos uma despesa.", "itens");
     const falta = d.itens.filter((i) => !i.data || !i.valor || !i.descricao || !i.motivo).length;
     if (falta) throw new ServiceError("INVALID_INPUT", `Preencha data, valor, descrição e motivo em todas as linhas (${falta} incompleta${falta > 1 ? "s" : ""}).`, "itens");
@@ -467,8 +615,14 @@ const mockAprovacao: AprovacaoService = {
     a.status = decisao === "aprovar" ? "aprovado" : decisao === "devolver" ? "devolvido" : "reprovado";
     a.comentario = comentario;
     a.decididoEm = new Date().toISOString();
+    const proximo = decisao === "aprovar" ? d.aprovacoes.find((x) => x.ciclo === d.ciclo && x.status === "pendente") : undefined;
+    if (proximo) {
+      proximo.status = "aguardando";
+      proximo.prazoEm = new Date(Date.now() + 48 * 3600_000).toISOString();
+      return { status: d.status, proximo: proximo.papel };
+    }
     d.status = decisao === "aprovar" ? "em_conferencia" : decisao === "devolver" ? "devolvida" : "reprovada";
-    if (decisao === "aprovar") d.pagarAte = new Date(Date.now() + 15 * 86_400_000).toISOString().slice(0, 10);
+    if (decisao === "aprovar") d.pagarAte = d.tipo === "adiantamento" ? (d.adiantamento?.vencimento ?? null) : new Date(Date.now() + 15 * 86_400_000).toISOString().slice(0, 10);
     if (decisao === "devolver") d.ciclo += 1;
     return { status: d.status };
   },
@@ -499,6 +653,10 @@ export interface LeituraOcr {
   motivo_sugestoes: { categoria_id: number; texto: string; confianca: number }[];
   legibilidade: { data: number; valor: number; favorecido: number };
   alertas: string[];
+  /** Fase 5B: número da nota/recibo ou do pedido, condição de pagamento e referência ao pedido. */
+  numero_documento?: string | null;
+  condicao_pagamento?: string | null;
+  referencia_pedido?: string | null;
   erro?: string;
 }
 

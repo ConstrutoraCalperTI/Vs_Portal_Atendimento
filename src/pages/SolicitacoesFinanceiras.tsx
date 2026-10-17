@@ -13,6 +13,7 @@ import "../features/configuracoes/pages/Integracoes.css";
 const MinhasSolicitacoes = lazy(() => import("../features/financeiro/pages/MinhasSolicitacoes").then((m) => ({ default: m.MinhasSolicitacoes })));
 const NovaSolicitacao = lazy(() => import("../features/financeiro/pages/NovaSolicitacao").then((m) => ({ default: m.NovaSolicitacao })));
 const CriarSolicitacao = lazy(() => import("../features/financeiro/pages/NovaSolicitacao").then((m) => ({ default: m.CriarSolicitacao })));
+const ComprovacaoPagina = lazy(() => import("../features/financeiro/pages/ComprovacaoPagina").then((m) => ({ default: m.ComprovacaoPagina })));
 const SolicitacaoPagina = lazy(() => import("../features/financeiro/pages/SolicitacaoPagina").then((m) => ({ default: m.SolicitacaoPagina })));
 const Aprovacoes = lazy(() => import("../features/financeiro/pages/Aprovacoes").then((m) => ({ default: m.Aprovacoes })));
 const FilaFinanceiro = lazy(() => import("../features/financeiro/pages/FilaFinanceiro").then((m) => ({ default: m.FilaFinanceiro })));
@@ -72,6 +73,7 @@ export function SolicitacoesFinanceiras() {
           <Route path="solicitacoes" element={<MinhasSolicitacoes />} />
           <Route path="solicitacoes/nova/:tipo" element={<CriarSolicitacao />} />
           <Route path="solicitacoes/:id" element={<SolicitacaoPagina />} />
+          <Route path="solicitacoes/:id/comprovacao" element={<ComprovacaoPagina />} />
           <Route path="nova" element={<NovaSolicitacao />} />
           <Route path="aprovacoes" element={<Aprovacoes />} />
           <Route path="conferencia" element={pode("sf_conferencia") ? <FilaFinanceiro /> : <NotFound />} />

@@ -7,6 +7,7 @@ import { NotFound } from "../../../pages/NotFound";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
 import { moeda } from "../cadeia";
+import { ConferenciaComprovacao } from "../components/ConferenciaComprovacao";
 import { FormPreview } from "../components/FormPreview";
 import { LancamentoSienge } from "../components/LancamentoSienge";
 import { ReceiptViewer } from "../components/ReceiptViewer";
@@ -14,13 +15,14 @@ import { StatusChip } from "../components/StatusChip";
 import type { DecisaoItem, ItemConferencia } from "../conferencia";
 import { useConferencia, useDecidirItem, useMarcarPaga, usePedirAjuste, useProgramarPagamento, useSituacaoSienge, useSolicitacao } from "../hooks";
 import { solicitacoesService, type Detalhe } from "../solicitacoes";
-import { dataBR, NOME_TIPO } from "./formato";
+import { dataBR, docBR, NOME_TIPO } from "./formato";
 import "../../atendimento/pages/Atendimento.css";
 import "../financeiro.css";
 
 // Tela 9 — Conferência item a item (/financeiro/conferencia/:id): itens com status, visualizador do comprovante,
 // Declarado × comprovante, regras de aceitação e decisão por item. "Concluir e gerar lançamento SIENGE" só com todos os
-// itens resolvidos (aceito ou glosado); valor a pagar = total − glosas.
+// itens resolvidos (aceito ou glosado); valor a pagar = total − glosas. Adiantamento (Fase 5B): a linha única é o valor,
+// com o documento de origem e a A04 (titularidade bancária); depois do pagamento, a tela confere a comprovação.
 
 const ICONE = { pendente: Clock, aceito: CheckCircle2, glosado: XCircle, ajuste: CornerUpLeft } as const;
 const ROTULO = { pendente: "pendente", aceito: "aceito", glosado: "glosado", ajuste: "ajuste pedido" } as const;
@@ -36,7 +38,11 @@ export function ConferenciaPagina() {
   return <Tela d={d.data} itens={c.data.itens} podeConferir={c.data.podeConferir} gerais={c.data.gerais} />;
 }
 
-function Tela({ d, itens, podeConferir, gerais }: { d: Detalhe; itens: ItemConferencia[]; podeConferir: boolean; gerais: { codigo: string; detalhe: string }[] }) {
+const FASE_COMPROVACAO = ["comprovacao_pendente", "comprovacao_em_conferencia", "devolucao_pendente", "encerrada"];
+
+function Tela({ d, itens, podeConferir, gerais: todas }: { d: Detalhe; itens: ItemConferencia[]; podeConferir: boolean; gerais: { codigo: string; resultado?: string; detalhe: string }[] }) {
+  const gerais = todas.filter((g) => g.resultado !== "ok");
+  const ad = d.tipo === "adiantamento" ? d.adiantamento : undefined;
   const [sel, setSel] = useState<number | null>(itens.find((i) => i.status === "pendente")?.id ?? itens[0]?.id ?? null);
   const [preview, setPreview] = useState(false);
   const atual = itens.find((i) => i.id === sel) ?? itens[0];
@@ -50,7 +56,7 @@ function Tela({ d, itens, podeConferir, gerais }: { d: Detalhe; itens: ItemConfe
         <div>
           <div className="sf-eyebrow">{NOME_TIPO[d.tipo]} · {d.solicitante.nome} · {d.setor?.nome ?? "Sem setor"}</div>
           <h2 className="sf-ph__t">Conferência {d.numero} <StatusChip status={d.status} /></h2>
-          <p className="sf-ph__s">Pagar até {dataBR(d.pagarAte)}{d.aprovacoes.length ? ` · aprovada por ${d.aprovacoes.filter((a) => a.status === "aprovado" && a.ciclo === d.ciclo).map((a) => a.aprovador).join(", ")}` : ""}</p>
+          <p className="sf-ph__s">{ad ? `Vencimento ${dataBR(ad.vencimento)} · comprovação até ${dataBR(ad.prazoComprovacao)}` : `Pagar até ${dataBR(d.pagarAte)}`}{d.aprovacoes.length ? ` · aprovada por ${d.aprovacoes.filter((a) => a.status === "aprovado" && a.ciclo === d.ciclo).map((a) => a.aprovador).join(", ")}` : ""}</p>
         </div>
         <div className="sf-ph__acoes">
           <button type="button" className="btn btn--outline" onClick={() => setPreview(true)}><Eye size={16} aria-hidden="true" />Preview do formulário</button>
@@ -60,6 +66,19 @@ function Tela({ d, itens, podeConferir, gerais }: { d: Detalhe; itens: ItemConfe
         <div className="sf-aviso sf-aviso--w" role="status">{gerais.map((g) => `${g.codigo}: ${g.detalhe}`).join(" · ")}</div>
       )}
 
+      {ad && FASE_COMPROVACAO.includes(d.status) ? (
+        <ConferenciaComprovacao d={d} podeConferir />
+      ) : (<>
+      {ad && (
+        <section className="card sf-painel sf-a04" aria-label="Pagamento do adiantamento">
+          <h3>Pagamento do adiantamento</h3>
+          <p>
+            <b>{ad.favorecido}</b> · {docBR(ad.favorecidoDoc)} · {ad.formaPagamento === "deposito" ? `depósito ${ad.banco ?? ""} ag. ${ad.agencia ?? "—"} conta ${ad.conta ?? "—"} (${ad.tipoConta === "poupanca" ? "poupança" : "corrente"})` : ad.formaPagamento ?? "—"}
+            {" · "}rateio {ad.rateio.map((r) => `${r.tarefa} ${String(r.porcentagem).replace(".", ",")}%`).join(", ")}
+          </p>
+          <p className="field__help"><span className="sf-chip sf-chip--aviso">A04</span> Confira se a conta pertence ao CPF/CNPJ do favorecido antes de aceitar.</p>
+        </section>
+      )}
       <div className="sf-conf">
         <section className="card sf-painel" aria-label="Itens">
           <h3>Itens · {itens.length}</h3>
@@ -85,6 +104,7 @@ function Tela({ d, itens, podeConferir, gerais }: { d: Detalhe; itens: ItemConfe
       </div>
 
       <Rodape d={d} podeConferir={podeConferir} resolvidos={resolvidos} total={itens.length} ajustes={ajustes} glosas={glosas} />
+      </>)}
       <FormPreview d={d} aberto={preview} onFechar={() => setPreview(false)} />
     </>
   );

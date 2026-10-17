@@ -121,7 +121,7 @@ function Kpi({ icon, rotulo, valor, legenda, tom, alerta }: { icon: typeof Clock
   );
 }
 
-/** Cartões de início (também é a tela "Nova solicitação"). Adiantamento chega na Fase 5B. */
+/** Cartões de início (também é a tela "Nova solicitação"). */
 export function CartoesInicio({ temFundoFixo, temSetor }: { temFundoFixo: boolean; temSetor: boolean }) {
   const criar = useCriarSolicitacao();
   const navegar = useNavigate();
@@ -144,7 +144,7 @@ export function CartoesInicio({ temFundoFixo, temSetor }: { temFundoFixo: boolea
           botao="Prestar contas" onClick={() => iniciar("fundo_fixo")} desabilitado={criar.isPending || !temSetor || !temFundoFixo}
           aviso={temFundoFixo ? undefined : "Você não tem fundo fixo cadastrado."} />
         <Cartao icone={Wallet} titulo="Adiantamento de numerário" texto="Pagamento antecipado a fornecedor a partir de um pedido de compras. Comprovação em até 30 dias."
-          botao="Novo adiantamento" desabilitado aviso="Disponível em breve." />
+          botao="Novo adiantamento" onClick={() => iniciar("adiantamento")} desabilitado={criar.isPending || !temSetor} />
       </div>
     </>
   );
