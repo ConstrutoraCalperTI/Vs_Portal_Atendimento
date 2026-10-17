@@ -12,7 +12,8 @@ import { ApprovalTimeline, type EtapaTimeline } from "../components/ApprovalTime
 import { FormSection } from "../components/Campos";
 import { StatusChip } from "../components/StatusChip";
 import { useCancelarSolicitacao, useChecagens, useDecidir, useDetalheExtra, useEnviarSolicitacao, useSolicitacao } from "../hooks";
-import { solicitacoesService, type Anexo, type Decisao, type Detalhe, type LinhaEdicao } from "../solicitacoes";
+import { solicitacoesService, type Anexo, type Decisao, type Detalhe, type Item, type LinhaEdicao } from "../solicitacoes";
+import { LeituraComprovantes } from "./LeituraComprovantes";
 import { dataBR, mesBR, NOME_TIPO } from "./formato";
 import "../../atendimento/pages/Atendimento.css";
 import "../financeiro.css";
@@ -65,6 +66,7 @@ function Formulario({ d }: { d: Detalhe }) {
   const salvando = useRef<Promise<LinhaEdicao[]> | null>(null);
   const linhasRef = useRef(linhas);
   linhasRef.current = linhas;
+  const conhecidos = useRef(new Set(d.itens.map((i) => i.id)));
 
   const salvarAgora = useCallback(async (): Promise<LinhaEdicao[]> => {
     if (salvando.current) await salvando.current;
@@ -72,9 +74,10 @@ function Formulario({ d }: { d: Detalhe }) {
     const tarefa = (async () => {
       const r = await solicitacoesService.salvar({
         id: d.id, competencia: competencia ? `${competencia}-01` : null, periodoDe: periodoDe || null, periodoAte: periodoAte || null,
-        centroCusto: centroCusto || null, itens: atuais,
+        centroCusto: centroCusto || null, itens: atuais, conhecidos: [...conhecidos.current],
       });
       const mapa = new Map(r.itens.map((x) => [x.chave, x.id]));
+      for (const x of r.itens) conhecidos.current.add(x.id);
       const novas = atuais.map((l) => (l.id ? l : { ...l, id: mapa.get(l.chave) }));
       setLinhas((ls) => ls.map((l) => (l.id ? l : { ...l, id: mapa.get(l.chave) })));
       setSalvoEm(new Date());
@@ -99,6 +102,12 @@ function Formulario({ d }: { d: Detalhe }) {
     }, 1200);
     return () => clearTimeout(t);
   }, [assinatura, salvarAgora]);
+
+  /** Linha criada a partir do comprovante: entra na lista (e some a linha em branco, se houver). */
+  const adicionarDaLeitura = (i: Item) => {
+    conhecidos.current.add(i.id);
+    setLinhas((ls) => [...ls.filter((l) => l.data || l.valor != null || l.descricao || l.motivo), linhaDe(i)]);
+  };
 
   const muda = (chave: string, p: Partial<LinhaEdicao>) => setLinhas((ls) => ls.map((l) => (l.chave === chave ? { ...l, ...p } : l)));
 
@@ -212,6 +221,8 @@ function Formulario({ d }: { d: Detalhe }) {
           </FormSection>
 
           {fundo && <ResumoCaixa d={d} total={total} />}
+
+          <LeituraComprovantes d={d} onLinha={adicionarDaLeitura} />
 
           <FormSection numero={3} titulo={fundo ? "Linhas do fundo fixo" : "Despesas"} extra="um comprovante por linha, obrigatório">
             <div className="at-tab-wrap">

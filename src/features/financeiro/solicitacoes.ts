@@ -2,7 +2,8 @@ import type { Json } from "../../lib/database.types";
 import { supabase } from "../../lib/supabase";
 import { DATA_SOURCE } from "../configuracoes/services";
 import { currentActor, delay } from "../configuracoes/services/mock/runtime";
-import { fromPostgrest } from "../configuracoes/services/supabase/errors";
+import { fromFunction, fromPostgrest } from "../configuracoes/services/supabase/errors";
+import { edgeFunction } from "../../config/app";
 import { ServiceError } from "../configuracoes/services/types";
 import type { StatusSolicitacao } from "./components/StatusChip";
 
@@ -141,6 +142,8 @@ export interface SalvarRascunho {
   periodoAte: string | null;
   centroCusto: string | null;
   itens: LinhaEdicao[];
+  /** Ids de linhas que a tela já conhecia: só estas podem ser apagadas por omissão. */
+  conhecidos?: number[];
 }
 
 export interface SolicitacoesService {
@@ -481,3 +484,117 @@ const mockAprovacao: AprovacaoService = {
 };
 
 export const aprovacaoService: AprovacaoService = DATA_SOURCE === "mock" ? mockAprovacao : supabaseAprovacao;
+
+// ---------- Fase 4: leitura de comprovantes (migration 20261017130000, Edge Function portal_atendimento-sf-ocr) ----------
+
+export interface LeituraOcr {
+  tipo_documento: "nfe" | "nfce" | "cupom" | "recibo" | "outro";
+  data: string | null;
+  valor_total: number | null;
+  favorecido: string | null;
+  cnpj_cpf_emissor: string | null;
+  chave_acesso: string | null;
+  itens: { descricao: string; valor: number | null }[];
+  motivo_sugestoes: { categoria_id: number; texto: string; confianca: number }[];
+  legibilidade: { data: number; valor: number; favorecido: number };
+  alertas: string[];
+  erro?: string;
+}
+
+export interface ComprovanteNaFila {
+  id: number;
+  nome: string;
+  path: string;
+  mime: string;
+  status: "fila" | "lendo" | "lido" | "ilegivel" | "erro";
+  ocr: LeituraOcr | null;
+  criadoEm: string;
+}
+
+export interface LeituraService {
+  fila(solicitacaoId: number): Promise<ComprovanteNaFila[]>;
+  /** Sobe o arquivo sem linha (fila de leitura) e devolve o id do anexo. */
+  enviar(p: { solicitacaoId: number; solicitanteId: string; arquivo: File }): Promise<{ id: number; duplicadoEm: string | null }>;
+  ler(anexoId: number): Promise<{ status: string; mensagem?: string }>;
+  confirmar(p: { anexoId: number; data: string | null; valor: number | null; descricao: string | null; categoriaId: number | null; motivo: string | null }): Promise<number>;
+}
+
+const supabaseLeitura: LeituraService = {
+  fila: (id) => rpc<ComprovanteNaFila[]>("sf_fila_leitura", { p_solicitacao: id }),
+  async enviar({ solicitacaoId, solicitanteId, arquivo }) {
+    const invalido = validarArquivo(arquivo);
+    if (invalido) throw invalido;
+    const hash = await sha256(arquivo);
+    const ext = (arquivo.name.split(".").pop() ?? "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
+    const path = `${solicitanteId}/${solicitacaoId}/${hash.slice(0, 16)}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from(BUCKET).upload(path, arquivo, { contentType: arquivo.type, upsert: false });
+    if (error) throw new ServiceError("INVALID_INPUT", `Não foi possível enviar ${arquivo.name}.`);
+    try {
+      const r = await rpc<{ id: number; duplicadoEm: string | null }>("sf_anexo_registrar", {
+        p: { solicitacaoId, path, nome: arquivo.name, mime: arquivo.type, tamanho: arquivo.size, sha256: hash } as unknown as Json,
+      });
+      return { id: Number(r.id), duplicadoEm: r.duplicadoEm };
+    } catch (e) {
+      await supabase.storage.from(BUCKET).remove([path]);
+      throw e;
+    }
+  },
+  async ler(anexoId) {
+    const { data, error } = await supabase.functions.invoke(edgeFunction("sf-ocr"), { body: { anexoId } });
+    if (error) throw await fromFunction(error);
+    return data as { status: string; mensagem?: string };
+  },
+  confirmar: (p) => rpc<number>("sf_linha_do_comprovante", { p: p as unknown as Json }),
+};
+
+// Modo simulado: leitura fixa de um cupom, com campos legíveis.
+const filaMock = new Map<number, ComprovanteNaFila[]>();
+const mockLeitura: LeituraService = {
+  async fila(id) {
+    await delay();
+    return structuredClone(filaMock.get(id) ?? []);
+  },
+  async enviar({ solicitacaoId, arquivo }) {
+    await delay();
+    const invalido = validarArquivo(arquivo);
+    if (invalido) throw invalido;
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    const path = `mock/${solicitacaoId}/${id}-${arquivo.name}`;
+    arquivos.set(path, arquivo);
+    filaMock.set(solicitacaoId, [...(filaMock.get(solicitacaoId) ?? []), { id, nome: arquivo.name, path, mime: arquivo.type, status: "fila", ocr: null, criadoEm: new Date().toISOString() }]);
+    return { id, duplicadoEm: null };
+  },
+  async ler(anexoId) {
+    await new Promise((r) => setTimeout(r, 900));
+    for (const lista of filaMock.values()) {
+      const a = lista.find((x) => x.id === anexoId);
+      if (!a) continue;
+      a.status = "lido";
+      a.ocr = {
+        tipo_documento: "nfce", data: new Date().toISOString().slice(0, 10), valor_total: 210, favorecido: "AUTO POSTO SHELL BARRA LTDA", cnpj_cpf_emissor: "12345678000190",
+        chave_acesso: null, itens: [{ descricao: "GASOLINA COMUM", valor: 210 }],
+        motivo_sugestoes: [{ categoria_id: 4, texto: "Combustível — abastecimento veículo", confianca: 0.91 }, { categoria_id: 5, texto: "Transporte — deslocamento obra", confianca: 0.42 }],
+        legibilidade: { data: 0.99, valor: 0.98, favorecido: 0.95 }, alertas: [],
+      };
+    }
+    return { status: "lido" };
+  },
+  async confirmar(p) {
+    await delay();
+    for (const [solId, lista] of filaMock) {
+      const a = lista.find((x) => x.id === p.anexoId);
+      if (!a) continue;
+      filaMock.set(solId, lista.filter((x) => x.id !== p.anexoId));
+      const d = registros.get(solId);
+      if (!d) break;
+      const id = proximoItem++;
+      d.itens.push({ id, ordem: d.itens.length + 1, data: p.data, valor: p.valor, descricao: p.descricao, motivo: p.motivo, categoriaId: p.categoriaId,
+        origem: "ocr_confirmado", statusConferencia: "pendente", anexos: [{ id: a.id, nome: a.nome, path: a.path, mime: a.mime, tamanho: 0 }] });
+      recalcular(d);
+      return id;
+    }
+    throw new ServiceError("NOT_FOUND", "Comprovante não encontrado.");
+  },
+};
+
+export const leituraService: LeituraService = DATA_SOURCE === "mock" ? mockLeitura : supabaseLeitura;
