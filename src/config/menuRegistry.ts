@@ -31,6 +31,7 @@ import {
   Ticket,
   Users,
   UsersRound,
+  Wallet,
 } from "lucide-react";
 
 // Fonte única de menu, rotas e permissões. Sidebar, guard de rotas e matriz de
@@ -288,6 +289,27 @@ const definitions = [
     group: "principal",
     description: "Automações do ticket: quando algo acontece (ou passa um tempo), confere as condições e executa as ações.",
     parent: "gestao_atendimento",
+    adminOnly: true,
+  },
+  // Solicitações Financeiras (docs/Solicitacoes-financeiras/CONTEXTO.md). Fase 1: só os cadastros (Admin e Super admin);
+  // Minhas solicitações, Aprovações e Conferência entram nas Fases 2 a 5. A aprovação por setor fica em Setores e números.
+  {
+    id: "solicitacoes_financeiras",
+    label: "Solicitações Financeiras",
+    path: "/financeiro",
+    icon: Wallet,
+    group: "principal",
+    description: "Reembolso de despesas, fundo fixo de caixa e adiantamento de numerário, da solicitação ao lançamento no SIENGE.",
+    adminOnly: true,
+  },
+  {
+    id: "sf_cadastros",
+    label: "Cadastros financeiros",
+    path: "/financeiro/cadastros",
+    icon: SlidersHorizontal,
+    group: "principal",
+    description: "Fundo fixo por colaborador, categorias de motivo e regras de aceitação dos comprovantes.",
+    parent: "solicitacoes_financeiras",
     adminOnly: true,
   },
   {

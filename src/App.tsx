@@ -20,6 +20,7 @@ const Integracoes = lazy(() =>
 );
 const GestaoAtendimento = lazy(() => import("./pages/GestaoAtendimento").then((m) => ({ default: m.GestaoAtendimento })));
 const GestaoChamados = lazy(() => import("./pages/GestaoChamados").then((m) => ({ default: m.GestaoChamados })));
+const SolicitacoesFinanceiras = lazy(() => import("./pages/SolicitacoesFinanceiras").then((m) => ({ default: m.SolicitacoesFinanceiras })));
 const GestaoTicketsMovidesk = lazy(() => import("./pages/GestaoTicketsMovidesk").then((m) => ({ default: m.GestaoTicketsMovidesk })));
 const PermissoesAplicativo = lazy(() =>
   import("./features/configuracoes/pages/PermissoesAplicativo").then((m) => ({ default: m.PermissoesAplicativo })),
@@ -51,6 +52,7 @@ const pages: Record<TopLevelMenuId, ReactElement> = {
   gestao_atendimento: <GestaoAtendimento />,
   gestao_chamados: <GestaoChamados />,
   gestao_movidesk: <GestaoTicketsMovidesk />,
+  solicitacoes_financeiras: <SolicitacoesFinanceiras />,
   manage_users: <UsuariosSecoes />,
   manage_pessoas: <Pessoas />,
   manage_permissions: <PerfisPermissoes />,

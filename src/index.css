@@ -31,6 +31,10 @@
   --info-bg: #e8effd;
   --info-fg: #1d4ed8;
   --info-border: #c7d7fb;
+  /* Solicitações Financeiras: chip Devolvida/Pendência e fundo do visualizador de comprovantes. */
+  --violet-bg: #f3e8ff;
+  --violet-fg: #7e22ce;
+  --viewer: #2a2b31;
   --online: #16a34a;
   --shadow-brand: 0 6px 18px -8px rgba(214, 41, 59, 0.35);
 

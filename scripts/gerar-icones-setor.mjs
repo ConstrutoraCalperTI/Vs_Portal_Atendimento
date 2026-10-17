@@ -68,6 +68,8 @@ const MENU = [
   ["gestao_atendimento_empreendimentos", "fluent-color:building-home-24"],
   ["gestao_atendimento_regras_exibicao", "flat-color-icons:filled-filter"],
   ["gestao_atendimento_gatilhos", "fluent-color:arrow-clockwise-dashes-settings-24"],
+  ["solicitacoes_financeiras", "flat-color-icons:money-transfer"],
+  ["sf_cadastros", "fluent-color:clipboard-text-edit-24"],
   ["configuracoes", "fluent-color:settings-24"],
   ["manage_users", "fluent-color:people-24"],
   ["manage_users_equipes", "fluent-color:people-team-24"],
@@ -126,7 +128,7 @@ const LUCIDE = [
   ["TrendingUp", "fluent-color:data-trending-24"], ["User", "fluent-color:person-24"],
   ["UserCheck", "fluent-color:person-available-24"], ["UserPen", "fluent-color:person-feedback-24"],
   ["Users", "fluent-color:people-24"], ["UsersRound", "fluent-color:people-team-24"],
-  ["Wifi", "fluent-color:wifi-24"], ["Wrench", "fluent-color:wrench-24"],
+  ["Wallet", "flat-color-icons:money-transfer"], ["Wifi", "fluent-color:wifi-24"], ["Wrench", "fluent-color:wrench-24"],
   ["Zap", "flat-color-icons:flash-on"],
 ];
 

@@ -1,5 +1,5 @@
 import * as Switch from "@radix-ui/react-switch";
-import { Building2, CircleDot, Info, Phone, Plus, Ticket, UserCheck, Users, X } from "lucide-react";
+import { Building2, CircleDot, Info, Phone, Plus, Ticket, UserCheck, Users, Wallet, X } from "lucide-react";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ThLabel } from "../../../components/ds";
@@ -8,6 +8,9 @@ import { EmptyState } from "../../configuracoes/components/EmptyState";
 import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { Notice } from "../../configuracoes/components/Notice";
 import { ServiceError } from "../../configuracoes/services/types";
+import { AprovacaoFinanceira } from "../../financeiro/AprovacaoFinanceira";
+import { useResumoSetoresFinanceiro } from "../../financeiro/hooks";
+import type { ResumoSetor } from "../../financeiro/service";
 import { useCandidatos, useContexto, useSalvarSetor } from "../hooks/useAtendimento";
 import type { Pessoa, Setor } from "../services/tipos";
 import { telefone } from "./util";
@@ -18,6 +21,9 @@ import "./Atendimento.css";
 export function Setores() {
   const contexto = useContexto();
   const [editando, setEditando] = useState<number | "novo" | null>(null);
+  const [aba, setAba] = useState<"atendimento" | "financeiro">("atendimento");
+  // Coluna "Aprovação" (Solicitações Financeiras, 17/10/2026). Sem acesso ou com erro, a coluna mostra "—".
+  const resumo = useResumoSetoresFinanceiro();
   if (contexto.isPending) return <PageSkeleton />;
   if (contexto.isError) return <ErrorState message="Não foi possível carregar os setores." onRetry={() => void contexto.refetch()} />;
   if (!contexto.data.supervisor) {
@@ -51,12 +57,13 @@ export function Setores() {
                   <th><ThLabel icon={UserCheck}>Gestão</ThLabel></th>
                   <th className="n"><ThLabel icon={Users}>Atendentes</ThLabel></th>
                   <th><ThLabel icon={Ticket}>Receber chamado</ThLabel></th>
+                  <th><ThLabel icon={Wallet}>Aprovação</ThLabel></th>
                   <th><ThLabel icon={CircleDot}>Situação</ThLabel></th>
                 </tr>
               </thead>
               <tbody>
                 {setores.length === 0 && (
-                  <tr><td colSpan={6} className="at-vazio">Nenhum setor ainda. Cadastre o primeiro ao lado.</td></tr>
+                  <tr><td colSpan={7} className="at-vazio">Nenhum setor ainda. Cadastre o primeiro ao lado.</td></tr>
                 )}
                 {setores.map((s) => (
                   <tr
@@ -71,6 +78,7 @@ export function Setores() {
                     <td>{s.gestores.map((g) => g.nome).join(", ") || "—"}</td>
                     <td className="n">{s.atendentes.length}</td>
                     <td>{s.recebeChamados ? <span className="at-selo s-fim">Sim</span> : <span title="Só solicitante: identifica o setor de quem abre o chamado">—</span>}</td>
+                    <td><SeloAprovacao resumo={resumo.data?.find((r) => r.setorId === s.id)} /></td>
                     <td><span className={`at-selo ${s.ativo ? "s-fim" : ""}`} style={s.ativo ? undefined : { background: "var(--neutral-bg)", color: "var(--neutral-fg)" }}>{s.ativo ? "Ativo" : "Inativo"}</span></td>
                   </tr>
                 ))}
@@ -78,7 +86,20 @@ export function Setores() {
             </table>
           </div>
         </section>
-        <FormSetor key={modoNovo ? "novo" : atual?.id} setor={modoNovo ? null : atual} onSalvo={(id) => setEditando(id)} onCancelar={() => setEditando(null)} />
+        <div>
+          {/* Setor salvo: abas Atendimento (formulário de sempre) e Aprovação financeira (nova). Setor novo: só o formulário. */}
+          {!modoNovo && atual && (
+            <div className="sf-abas-setor" role="tablist" aria-label={`Configuração de ${atual.nome}`}>
+              <button type="button" role="tab" aria-selected={aba === "atendimento"} onClick={() => setAba("atendimento")}>Atendimento</button>
+              <button type="button" role="tab" aria-selected={aba === "financeiro"} onClick={() => setAba("financeiro")}>Aprovação financeira</button>
+            </div>
+          )}
+          {!modoNovo && atual && aba === "financeiro" ? (
+            <AprovacaoFinanceira setorId={atual.id} nome={atual.nome} />
+          ) : (
+            <FormSetor key={modoNovo ? "novo" : atual?.id} setor={modoNovo ? null : atual} onSalvo={(id) => setEditando(id)} onCancelar={() => setEditando(null)} />
+          )}
+        </div>
       </div>
       <div style={{ marginTop: 16 }}>
         <Notice icon={Info}>
@@ -88,6 +109,15 @@ export function Setores() {
       </div>
     </>
   );
+}
+
+/** Coluna "Aprovação": conferência (setor financeiro), níveis configurados ou pendente. */
+function SeloAprovacao({ resumo }: { resumo: ResumoSetor | undefined }) {
+  if (!resumo) return <span>—</span>;
+  if (resumo.financeiro) return <span className="at-selo s-info">Confere</span>;
+  const n = resumo.niveisReembolso;
+  if (n === 0) return <span className="at-selo s-fila" title="Sem aprovador de reembolso e fundo fixo">Pendente</span>;
+  return <span className="at-selo s-fim" title={`Adiantamento: ${resumo.niveisAdiantamento} de 4 níveis`}>{n === 1 ? "1 nível" : `${n} níveis`}</span>;
 }
 
 function FormSetor({ setor, onSalvo, onCancelar }: { setor: Setor | null; onSalvo: (id: number) => void; onCancelar: () => void }) {

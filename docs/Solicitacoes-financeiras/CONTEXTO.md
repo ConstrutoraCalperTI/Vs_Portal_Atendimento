@@ -1,0 +1,172 @@
+# Solicitações Financeiras — CONTEXTO permanente
+
+Leia este arquivo antes de qualquer alteração no módulo. Quando uma regra, estado, tabela ou componente mudar, atualize-o no mesmo commit.
+Fontes: `docs/Solicitacoes-financeiras/PRD.md` (detalhe de regras, tabelas e telas) e o mockup aprovado `docs/mockups/solicitacoes-financeiras.html`.
+
+As seções 1 a 8 abaixo são o texto integral do prompt de implantação. A seção 9 registra onde o repositório e as decisões do Wagner
+**prevalecem** sobre esse texto: em caso de conflito, vale a seção 9.
+
+```text
+========================================
+1. PERFIS
+========================================
+- Colaborador: cria, salva rascunho, anexa, envia, corrige quando devolvida, cancela antes da 1ª aprovação, comprova adiantamento. Vê só as próprias solicitações.
+- Aprovador: listado em equipe_aprovador. Aprova, devolve para ajuste, reprova, define substituto por período. Vê as solicitações em que é ou foi etapa.
+- Conferente financeiro: membro de equipe com is_financeiro = true. Confere item a item, aceita, glosa, pede ajuste, devolve, gera lançamento no SIENGE, programa pagamento, confere comprovação. Vê status em_conferencia em diante.
+- Administrador: cadastra equipes, aprovadores, alçadas, regras, categorias de motivo e o valor do fundo fixo por colaborador.
+Se o solicitante também for aprovador da própria equipe, a etapa dele é pulada.
+
+========================================
+2. PROCESSO E MÁQUINA DE ESTADOS
+========================================
+Geral: rascunho -> em_aprovacao -> em_conferencia -> lancamento_gerado -> pagamento_programado -> paga.
+Desvios: em_aprovacao -> devolvida -> (reenvio) em_aprovacao, recomeçando do nível 1 em novo ciclo; em_aprovacao -> reprovada (fim); em_conferencia -> pendencia_solicitante -> em_conferencia; cancelada só a partir de rascunho ou antes da 1ª aprovação.
+Adiantamento continua após paga: comprovacao_pendente -> comprovacao_em_conferencia -> encerrada; se comprovado < adiantado: devolucao_pendente -> encerrada; se o prazo vencer: comprovação marcada vencida, aviso ao gestor e bloqueio de novos adiantamentos do solicitante.
+Toda mudança de status passa por RPC security definer (sf_enviar, sf_decidir_aprovacao, sf_decidir_item, sf_concluir_conferencia, sf_enviar_comprovacao, sf_decidir_comprovacao). O frontend nunca faz update direto em status. Toda ação grava em sf_evento.
+Prazos: reembolso e fundo fixo, pagar_ate = data da última aprovação + 15 dias. Adiantamento: paga no vencimento informado; prazo de comprovação = vencimento + prazo_comprovacao_dias da equipe (padrão 30).
+
+========================================
+3. FORMULÁRIOS
+========================================
+Cabeçalho comum, somente leitura e vindo do perfil: funcionário, CPF mascarado, departamento, equipe.
+REEMBOLSO: mês de referência, período de/até, centro de custo/obra (lista do SIENGE); linhas com data, valor, descrição/fornecedor, motivo e comprovante obrigatório; total; aceite eletrônico.
+FUNDO FIXO: valor do fundo (cadastro do colaborador), saldo inicial = saldo final anterior + reposição recebida; linhas com data, valor, favorecido, motivo/descrição e comprovante; despesas totais; saldo final = saldo inicial - despesas; reposição solicitada = despesas totais; aceite.
+ADIANTAMENTO (modelo Adiantamento de Numerário da Calper): documento de origem (pedido de compras, proposta ou e-mail); obra (empresa pagadora); data do preenchimento automática; conta caixa; conta de pagamento; centro de custo; centro de apuração; rateio por tarefa com porcentagem (soma 100%); valor; valor por extenso gerado; favorecido; CPF/CNPJ; finalidade; forma de pagamento (depósito, boleto, cheque, dinheiro) com banco, agência, conta e tipo (corrente/poupança); vencimento; prazo máximo de comprovação; aceite com termo de responsabilidade pela comprovação.
+COMPROVAÇÃO DO ADIANTAMENTO: anexar NF, recibo ou foto; acerto: comprovado >= adiantado encerra e gera lançamento do saldo do pedido contra a nota; menor gera devolução da diferença. Lembretes D-7 e D-1.
+Rascunho é salvo automaticamente. O aceite eletrônico registra usuário, data/hora, IP e user-agent e substitui as assinaturas.
+
+========================================
+4. APROVAÇÃO
+========================================
+Cadastro por equipe em equipe_aprovador: tipo_solicitacao (reembolso_fundo_fixo | adiantamento), ordem/nível, papel, aprovador, substituto, condição (sempre | obra | valor_acima) e alcada_minima. Na equipe ficam: modo_aprovacao (sequencial | paralelo | qualquer_um), prazo_horas (48), acao_prazo_vencido (lembrar | escalar), is_financeiro, prazo_comprovacao_dias, acao_comprovacao_vencida, limite_adiantamentos_abertos.
+Reembolso/fundo fixo: aprovador entra se total >= alcada_minima.
+Adiantamento: sequencial, Planejamento (só se a despesa é de obra) -> Gerente (sempre) -> Diretor (valor acima da alçada) -> Presidente (valor acima da alçada). Níveis não exigidos aparecem na timeline como "não exigido para este valor".
+No envio, a cadeia é CONGELADA em sf_aprovacao: mudanças posteriores no cadastro não afetam solicitações em andamento.
+Devolver e reprovar exigem comentário. Job pg_cron a cada 30 min: lembrete com 25% do prazo restante e escalonamento ao substituto quando vencer.
+
+========================================
+5. OCR E REGRAS DE ACEITAÇÃO
+========================================
+OCR = Edge Function sf-ocr chamando a API da Anthropic (modelo com visão). Chave só no Vault.
+PRINCÍPIO: a IA NÃO sugere data, valor nem favorecido. Ela TRANSCREVE literalmente o que está impresso, campo a campo, sem estimar, corrigir ou completar. Um campo só é copiado quando a legibilidade dele é >= 0,80; abaixo disso, volta null, fica vazio para preenchimento manual e o anexo é marcado ilegivel. A ÚNICA sugestão é o motivo/descrição: até 3 opções, escolhidas só entre as categorias ativas de sf_categoria_motivo enviadas no prompt.
+Modos: comprovante (fundo fixo/reembolso), pedido_compra (adiantamento: nº do pedido, data, fornecedor, CNPJ, valor total, condição de pagamento; o sistema CALCULA valor = total x percentual) e comprovacao (NF/recibo do adiantamento).
+Contrato de saída (validar com zod antes de gravar em sf_anexo.ocr_json): tipo_documento, data, valor_total, favorecido, cnpj_cpf_emissor, chave_acesso, itens[], motivo_sugestoes[{categoria_id, texto, confianca}], legibilidade{data, valor, favorecido}, alertas[]. Retentativa exponencial 3x; meta de 10 s por arquivo.
+Na UI, campo copiado aparece em azul com "copiado · legibilidade NN%". A linha registra a origem: manual | ocr_confirmado | ocr_editado.
+Regras (parâmetros em sf_regra; resultado em sf_regra_resultado: ok | alerta | bloqueio):
+R01 comprovante anexado (bloqueio); R02 legibilidade >= 80% em data, valor e favorecido (alerta); R03 data dentro do período (alerta); R04 valor do comprovante = declarado, tolerância configurável (alerta); R05 documento fiscal com CNPJ/CPF (alerta); R06 duplicidade por SHA-256 e por CNPJ+data+valor (bloqueio); R07 itens proibidos (alerta); R08 teto por categoria (alerta); R09 prazo de envio (alerta); R10 despesas <= saldo do fundo (bloqueio).
+A01 documento de origem (bloqueio); A02 valor <= pedido x percentual (alerta); A03 CNPJ do favorecido = fornecedor do pedido (alerta); A04 titularidade bancária (alerta); A05 rateio = 100% (bloqueio); A06 sem adiantamento em aberto no pedido, abaixo do limite por pessoa e sem comprovação vencida (bloqueio); A07 comprovação: emitente = favorecido, emissão após o pagamento e no prazo, valor >= adiantado, nota não usada (alerta; valor menor gera devolução).
+Conferente pode aceitar item com alerta, mas com observação obrigatória. Glosa retira o valor do pagamento: valor_a_pagar = total - glosas.
+
+========================================
+6. DADOS E INTEGRAÇÕES
+========================================
+Schema porta_atendimento, prefixo sf_. Só migrations ADITIVAS e versionadas (supabase/migrations/AAAAMMDDHHMM_sf_<descricao>.sql). Dinheiro numeric(14,2); datas date/timestamptz. RLS ligada em todas as tabelas sf_.
+Tabelas: sf_solicitacao (inclui tipo reembolso|fundo_fixo|adiantamento, numero SF-AAAA-NNNN, competência, período, totais, valor_glosado, valor_a_pagar, status, etapa_atual, aceite, pagar_ate, sienge_lancamento_id e os campos do adiantamento), sf_item, sf_anexo, sf_regra_resultado, sf_aprovacao (ciclo, nível, papel, status, comentário, prazo), sf_evento, sf_rateio, sf_comprovacao, equipe_aprovador, sf_fundo_fixo, sf_categoria_motivo, sf_regra; colunas novas em equipe.
+RLS: colaborador vê solicitante_id = auth.uid(); aprovador vê onde é aprovador_id ou substituto_id em sf_aprovacao; financeiro vê em_conferencia em diante; admin vê tudo. Storage: bucket privado sf-comprovantes, políticas espelhadas, URLs assinadas de 5 min. CPF completo só no PDF e no SIENGE.
+Edge Functions: sf-ocr; sf-pdf (HTML -> PDF no layout padrão 2026 da Calper, o mesmo template para preview e anexo); sf-sienge-lancamento (API REST do SIENGE: título a pagar ou de adiantamento com credor, centro de custo, rateio, vencimento e anexos; idempotente pelo numero; na comprovação, vincula a NF e compensa; credor inexistente = erro claro, sem cadastro automático). Credenciais no Vault. Antes de codar o SIENGE, mostre-me os endpoints que vai usar.
+Notificações: reusar o serviço do portal (e-mail + aviso no portal) em envio, cada aprovação, devolução, reprovação, chegada no Financeiro, pendência, lançamento, pagamento, lembretes e vencimentos.
+
+========================================
+7. DESIGN SYSTEM (igual ao Portal de Tickets atual)
+========================================
+Cores: brand #C41E2A (primário, item ativo, links), brand-hover #9B1620, brand-soft #FDECEE; sidebar #1E1F24, sidebar-hover #2B2D33, texto da sidebar #E4E6EA / subitem #C9CCD3 / rótulo #A3A7B0; bg #F4F5F7; surface #FFFFFF; border #E3E5EA; border-input #D5D8DE; text #1B1D22; text-secondary #4F5562; text-label #3A3F4A; readonly #F1F2F4; ocr (borda #6C8FD8, fundo #F3F7FF, texto #173B86); success #1D6B34; danger #B0181F.
+Chips (fundo/texto): rascunho #EEF0F3/#3A3F4A; aguardando, em conferência, comprovação pendente, vence em #FFF1E5/#8A3F00; devolvida, pendência #F1EAFC/#5B2AA0; aguardando pagamento, lançamento gerado #E8EFFC/#1F4FB3; aprovada, paga, encerrado #E6F4EA/#1D6B34; reprovada, vencido, divergente #FDECEE/#A3141C. Sempre texto no chip, nunca só cor.
+Tipografia: Inter (fallback system-ui). Título de página 28-32/700; título de card 17/700; corpo 14-15; rótulo 13/600; chip e legenda 12; eyebrow 12/700 em caixa alta, espaçamento 0,14em, cor brand.
+Forma: grade de 4 px; padding de card 20-22; gap 16-20; raio card 12, input/botão 8-10, chip 999; cards sem sombra, só borda; controles com no mínimo 44 px (botões finais 48, app 52).
+Componentes a criar em src/components/financeiro (ou no padrão do repo): AppShell (reusar o existente), PageHeader, KpiCard, DataTable, StatusChip, FormSection, Field, OcrField, ExpenseTable, AttachmentChip, Dropzone, ApprovalTimeline (verde concluído, borda laranja atual, tracejado não exigido, cinza futuro), ApproverChainPreview, DecisionBar (Reprovar contorno danger, Devolver contorno roxo, Aprovar preenchido success), ReceiptViewer (fundo #2A2C31, zoom, girar, tela cheia, PDF), RuleChecklist, FormPreview (A4 com toolbar escura).
+Acessibilidade: contraste 4,5:1, botões e links reais, aria-label em botão só de ícone, responsivo (sidebar empilha no celular, tabelas com rolagem horizontal dentro do card).
+
+========================================
+8. TELAS E ROTAS
+========================================
+1 Minhas solicitações /financeiro/solicitacoes — cards de início (Reembolso, Fundo fixo, Adiantamento), KPIs por status, histórico com busca.
+2 Reembolso /financeiro/solicitacoes/nova/reembolso — seções numeradas + painel lateral com a cadeia de aprovação.
+3 e 11 Fundo fixo /financeiro/solicitacoes/nova/fundo-fixo — resumo do caixa + adicionar por comprovante (dropzone múltipla, fila de leitura: fila/lendo/lido/ilegível, painel com o comprovante ao lado, campos copiados em azul, chips de motivo).
+13 Adiantamento /financeiro/solicitacoes/nova/adiantamento — documento de origem com OCR, apropriação e rateio, valor e favorecido, pagamento e prazos, painel de alçadas.
+15 Comprovação /financeiro/solicitacoes/:id/comprovacao — documento com OCR, regras A07, acerto do adiantamento.
+5 Aprovações /financeiro/aprovacoes — abas Aguardando mim, Aprovadas por mim, Todas da equipe; etapa N de M; chip de prazo; definir substituto.
+6 e 14 Detalhe /financeiro/solicitacoes/:id — dados, anexos com prévia, checagens, comentários, DecisionBar e ApprovalTimeline.
+8 Fila do Financeiro /financeiro/conferencia — KPIs por etapa (a conferir, pendência, lançamento gerado, pagamento programado, adiantamentos a comprovar, pagas no mês), lista com pagar até.
+9 Conferência /financeiro/conferencia/:id — lista de itens, ReceiptViewer, Declarado x Comprovante, RuleChecklist, decisão por item, "Concluir e Gerar Lançamento SIENGE" só com todos os itens resolvidos.
+10 Preview do formulário — modal com FormPreview, imprimir, baixar PDF, lista de comprovantes.
+7 Equipes e aprovadores /admin/equipes — dados da equipe, fluxo de reembolso/fundo fixo, fluxo do adiantamento (4 níveis), prazos, flag financeira, prévia de quem aprovaria.
+4 e 12 App — mesmas rotas em layout mobile, câmera para comprovante, rascunho offline.
+```
+
+## 9. Adaptações ao repositório e decisões (prevalecem sobre as seções 1 a 8)
+
+### 9.1 Nomes reais do repositório
+| Texto das seções 1–8 | No repositório |
+|---|---|
+| schema `porta_atendimento` | `portal_atendimento` |
+| `docs/solicitacoes-financeiras/` | `docs/Solicitacoes-financeiras/` |
+| migration `AAAAMMDDHHMM_sf_<descricao>.sql` | `AAAAMMDDHHMMSS_portal_atendimento_sf_<descricao>.sql` (padrão das 14 cifras) |
+| tabela `equipe` | não existe; ver 9.2 (a unidade é o **setor**, `at_setores`) |
+| perfis "Aprovador", "Financeiro", "Administrador" | permissões do `menuRegistry` + `portal_atendimento.tem_permissao()`; super admin vê tudo |
+| AppShell, Sidebar | `ProtectedLayout`, `Sidebar`, `Topbar` existentes; menu novo só por entrada no `src/config/menuRegistry.ts` |
+| ícones | coloridos (`fluent-color`, `flat-color-icons`) embutidos por `scripts/gerar-icones-setor.mjs` (`npm run icones:setor`); botões de ação seguem com Lucide em linha |
+| App (telas 4 e 12) | aba "Financeiro" dentro do CalperDESK existente (`/app/*`) |
+| notificações | aviso no portal = sino dos gatilhos (`src/features/chamados/gatilhos`); e-mail = Edge Function `portal_atendimento-email` |
+
+### 9.2 Aprovadores ficam no cadastro de Setores (decisão do Wagner, 17/10/2026)
+- Toda a configuração que as seções 1–8 colocam em `equipe` / `equipe_aprovador` fica em **Gestão de Atendimento › Setores e números**, numa aba nova **"Aprovação financeira"** do setor, mais a coluna **Aprovação** na lista. A aba "Atendimento" atual não muda.
+- Os setores já incluem as obras ("Obra - Arte Wave", "Obra - Arte Jardim"…) e o Financeiro.
+- Banco: colunas novas em `at_setores` (`sf_setor_obra`, `sf_financeiro`, `sf_modo_aprovacao`, `sf_prazo_horas`, `sf_acao_prazo_vencido`, `sf_centro_custo_padrao`, `sf_prazo_comprovacao_dias`, `sf_acao_comprovacao_vencida`, `sf_limite_adiantamentos_abertos`) e tabela `sf_setor_aprovador` (no lugar de `equipe_aprovador`, mesmas colunas, com `setor_id`).
+- "Setor de obra" decide se o nível Planejamento entra no adiantamento. "Setor financeiro" substitui `is_financeiro`.
+- Aprovação financeira **independe** de "Receber chamado".
+- O gestor do setor ("Gestão do setor") é **sugerido** como aprovador Gestor/Gerente; o admin pode trocar (aprovado em 17/10/2026).
+
+### 9.3 Quem é o solicitante
+- Usuário (`usuarios`, id = `auth.uid()`) → pessoa (`at_pessoas`) pelo e-mail em `at_pessoa_contatos` → setor (`at_pessoas.setor_id`) e CPF (`at_pessoas.documento`).
+- O Wagner vai colocar **todas** as pessoas num setor (17/10/2026). Mesmo assim, `sf_enviar` recusa com mensagem clara quem estiver sem setor (proteção).
+- Cabeçalho do formulário: Funcionário, CPF mascarado, Departamento = **Setor**.
+
+### 9.4 Acesso aos dados
+- Padrão do repositório: tabelas com RLS ligada e `revoke all` de `anon`/`authenticated`; leitura e escrita **só por RPC security definer** que checa a permissão. As tabelas `sf_` seguem esse padrão; as regras de visibilidade das seções 6 (colaborador, aprovador, financeiro, admin) ficam dentro das RPCs de leitura.
+
+### 9.5 Design system
+Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
+
+| Token do PRD | Token do repositório |
+|---|---|
+| brand #C41E2A | `--brand` #d6293b |
+| brand-hover #9B1620 | `--brand-hover` #a91d2c |
+| brand-soft #FDECEE | `--brand-soft` #fdecee |
+| sidebar #1E1F24 / sidebar-hover #2B2D33 | `--sidebar` #17181c / `--sidebar-hover` #232429 |
+| texto da sidebar #E4E6EA / #C9CCD3 / rótulo #A3A7B0 | `--sidebar-text` #9a9ba3 (ativo: #fff) |
+| bg #F4F5F7 | `--page` #f5f6f8 |
+| surface #FFFFFF | `--surface` |
+| border #E3E5EA | `--line` #e9eaee |
+| border-input #D5D8DE | `--input-border` #8d939e (3:1 com o branco, WCAG 1.4.11) |
+| text #1B1D22 | `--ink` #17181c |
+| text-secondary #4F5562 | `--muted` #6b7280 |
+| text-label #3A3F4A | `--neutral-fg` #52525b |
+| readonly #F1F2F4 | `--neutral-bg` #f1f1f3 |
+| ocr (borda #6C8FD8, fundo #F3F7FF, texto #173B86) | `--info-fg` #1d4ed8, `--info-bg` #e8effd, `--info-border` #c7d7fb |
+| success #1D6B34 | `--success-fg` #166534 |
+| danger #B0181F | `--danger-fg` #b91c1c |
+| chip rascunho | `--neutral-bg` / `--neutral-fg` |
+| chip aguardando, em conferência, vence em | `--warning-bg` / `--warning-strong` |
+| chip devolvida, pendência #F1EAFC/#5B2AA0 | **criar** `--violet-bg` #f3e8ff / `--violet-fg` #7e22ce |
+| chip aguardando pagamento, lançamento gerado | `--info-bg` / `--info-fg` |
+| chip aprovada, paga, encerrado | `--success-bg` / `--success-fg` |
+| chip reprovada, vencido, divergente | `--danger-bg` / `--danger-fg` |
+| ReceiptViewer #2A2C31 | **criar** `--viewer` #2a2b31 (= `--sidebar-sub-active`) |
+| tipografia Inter, eyebrow, títulos | `--ds-font`, `.ds-eyebrow`, `.ds-h1` existentes |
+| KpiCard, PageHeader, Pill, Panel, Toast | `src/components/ds/` existentes (`KpiCard`, `PageHeading`, `Pill`, `Panel`, `AlertBanner`, `ThLabel`, `IconeColorido`) |
+
+### 9.6 Em aberto (perguntar antes de codar a parte afetada)
+- Lançamento: **SIENGE** em tudo (decisão do Wagner, 17/10/2026). A menção ao RM nos formulários xlsx é antiga.
+- Valores `[ALÇADA]` (Diretor e Presidente), `[LIMITE]` de adiantamentos em aberto, `[PRAZO]` da R09, tolerância da R04, lista de itens proibidos (R07) e tetos por categoria (R08): parâmetros configuráveis, sem constantes no código.
+- Demais itens da seção "Decisões em aberto" do PRD.md.
+
+## 10. Estado da implementação
+
+### Fase 1 — Banco e cadastros (17/10/2026)
+- Migrations: `20261017100000_portal_atendimento_sf_base.sql` (tabelas, colunas `sf_*` em `at_setores`, número SF-AAAA-NNNN, `sf_evento` imutável, bucket `sf-comprovantes`), `…100100_sf_seeds.sql` (R01–R10, A01–A07, 10 categorias, Financeiro e setores "Obra…" marcados na 1ª carga), `…100200_sf_rpc_cadastros.sql`.
+- Regras de acesso: `sf_pessoa_do_usuario`, `sf_setor_do_usuario`, `sf_eh_financeiro` (setor da pessoa ou setor que gere), `sf_status_financeiro`, `sf_pode_ver` (regra única de visibilidade; equivale às policies da seção 6).
+- RPCs: `sf_meu_contexto`, `sf_setores_resumo`, `sf_setor_config_obter`, `sf_setor_config_salvar` (Admin), `sf_usuarios_opcoes`, `sf_cadastros_lista`, `sf_fundo_fixo_salvar`, `sf_categoria_salvar`, `sf_regra_salvar` (Admin), `sf_solicitacoes_listar(escopo)`.
+- Regra de alçada: reembolso/fundo fixo entra quem tem `alcada_minima <= total`; adiantamento: planejamento só em setor de obra, gerente sempre, diretor e presidente quando `valor > alçada`. Mesma regra em `src/features/financeiro/cadeia.ts` (prévia) e, na Fase 2, em `sf_enviar`.
+- Telas: aba **Aprovação financeira** e coluna **Aprovação** em Setores e números; menu **Solicitações Financeiras › Cadastros financeiros** (Admin e Super admin; o grupo fica só para admin até a Fase 2 liberar as telas do colaborador).
+- Componentes: `StatusChip`, `ApprovalTimeline`, `FormSection`, `Field`, `OcrField`, `CadeiaPrevia` em `src/features/financeiro/components/`; tokens `--violet-bg`, `--violet-fg`, `--viewer`.
+- Testes: `tests/db/financeiro.db.test.ts` (4 usuários) e `tests/financeiro-cadeia.test.ts`.

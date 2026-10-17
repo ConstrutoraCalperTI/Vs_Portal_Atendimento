@@ -1,0 +1,322 @@
+/* Solicitações Financeiras (CONTEXTO.md 9.5): só tokens de src/index.css. */
+
+/* ---------- Aba "Aprovação financeira" (Setores e números) ---------- */
+.sf-aba__grupo {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.sf-aba__titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.sf-aba__titulo small {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sf-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.sf-niveis {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sf-niveis > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--table-head);
+}
+
+.sf-niveis__n {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--brand-soft);
+  color: var(--brand-hover);
+  font-weight: 700;
+}
+
+.sf-niveis__campos {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.sf-niveis__largo {
+  grid-column: 1 / -1;
+}
+
+.sf-ro {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+  font-size: 13.5px;
+}
+
+.sf-num {
+  text-align: right;
+}
+
+.sf-previa {
+  display: grid;
+  gap: 12px;
+}
+
+.sf-previa__valor {
+  max-width: 220px;
+}
+
+.sf-previa__cadeia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.sf-chip-pessoa {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sf-chip-pessoa + .sf-chip-pessoa::before {
+  content: "→ ";
+  color: var(--muted);
+}
+
+.sf-chip-pessoa--fin {
+  background: var(--info-bg);
+  color: var(--info-fg);
+}
+
+/* Abas Atendimento | Aprovação financeira do setor */
+.sf-abas-setor {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sf-abas-setor button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sf-abas-setor button[aria-selected="true"] {
+  border-bottom-color: var(--brand);
+  color: var(--ink);
+}
+
+/* ---------- StatusChip ---------- */
+.sf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sf-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sf-chip--neutro { background: var(--neutral-bg); color: var(--neutral-fg); }
+.sf-chip--aviso { background: var(--warning-bg); color: var(--warning-strong); }
+.sf-chip--roxo { background: var(--violet-bg); color: var(--violet-fg); }
+.sf-chip--info { background: var(--info-bg); color: var(--info-fg); }
+.sf-chip--ok { background: var(--success-bg); color: var(--success-fg); }
+.sf-chip--erro { background: var(--danger-bg); color: var(--danger-fg); }
+
+/* ---------- FormSection e OcrField ---------- */
+.sf-secao {
+  padding: 20px;
+}
+
+.sf-secao__t {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: 17px;
+}
+
+.sf-secao__t small {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.sf-secao__n {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-hover);
+  font-size: 13px;
+}
+
+.sf-ocr .input {
+  border-color: var(--info-fg);
+  background: var(--info-bg);
+  color: var(--info-fg);
+  font-weight: 600;
+}
+
+.sf-ocr--vazio .input {
+  border-style: dashed;
+  border-color: var(--warning-fg);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.sf-ocr__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--info-fg);
+}
+
+.sf-ocr--vazio .sf-ocr__tag {
+  color: var(--warning-strong);
+}
+
+/* ---------- ApprovalTimeline ---------- */
+.sf-tl {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sf-tl__item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+
+.sf-tl__item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 30px;
+  bottom: 2px;
+  left: 13px;
+  width: 2px;
+  background: var(--line);
+}
+
+.sf-tl__m {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--input-border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sf-tl__item--feito .sf-tl__m { border-color: var(--success-fg); background: var(--success-fg); color: #fff; }
+.sf-tl__item--feito:not(:last-child)::before { background: var(--success-fg); }
+.sf-tl__item--atual .sf-tl__m { border-color: var(--warning-fg); color: var(--warning-strong); box-shadow: 0 0 0 4px var(--warning-bg); }
+.sf-tl__item--nao_exigido .sf-tl__m { border-style: dashed; }
+.sf-tl__item--nao_exigido .sf-tl__t { color: var(--muted); }
+.sf-tl__item--devolvido .sf-tl__m { border-color: var(--violet-fg); background: var(--violet-fg); color: #fff; }
+
+.sf-tl__t { font-weight: 700; }
+.sf-tl__d { margin-top: 1px; font-size: 12.5px; color: var(--muted); }
+
+.sf-tl__q {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--table-head);
+  font-size: 13px;
+}
+
+/* ---------- Cadastros financeiros ---------- */
+.sf-cad {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.sf-cad .at-tab tr {
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .sf-cad {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .sf-niveis__campos {
+    grid-template-columns: 1fr;
+  }
+}
