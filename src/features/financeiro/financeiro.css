@@ -591,3 +591,19 @@
 .hf-carregando { min-height: 132px; background: var(--neutral-bg); }
 @media (max-width: 900px) { .hf-cards--seis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .hf-cards--seis { grid-template-columns: 1fr; } }
+
+/* ---------- PDF dentro do sistema (pdf.js) e visualizador em janela ---------- */
+.sf-viewer__palco--pdf { display: block; place-items: normal; max-height: 680px; padding: 12px; }
+.sf-viewer__palco--pdf:fullscreen { max-height: none; }
+.sf-pdf { width: 100%; display: grid; justify-items: center; align-content: start; gap: 12px; min-height: 380px; }
+.sf-pdf > .sf-viewer__msg { align-self: center; margin-top: 160px; }
+.sf-pdf__pagina { max-width: none; background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45); }
+.sf-pdf__info { color: #c9ccd3; font-size: 12px; }
+.sf-visual { position: fixed; top: 50%; left: 50%; z-index: 92; display: flex; flex-direction: column; width: min(980px, calc(100vw - 32px)); height: min(860px, calc(100dvh - 32px));
+  overflow: hidden; border-radius: 12px; background: var(--viewer); transform: translate(-50%, -50%); }
+.sf-visual .sf-viewer { flex: 1; min-height: 0; border-radius: 0; }
+.sf-visual .sf-viewer__palco--pdf { max-height: none; }
+.sf-visual .sf-viewer__palco img { max-height: none; }
+.sf-visual__fechar { position: absolute; top: 6px; right: 8px; z-index: 2; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12); color: #fff; cursor: pointer; }
+.sf-visual .sf-viewer__barra { padding-right: 52px; }

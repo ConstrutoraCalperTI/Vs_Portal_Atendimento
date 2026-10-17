@@ -249,3 +249,9 @@ Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
 - Para o perfil Financeiro, o bloco vem antes de tudo; para os demais, depois dos chamados e dos módulos. O "Nenhum módulo liberado" não aparece mais para quem tem as Solicitações Financeiras.
 - Os cards abrem as telas já filtradas: a fila do Financeiro aceita `?etapa=` (em_conferencia, pendencia_solicitante, lancamento_gerado, pagamento_programado, comprovar, paga, todas) e Minhas solicitações aceita `?status=`.
 - Migration `20261017170000_portal_atendimento_sf_perfil_financeiro.sql` (aditiva, aplicada): o perfil `financeiro` abre a tela `sf_conferencia`. A regra de dados não muda: só quem é do setor marcado como financeiro (ou admin) confere.
+
+### PDF dentro do sistema (17/10/2026)
+- Pedido do Wagner: o PDF não deve abrir em outra janela. O `ReceiptViewer` agora desenha o PDF na própria tela com o **pdf.js** (`pdfjs-dist` 4.10.38, componente `PdfPaginas`), em `<canvas>`, com zoom, girar e tela cheia, até 20 páginas. A CSP continua com `frame-src 'none'` e `object-src 'none'`, porque não há iframe. O worker sai do próprio portal (`script-src 'self'`) e o `isEvalSupported` fica desligado (sem `unsafe-eval`). A biblioteca só é baixada quando aparece um PDF (chunk separado, cerca de 330 kB + worker).
+- Os anexos clicados (linhas, detalhe, preview do formulário, documento de origem, comprovação) abrem no `VisualizadorAnexo`, uma janela dentro do sistema montada nas telas das Solicitações Financeiras. Fora delas (ex.: app), cai na nova aba.
+- CSP (`vercel.json`): `connect-src` ganhou `blob:`, para o PDF da demonstração (o arquivo fica em memória). Em produção, o PDF vem da URL assinada do Storage (`*.supabase.co`, já permitido).
+- Armadilha: um contêiner com `place-items: center` encolhe o filho mesmo em `display: block`, nos Chrome recentes (justify-self em layout de bloco). O palco do PDF usa `place-items: normal`.

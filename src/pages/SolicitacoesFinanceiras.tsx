@@ -8,6 +8,7 @@ import { useAccess } from "../features/configuracoes/access/useAccess";
 import { EmptyState } from "../features/configuracoes/components/EmptyState";
 import { PageHeader } from "../features/configuracoes/components/PageHeader";
 import { NotFound } from "./NotFound";
+import { VisualizadorAnexo } from "../features/financeiro/components/VisualizadorAnexo";
 import "../features/configuracoes/pages/Integracoes.css";
 
 const MinhasSolicitacoes = lazy(() => import("../features/financeiro/pages/MinhasSolicitacoes").then((m) => ({ default: m.MinhasSolicitacoes })));
@@ -82,6 +83,8 @@ export function SolicitacoesFinanceiras() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+      {/* Anexos (imagem e PDF) abrem aqui dentro, sem nova aba. */}
+      <VisualizadorAnexo />
     </>
   );
 }

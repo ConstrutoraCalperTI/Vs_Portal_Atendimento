@@ -6,7 +6,8 @@ import { valorPorExtenso } from "../../../../supabase/functions/_shared/sf/adian
 import { moeda } from "../cadeia";
 import { dataBR, docBR, mesBR } from "../pages/formato";
 import { siengeService } from "../sienge";
-import { solicitacoesService, type Detalhe } from "../solicitacoes";
+import { abrirAnexo } from "./VisualizadorAnexo";
+import type { Detalhe } from "../solicitacoes";
 
 // Tela 10 — FormPreview: o formulário no layout padrão 2026 da Calper (A4), com toolbar escura (fechar, zoom, imprimir,
 // baixar PDF) e a lista de comprovantes ao lado. "Baixar PDF" é o mesmo PDF que vai anexado ao título no SIENGE
@@ -33,13 +34,6 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar o PDF. Use Imprimir › Salvar como PDF.");
-    }
-  };
-  const abrir = async (path: string) => {
-    try {
-      window.open(await solicitacoesService.urlAnexo(path), "_blank", "noopener");
-    } catch {
-      toast.error("Não foi possível abrir o comprovante.");
     }
   };
 
@@ -105,7 +99,7 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
               <ul className="sf-fila">
                 {anexos.map((a) => (
                   <li key={a.id}>
-                    <button type="button" className="sf-fila__item" onClick={() => void abrir(a.path)}>
+                    <button type="button" className="sf-fila__item" onClick={() => void abrirAnexo({ path: a.path, nome: a.nome, mime: "mime" in a ? String(a.mime) : a.nome.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg" })}>
                       <FileText size={16} aria-hidden="true" />
                       <span><b>{a.nome}</b>{a.valor != null && <small>{moeda(a.valor)}</small>}</span>
                     </button>

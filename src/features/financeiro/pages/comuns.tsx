@@ -1,8 +1,5 @@
 import { Lock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { ServiceError } from "../../configuracoes/services/types";
-import { solicitacoesService, type Anexo } from "../solicitacoes";
 
 // Pedaços comuns aos formulários e às visões das solicitações (reembolso, fundo fixo e adiantamento).
 
@@ -49,10 +46,5 @@ export function Ro({ rotulo, valor, trava }: { rotulo: string; valor: string; tr
   );
 }
 
-export async function abrirAnexo(a: Anexo) {
-  try {
-    window.open(await solicitacoesService.urlAnexo(a.path), "_blank", "noopener");
-  } catch (e) {
-    toast.error(e instanceof ServiceError ? e.message : "Não foi possível abrir o arquivo.");
-  }
-}
+/** Abre o anexo no visualizador do sistema (imagem ou PDF, sem nova aba). */
+export { abrirAnexo } from "../components/VisualizadorAnexo";
