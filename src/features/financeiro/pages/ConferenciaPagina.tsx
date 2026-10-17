@@ -8,10 +8,11 @@ import { ErrorState } from "../../configuracoes/components/ErrorState";
 import { ServiceError } from "../../configuracoes/services/types";
 import { moeda } from "../cadeia";
 import { FormPreview } from "../components/FormPreview";
+import { LancamentoSienge } from "../components/LancamentoSienge";
 import { ReceiptViewer } from "../components/ReceiptViewer";
 import { StatusChip } from "../components/StatusChip";
 import type { DecisaoItem, ItemConferencia } from "../conferencia";
-import { useConferencia, useDecidirItem, useMarcarPaga, usePedirAjuste, useProgramarPagamento, useSolicitacao } from "../hooks";
+import { useConferencia, useDecidirItem, useMarcarPaga, usePedirAjuste, useProgramarPagamento, useSituacaoSienge, useSolicitacao } from "../hooks";
 import { solicitacoesService, type Detalhe } from "../solicitacoes";
 import { dataBR, NOME_TIPO } from "./formato";
 import "../../atendimento/pages/Atendimento.css";
@@ -184,9 +185,14 @@ function Rodape({ d, podeConferir, resolvidos, total, ajustes, glosas }: { d: De
   const [dataPg, setDataPg] = useState(d.pagarAte ?? new Date().toISOString().slice(0, 10));
   const err = (e: unknown, padrao: string) => toast.error(e instanceof ServiceError ? e.message : padrao);
   const pendentes = total - resolvidos - ajustes;
+  const sit = useSituacaoSienge(d.id);
+  const [lancar, setLancar] = useState(false);
+  const pronto = resolvidos === total && total > 0;
 
   return (
     <section className="card sf-decisao" aria-label="Conclusão">
+      {sit.data?.erro && <p className="field__error sf-decisao__campo" role="alert">Último lançamento falhou: {sit.data.erro}</p>}
+      {sit.data?.titulo && <p className="sf-decisao__campo">Título no SIENGE: <b>{sit.data.titulo}</b>{sit.data.ambiente === "homologacao" ? " (homologação)" : ""}</p>}
       <div className="sf-decisao__totais">
         <span>Total <b>{moeda(d.totalDespesas)}</b></span>
         <span>Glosas <b className="sf-txt-erro">− {moeda(glosas)}</b></span>
@@ -207,9 +213,11 @@ function Rodape({ d, podeConferir, resolvidos, total, ajustes, glosas }: { d: De
               <CornerUpLeft size={16} aria-hidden="true" />
               Devolver ao solicitante
             </button>
-            <button type="button" className="btn btn--primary" disabled title={resolvidos < total ? "Resolva todos os itens" : "Integração SIENGE aguardando a aprovação dos endpoints"}>
+            <button type="button" className="btn btn--primary" disabled={!pronto || !sit.data?.configurada || sit.data?.status === "lancando"}
+              title={!pronto ? "Resolva todos os itens (aceitar ou glosar)" : !sit.data?.configurada ? "Ative a integração em Configurações › Integrações › SIENGE" : undefined}
+              onClick={() => setLancar(true)}>
               <HardDrive size={16} aria-hidden="true" />
-              Concluir e gerar lançamento SIENGE
+              Lançamento no SIENGE
             </button>
           </>
         )}
@@ -229,6 +237,7 @@ function Rodape({ d, podeConferir, resolvidos, total, ajustes, glosas }: { d: De
           </button>
         )}
       </div>
+      <LancamentoSienge d={d} aberto={lancar} onFechar={() => setLancar(false)} />
     </section>
   );
 }

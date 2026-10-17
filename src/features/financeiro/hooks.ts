@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { financeiroService, type ConfigSetorFinanceiro, type SalvarCategoria, type SalvarRegra } from "./service";
 import { conferenciaService, type DecisaoItem } from "./conferencia";
+import { siengeService, type SalvarSienge } from "./sienge";
 import { aprovacaoService, solicitacoesService, type AbaAprovacao, type Decisao, type TipoSolicitacao } from "./solicitacoes";
 
 const CHAVE = ["financeiro"] as const;
@@ -76,3 +77,21 @@ export const usePedirAjuste = () => useMuda((p: { id: number; comentario: string
 export const usePendenciaResponder = () => useMuda((p: { id: number; resposta: string }) => conferenciaService.pendenciaResponder(p));
 export const useProgramarPagamento = () => useMuda((p: { id: number; data: string }) => conferenciaService.programarPagamento(p));
 export const useMarcarPaga = () => useMuda((id: number) => conferenciaService.marcarPaga(id));
+
+// ---------- SIENGE (Fase 5, parte 2) ----------
+export function useConfigSienge() {
+  return useQuery({ queryKey: [...CHAVE, "sienge", "config"], queryFn: () => siengeService.config() });
+}
+
+export function useListasSienge(ativo: boolean) {
+  return useQuery({ queryKey: [...CHAVE, "sienge", "listas"], queryFn: () => siengeService.listas(), enabled: ativo, staleTime: 10 * 60_000, retry: false });
+}
+
+export function useSituacaoSienge(id: number) {
+  return useQuery({ queryKey: [...CHAVE, "sienge", "situacao", id], queryFn: () => siengeService.situacao(id), enabled: id > 0 });
+}
+
+export const useSalvarSienge = () => useMuda((p: SalvarSienge) => siengeService.salvar(p));
+export const useSalvarSenhaSienge = () => useMuda((senha: string) => siengeService.salvarSenha(senha));
+export const useTestarSienge = () => useMuda(() => siengeService.testar());
+export const useLancarSienge = () => useMuda((p: { solicitacaoId: number; centroCustoId: number; plano: string; vencimento: string }) => siengeService.lancar(p));

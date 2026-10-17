@@ -4,11 +4,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { moeda } from "../cadeia";
 import { dataBR, mesBR } from "../pages/formato";
+import { siengeService } from "../sienge";
 import { solicitacoesService, type Detalhe } from "../solicitacoes";
 
 // Tela 10 — FormPreview: o formulário no layout padrão 2026 da Calper (A4), com toolbar escura (fechar, zoom, imprimir,
-// baixar PDF) e a lista de comprovantes ao lado. "Baixar PDF" usa a impressão do navegador (Salvar como PDF); o PDF que
-// vai anexado ao SIENGE sai do mesmo modelo no servidor (Fase 5, parte 2).
+// baixar PDF) e a lista de comprovantes ao lado. "Baixar PDF" é o mesmo PDF que vai anexado ao título no SIENGE
+// (gerado no servidor, portal_atendimento-sf-sienge › pdf).
 
 const TITULO: Record<Detalhe["tipo"], string> = { reembolso: "REEMBOLSO", fundo_fixo: "FUNDO FIXO DE CAIXA", adiantamento: "ADIANTAMENTO DE NUMERÁRIO" };
 
@@ -17,6 +18,19 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
   const fundo = d.tipo === "fundo_fixo";
   const gestor = [...d.aprovacoes].reverse().find((a) => a.status === "aprovado" && a.ciclo === d.ciclo);
   const anexos = d.itens.flatMap((i) => i.anexos.map((a) => ({ ...a, valor: i.valor })));
+  const baixar = async () => {
+    try {
+      const blob = await siengeService.pdf(d.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${d.numero}-formulario.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível gerar o PDF. Use Imprimir › Salvar como PDF.");
+    }
+  };
   const abrir = async (path: string) => {
     try {
       window.open(await solicitacoesService.urlAnexo(path), "_blank", "noopener");
@@ -35,7 +49,7 @@ export function FormPreview({ d, aberto, onFechar }: { d: Detalhe; aberto: boole
             <button type="button" aria-label="Diminuir zoom" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}><ZoomOut size={16} aria-hidden="true" /></button>
             <button type="button" aria-label="Aumentar zoom" onClick={() => setZoom((z) => Math.min(1.6, z + 0.1))}><ZoomIn size={16} aria-hidden="true" /></button>
             <button type="button" onClick={() => window.print()}><Printer size={16} aria-hidden="true" />Imprimir</button>
-            <button type="button" onClick={() => window.print()} title="Na janela de impressão, escolha Salvar como PDF"><FileText size={16} aria-hidden="true" />Baixar PDF</button>
+            <button type="button" onClick={() => void baixar()}><FileText size={16} aria-hidden="true" />Baixar PDF</button>
             <Dialog.Close asChild>
               <button type="button" aria-label="Fechar"><X size={16} aria-hidden="true" /></button>
             </Dialog.Close>

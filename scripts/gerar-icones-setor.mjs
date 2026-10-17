@@ -83,6 +83,7 @@ const MENU = [
   ["configure_integrations", "flat-color-icons:data-configuration"],
   ["atendimento_zenvia", "fluent-color:chat-24"],
   ["integracao_movidesk", "fluent-color:book-database-24"],
+  ["integracao_sienge", "flat-color-icons:database"],
   ["view_audit_logs", "fluent-color:history-24"],
   ["manage_sessions", "fluent-color:shield-checkmark-24"],
   // Rodapé do menu (ids próprios, fora do menuRegistry).

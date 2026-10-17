@@ -307,6 +307,14 @@ export const ICONES_MENU: Record<string, { nome: string; data: IconifyIcon }> = 
       "height": 24
     }
   },
+  "integracao_sienge": {
+    "nome": "flat-color-icons:database",
+    "data": {
+      "body": "<path fill=\"#D1C4E9\" d=\"M38 7H10c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h28c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2m0 12H10c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h28c1.1 0 2-.9 2-2v-6c0-1.1-.9-2-2-2m0 12H10c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h28c1.1 0 2-.9 2-2v-6c0-1.1-.9-2-2-2\"/>",
+      "width": 48,
+      "height": 48
+    }
+  },
   "view_audit_logs": {
     "nome": "fluent-color:history-24",
     "data": {

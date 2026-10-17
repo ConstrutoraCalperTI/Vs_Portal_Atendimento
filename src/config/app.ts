@@ -12,7 +12,7 @@ export const APP_TOPBAR_NAME = "Portal de Tickets";
 export const APP_SCHEMA: string = (import.meta.env.VITE_APP_SCHEMA ?? "").trim() || "portal_atendimento";
 
 /** Nome publicado de uma Edge Function do aplicativo, ex.: edgeFunction("usuarios") → "modelo-usuarios". */
-export function edgeFunction(name: "auth" | "usuarios" | "totvs" | "integracao-teste" | "zenvia" | "atendimento" | "email" | "google-oauth" | "whatsapp" | "ia" | "calper-site" | "movidesk" | "sf-ocr"): string {
+export function edgeFunction(name: "auth" | "usuarios" | "totvs" | "integracao-teste" | "zenvia" | "atendimento" | "email" | "google-oauth" | "whatsapp" | "ia" | "calper-site" | "movidesk" | "sf-ocr" | "sf-sienge"): string {
   return `${APP_SCHEMA}-${name}`;
 }
 
