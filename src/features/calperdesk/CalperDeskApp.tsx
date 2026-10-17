@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Eye, EyeOff, LogOut, User, Wrench } from "lucide-react";
-import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from "react-router";
 import { CORPORATE_DOMAIN } from "../../config/app";
 import { AppAccessDeniedPopup } from "../auth/AppAccessDeniedPopup";
 import { useAuthSession } from "../auth/useAuthSession";
 import { AbrirChamado } from "./AbrirChamado";
+import { AppFinanceiro } from "./financeiro/AppFinanceiro";
 import { DetalheChamado, MeusChamados } from "./Chamados";
 import { calperdesk, type Entrada } from "./service";
 import { AppTecnico } from "./Tecnico";
@@ -118,8 +119,17 @@ export function SubCabecalho({ titulo, sub, voltar }: { titulo: string; sub?: Re
   );
 }
 
+/** Service worker do app (public/sw-app.js, escopo /app): abre sem rede para o rascunho financeiro do aparelho. Só no build. */
+function useAppOffline() {
+  useEffect(() => {
+    if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw-app.js", { scope: "/app" }).catch(() => undefined);
+  }, []);
+}
+
 /** Rota /app/*. */
 export function CalperDeskApp() {
+  useAppOffline();
   const { status } = useAuthSession();
   const [params] = useSearchParams();
   const pedido = params.get("simular");
@@ -149,7 +159,18 @@ function AppAutenticado() {
   const navigate = useNavigate();
   const { email, signOut } = useAuthSession();
   const [como] = useState(() => lerSessao(SIMULAR_KEY));
-  const entrada = useQuery({ queryKey: ["cd", "entrada", como], queryFn: () => calperdesk.entrar(como), retry: 1, staleTime: 60_000 });
+  // Sem rede (ex.: abriu o app no canteiro para o rascunho financeiro), vale a última entrada guardada no aparelho.
+  const entrada = useQuery({
+    queryKey: ["cd", "entrada", como],
+    queryFn: () => calperdesk.entrar(como),
+    retry: 1,
+    staleTime: 60_000,
+    networkMode: "offlineFirst",
+    placeholderData: () => (!como && typeof navigator !== "undefined" && !navigator.onLine ? lerEntrada(email) : undefined),
+  });
+  useEffect(() => {
+    if (entrada.data && !entrada.isPlaceholderData && !como) gravarEntrada(entrada.data);
+  }, [entrada.data, entrada.isPlaceholderData, como]);
   // Permissões por aplicativo: o bloqueio manual do Super admin vale também no app (consulta depois do 1º acesso,
   // que cria o cadastro). Na simulação, quem vê é a Administração.
   const acesso = useQuery({ queryKey: ["cd", "acesso"], queryFn: calperdesk.podeAcessar, enabled: entrada.isSuccess && !como, staleTime: 300_000 });
@@ -223,6 +244,7 @@ function AppAutenticado() {
             <Route path="chamados" element={<MeusChamados />} />
             <Route path="chamados/:id" element={<DetalheChamado />} />
             <Route path="perfil" element={<Perfil />} />
+            <Route path="financeiro/*" element={<AppFinanceiro />} />
             <Route path="*" element={<Navigate to="/app" replace />} />
           </Routes>
         </div>
@@ -379,6 +401,21 @@ function AppLogin({ modo: aba, onModo }: { modo: Modo; onModo: (m: Modo) => void
       </div>
     </div>
   );
+}
+
+const ENTRADA_KEY = "calperdesk-entrada";
+
+function lerEntrada(email: string | null): Entrada | undefined {
+  try {
+    const e = JSON.parse(localStorage.getItem(ENTRADA_KEY) ?? "null") as Entrada | null;
+    return e && email && e.email.toLowerCase() === email.toLowerCase() ? e : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function gravarEntrada(e: Entrada) {
+  gravarLocal(ENTRADA_KEY, JSON.stringify(e));
 }
 
 function gravarLocal(chave: string, valor: string) {

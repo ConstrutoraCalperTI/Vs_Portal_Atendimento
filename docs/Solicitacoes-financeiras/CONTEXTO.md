@@ -223,3 +223,14 @@ Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
 - Adaptação ao mockup: obra, conta de pagamento, centro de custo e centro de apuração são campos de texto (a obra sugere os setores de obra), porque não há lista dessas contas no portal; o colaborador não consulta o SIENGE.
 - Módulo puro `_shared/sf/adiantamento.ts` (valor por extenso, percentual da condição, rateio, acerto, prazo), usado pela tela e pelo PDF; testado em `tests/financeiro-adiantamento.test.ts`. Banco: `tests/db/financeiro-adiantamento.db.test.ts`.
 
+
+### Fase 6 — App no celular e README (17/10/2026)
+- CalperDESK ganhou o quadro **Financeiro** (`/app/financeiro`), telas 4 e 12 do mockup: início com aviso de sem rede, Reembolso e Fundo fixo, lista das solicitações (inclusive adiantamentos, só para acompanhar), rascunho com os comprovantes, "Novo comprovante" com a câmera traseira, leitura (campos em azul e motivo sugerido) e envio com aceite. Mesmas RPCs do portal; nenhuma migration nova.
+- Rascunho offline: IndexedDB `calperdesk-sf` (fotos como Blob). Ao voltar a rede, sobe sozinho; a sincronização é retomável (servidorId, linhaId, fotoEnviada), sem duplicar rascunho nem foto. O envio para aprovação é feito depois, com rede. Lógica pura em `src/features/calperdesk/financeiro/offline.ts` (testada em `tests/calperdesk-financeiro-offline.test.ts`).
+- O app abre sem rede: service worker `public/sw-app.js` (escopo `/app`, só no build; página com rede primeiro, `/assets/` com a cópia guardada primeiro). A última entrada do CalperDESK fica no `localStorage` (`calperdesk-entrada`) e é usada quando não há rede.
+- Armadilha: o React Query pausa as consultas quando o aparelho está sem rede (`networkMode: "online"`, o padrão), inclusive as que só leem o IndexedDB. Essas consultas usam `networkMode: "always"`.
+- O adiantamento continua sendo preenchido no portal (documento de origem, rateio). No app, ele só aparece para acompanhar.
+- Foto acima de 1,5 MB é reduzida no aparelho para JPEG de até 2000 px, abaixo do limite de 5 MB da leitura.
+- Na simulação da Administração (`?simular=`), o Financeiro fica indisponível: as solicitações são sempre da própria pessoa.
+- README do módulo: `docs/Solicitacoes-financeiras/README.md` (rotas, estados, tabelas, RPCs, Edge Functions, variáveis, app e o roteiro do piloto).
+- **Pendente do Wagner (não é código):** piloto com 1 equipe de obra por 1 competência mensal e aposentadoria das planilhas dessa equipe.

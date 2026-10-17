@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, ChevronRight, ClipboardList, Lightbulb, Megaphone, MessageCircle, PlusCircle, User } from "lucide-react";
+import { Building2, ChevronRight, ClipboardList, Lightbulb, Megaphone, MessageCircle, PlusCircle, User, Wallet } from "lucide-react";
 import { useEffect, useState, type FormEvent, type SyntheticEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -335,6 +335,11 @@ export function Inicio() {
             <span>Falar no WhatsApp</span>
           </a>
         )}
+        <Link to="/app/financeiro" className="cd-tile">
+          <Wallet size={28} strokeWidth={1.6} aria-hidden="true" />
+          <span>Financeiro</span>
+          <small>reembolso e fundo fixo</small>
+        </Link>
         {q.perfil !== false && (
           <Link to="/app/perfil" className="cd-tile">
             <User size={28} strokeWidth={1.6} aria-hidden="true" />

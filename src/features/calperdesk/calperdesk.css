@@ -389,3 +389,57 @@ button.cd-tile { font: inherit; cursor: pointer; }
 .cd-rodape { position: sticky; bottom: 0; margin-top: auto; padding: 10px 20px 16px; background: linear-gradient(to top, var(--cd-3) 72%, transparent); }
 .cd-rodape small { display: block; text-align: center; font-size: 11px; color: var(--cd-txt-3); margin-top: 6px; }
 .cd-tl--tec { padding: 0; }
+
+/* ---------- Financeiro (Solicitações Financeiras, Fase 6: telas 4 e 12) ---------- */
+.cd-st--roxo { color: #c4b5fd; background: rgba(196, 181, 253, 0.14); }
+.cd-st--erro { color: var(--cd-perigo); background: rgba(251, 113, 133, 0.12); }
+.cd-sf-offline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; font-size: 13px;
+  color: #fde68a; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); }
+.cd-sf-offline--on { color: var(--cd-info); background: rgba(125, 211, 252, 0.1); border-color: rgba(125, 211, 252, 0.3); }
+.cd-sf-offline .cd-btn-mini { margin-left: auto; }
+.cd-sf-inicio { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cd-sf-tipo { display: grid; gap: 4px; justify-items: start; min-height: 104px; padding: 14px; border-radius: 16px; border: 1px solid var(--cd-borda);
+  background: var(--cd-vidro); color: #fff; text-align: left; font: inherit; cursor: pointer; }
+.cd-sf-tipo svg { color: var(--cd-ouro); }
+.cd-sf-tipo b { font-size: 15px; }
+.cd-sf-tipo small { color: var(--cd-txt-3); font-size: 12px; }
+.cd-sf-tipo:disabled { opacity: 0.5; cursor: default; }
+.cd-sf-camera-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; text-decoration: none; font-weight: 700; }
+.cd-sf-linhas { display: grid; gap: 8px; }
+.cd-sf-linha { position: relative; padding-right: 44px; }
+.cd-sf-linha .cd-card__l1 b { color: #fff; font-size: 14px; }
+.cd-sf-tirar { position: absolute; right: 8px; bottom: 8px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 10px;
+  background: transparent; color: var(--cd-txt-3); cursor: pointer; }
+.cd-sf-falta { color: var(--cd-perigo); }
+.cd-sf-total { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; padding: 12px 14px; border-radius: 14px;
+  border: 1px solid var(--cd-ouro-b); background: var(--cd-ouro-bg2); }
+.cd-sf-total b { font-size: 20px; }
+.cd-sf-resumo { margin: 6px 0 12px; font-size: 12px; color: var(--cd-txt-3); }
+.cd-sf-centro { text-align: center; }
+.cd-sf-aviso { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; font-size: 13px; color: #fde68a; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); }
+.cd-sf-aviso--roxo { color: #ddd6fe; background: rgba(196, 181, 253, 0.12); border-color: rgba(196, 181, 253, 0.35); }
+.cd-sf-bloqueios { margin: 0 0 12px; padding: 10px 12px 10px 28px; border-radius: 12px; font-size: 12px; color: #ffe4e6; background: rgba(251, 113, 133, 0.12); }
+.cd-sf-aceite { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; font-size: 13px; color: var(--cd-txt-2); }
+.cd-sf-aceite input { width: 22px; height: 22px; flex: none; accent-color: var(--cd-acao); }
+.cd-sf-etapas { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.cd-sf-etapa { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--cd-borda); background: var(--cd-vidro); }
+.cd-sf-etapa small { color: var(--cd-txt-3); }
+.cd-sf-etapa em { font-size: 12px; color: var(--cd-txt-2); }
+.cd-sf-etapa--aprovado { border-color: rgba(52, 211, 153, 0.4); }
+.cd-sf-etapa--aguardando { border-color: rgba(251, 191, 36, 0.5); }
+.cd-sf-etapa--devolvido, .cd-sf-etapa--reprovado { border-color: rgba(251, 113, 133, 0.5); }
+.cd-sf-camera { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 3 / 4; max-height: 52dvh; margin: 0 0 6px; padding: 0;
+  overflow: hidden; border-radius: 18px; border: 1px solid var(--cd-borda); background: #0b0c0f; color: var(--cd-txt-2); cursor: pointer; }
+.cd-sf-camera img { width: 100%; height: 100%; object-fit: contain; }
+.cd-sf-camera > span { display: flex; align-items: center; gap: 8px; }
+.cd-sf-moldura { width: 70%; height: 72%; border: 2px dashed var(--cd-ouro-b); border-radius: 14px; }
+.cd-sf-lendo { position: absolute; left: 12px; right: 12px; bottom: 12px; justify-content: center; padding: 8px; border-radius: 10px; background: rgba(15, 16, 19, 0.85); color: var(--cd-info); font-size: 13px; }
+.cd-sf-ocr { border-color: rgba(125, 211, 252, 0.6); background: rgba(125, 211, 252, 0.08); }
+.cd-sf-tag { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; color: var(--cd-info); }
+.cd-chip small { opacity: 0.75; margin-left: 4px; }
+.cd-sf-incluir { margin-top: 18px; min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.cd-gira { animation: cd-gira 1s linear infinite; }
+@keyframes cd-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cd-gira { animation: none; } }
+.cd-sf-offline { flex-wrap: nowrap; }
+.cd-sf-offline svg { flex: none; }
