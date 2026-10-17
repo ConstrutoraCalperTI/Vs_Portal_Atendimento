@@ -14,6 +14,7 @@ const MinhasSolicitacoes = lazy(() => import("../features/financeiro/pages/Minha
 const NovaSolicitacao = lazy(() => import("../features/financeiro/pages/NovaSolicitacao").then((m) => ({ default: m.NovaSolicitacao })));
 const CriarSolicitacao = lazy(() => import("../features/financeiro/pages/NovaSolicitacao").then((m) => ({ default: m.CriarSolicitacao })));
 const SolicitacaoPagina = lazy(() => import("../features/financeiro/pages/SolicitacaoPagina").then((m) => ({ default: m.SolicitacaoPagina })));
+const Aprovacoes = lazy(() => import("../features/financeiro/pages/Aprovacoes").then((m) => ({ default: m.Aprovacoes })));
 const CadastrosFinanceiros = lazy(() => import("../features/financeiro/CadastrosFinanceiros").then((m) => ({ default: m.CadastrosFinanceiros })));
 
 // Solicitações Financeiras: item `solicitacoes_financeiras` do menuRegistry (docs/Solicitacoes-financeiras/CONTEXTO.md).
@@ -23,6 +24,7 @@ const page = getMenuItem("solicitacoes_financeiras");
 const SECOES: { id: MenuItemId; segmento: string }[] = [
   { id: "sf_minhas", segmento: "solicitacoes" },
   { id: "sf_nova", segmento: "nova" },
+  { id: "sf_aprovacoes", segmento: "aprovacoes" },
   { id: "sf_cadastros", segmento: "cadastros" },
 ];
 
@@ -68,6 +70,7 @@ export function SolicitacoesFinanceiras() {
           <Route path="solicitacoes/nova/:tipo" element={<CriarSolicitacao />} />
           <Route path="solicitacoes/:id" element={<SolicitacaoPagina />} />
           <Route path="nova" element={<NovaSolicitacao />} />
+          <Route path="aprovacoes" element={<Aprovacoes />} />
           <Route path="cadastros" element={pode("sf_cadastros") ? <CadastrosFinanceiros /> : <NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

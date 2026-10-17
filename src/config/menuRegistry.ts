@@ -29,6 +29,7 @@ import {
   Smartphone,
   SquareKanban,
   Ticket,
+  UserCheck,
   Users,
   UsersRound,
   Wallet,
@@ -321,6 +322,17 @@ const definitions = [
     group: "principal",
     description: "Reembolso de despesas ou prestação de contas do fundo fixo.",
     parent: "solicitacoes_financeiras",
+    alwaysVisible: true,
+  },
+  {
+    id: "sf_aprovacoes",
+    label: "Aprovações",
+    path: "/financeiro/aprovacoes",
+    icon: UserCheck,
+    group: "principal",
+    description: "Solicitações aguardando a sua aprovação, as que você aprovou e as do seu setor.",
+    parent: "solicitacoes_financeiras",
+    // A fila mostra só o que é do usuário (vazia para quem não aprova).
     alwaysVisible: true,
   },
   {

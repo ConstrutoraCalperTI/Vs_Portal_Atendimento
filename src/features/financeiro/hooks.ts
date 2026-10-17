@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { financeiroService, type ConfigSetorFinanceiro, type SalvarCategoria, type SalvarRegra } from "./service";
-import { solicitacoesService, type TipoSolicitacao } from "./solicitacoes";
+import { aprovacaoService, solicitacoesService, type AbaAprovacao, type Decisao, type TipoSolicitacao } from "./solicitacoes";
 
 const CHAVE = ["financeiro"] as const;
 
@@ -47,3 +47,16 @@ export function useChecagens(id: number, ativo: boolean) {
 export const useCriarSolicitacao = () => useMuda((tipo: TipoSolicitacao) => solicitacoesService.criar(tipo));
 export const useEnviarSolicitacao = () => useMuda((id: number) => solicitacoesService.enviar(id));
 export const useCancelarSolicitacao = () => useMuda((id: number) => solicitacoesService.cancelar(id));
+
+// ---------- Aprovação (Fase 3) ----------
+export function useFilaAprovacao(aba: AbaAprovacao) {
+  return useQuery({ queryKey: [...CHAVE, "aprovacoes", aba], queryFn: () => aprovacaoService.fila(aba), refetchInterval: 60_000 });
+}
+
+export function useDetalheExtra(id: number) {
+  return useQuery({ queryKey: [...CHAVE, "extra", id], queryFn: () => aprovacaoService.extra(id), enabled: id > 0 });
+}
+
+export const useDecidir = () => useMuda((p: { id: number; decisao: Decisao; comentario: string | null }) => aprovacaoService.decidir(p));
+export const useDefinirSubstituto = () => useMuda((p: { substitutoId: string; de: string; ate: string }) => aprovacaoService.definirSubstituto(p));
+export const useRemoverSubstituto = () => useMuda((id: number) => aprovacaoService.removerSubstituto(id));

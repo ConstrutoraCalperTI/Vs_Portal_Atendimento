@@ -366,3 +366,118 @@ const mockSolicitacoes: SolicitacoesService = {
 };
 
 export const solicitacoesService: SolicitacoesService = DATA_SOURCE === "mock" ? mockSolicitacoes : supabaseSolicitacoes;
+
+// ---------- Fase 3: aprovação (migration 20261017120000) ----------
+
+export type AbaAprovacao = "aguardando" | "aprovadas" | "setor";
+export type Decisao = "aprovar" | "devolver" | "reprovar";
+
+export interface LinhaAprovacao {
+  id: number;
+  numero: string;
+  tipo: TipoSolicitacao;
+  status: StatusSolicitacao;
+  solicitante: string;
+  setor: string | null;
+  valor: number;
+  atualizadoEm: string;
+  nivel: number | null;
+  papel: string | null;
+  de: number;
+  desde: string | null;
+  prazoEm: string | null;
+  escaladoEm: string | null;
+  /** Decidindo como substituto de alguém. */
+  substitutoDe: string | null;
+  alertas: number;
+  decisao: string | null;
+  decididoEm: string | null;
+}
+
+export interface FilaAprovacao {
+  contagem: number;
+  ehAprovador: boolean;
+  substituicoes: { id: number; substituto: string; de: string; ate: string }[];
+  usuarios: { id: string; nome: string }[];
+  lista: LinhaAprovacao[];
+}
+
+export interface DetalheExtra {
+  podeDecidir: boolean;
+  etapa: { nivel: number; papel: string; prazoEm: string | null; emNomeDe: string | null } | null;
+  regras: { codigo: string; nome: string; resultado: "ok" | "alerta" | "bloqueio"; detalhe: string | null; itemId: number | null }[];
+}
+
+export interface AprovacaoService {
+  fila(aba: AbaAprovacao): Promise<FilaAprovacao>;
+  extra(id: number): Promise<DetalheExtra>;
+  decidir(p: { id: number; decisao: Decisao; comentario: string | null }): Promise<{ status: string; proximo?: string }>;
+  definirSubstituto(p: { substitutoId: string; de: string; ate: string }): Promise<void>;
+  removerSubstituto(id: number): Promise<void>;
+}
+
+const supabaseAprovacao: AprovacaoService = {
+  fila: async (aba) => {
+    const f = await rpc<FilaAprovacao>("sf_aprovacoes_fila", { p_aba: aba });
+    return { ...f, lista: f.lista.map((l) => ({ ...l, valor: Number(l.valor) })) };
+  },
+  extra: (id) => rpc<DetalheExtra>("sf_detalhe_extra", { p_id: id }),
+  decidir: (p) => rpc("sf_decidir_aprovacao", { p_id: p.id, p_decisao: p.decisao, p_comentario: p.comentario }),
+  definirSubstituto: async (p) => {
+    await rpc("sf_substituto_definir", { p: p as unknown as Json });
+  },
+  removerSubstituto: (id) => rpc<void>("sf_substituto_remover", { p_id: id }),
+};
+
+// Modo simulado: o próprio solicitante aprova a etapa (só para ver as telas).
+const substituicoesMock: FilaAprovacao["substituicoes"] = [];
+const mockAprovacao: AprovacaoService = {
+  async fila(aba) {
+    await delay();
+    const lista: LinhaAprovacao[] = [...registros.values()]
+      .filter((d) => (aba === "aguardando" ? d.status === "em_aprovacao" : aba === "aprovadas" ? d.aprovacoes.some((a) => a.status === "aprovado") : d.status !== "rascunho"))
+      .map((d) => {
+        const a = d.aprovacoes.find((x) => x.status === "aguardando");
+        return {
+          id: d.id, numero: d.numero, tipo: d.tipo, status: d.status, solicitante: d.solicitante.nome, setor: d.setor?.nome ?? null, valor: d.totalDespesas,
+          atualizadoEm: d.atualizadoEm, nivel: a?.nivel ?? null, papel: a?.papel ?? null, de: d.aprovacoes.length, desde: d.enviadoEm,
+          prazoEm: new Date(Date.now() + 46 * 3600_000).toISOString(), escaladoEm: null, substitutoDe: null, alertas: 0,
+          decisao: d.aprovacoes.find((x) => x.status === "aprovado") ? "aprovado" : null, decididoEm: null,
+        };
+      });
+    return { contagem: [...registros.values()].filter((d) => d.status === "em_aprovacao").length, ehAprovador: true, substituicoes: substituicoesMock,
+      usuarios: [{ id: "u-ana", nome: "Ana Prado" }, { id: "u-paulo", nome: "Paulo Mendes" }], lista };
+  },
+  async extra(id) {
+    await delay();
+    const d = registros.get(id);
+    const a = d?.aprovacoes.find((x) => x.status === "aguardando");
+    return { podeDecidir: !!a, etapa: a ? { nivel: a.nivel, papel: a.papel, prazoEm: a.prazoEm, emNomeDe: null } : null, regras: [] };
+  },
+  async decidir({ id, decisao, comentario }) {
+    await delay();
+    const d = registros.get(id);
+    const a = d?.aprovacoes.find((x) => x.status === "aguardando");
+    if (!d || !a) throw new ServiceError("FORBIDDEN", "Esta solicitação não está aguardando a sua aprovação.");
+    if (decisao !== "aprovar" && !comentario?.trim()) throw new ServiceError("INVALID_INPUT", "Escreva o motivo para devolver ou reprovar.", "comentario");
+    a.status = decisao === "aprovar" ? "aprovado" : decisao === "devolver" ? "devolvido" : "reprovado";
+    a.comentario = comentario;
+    a.decididoEm = new Date().toISOString();
+    d.status = decisao === "aprovar" ? "em_conferencia" : decisao === "devolver" ? "devolvida" : "reprovada";
+    if (decisao === "aprovar") d.pagarAte = new Date(Date.now() + 15 * 86_400_000).toISOString().slice(0, 10);
+    if (decisao === "devolver") d.ciclo += 1;
+    return { status: d.status };
+  },
+  async definirSubstituto(p) {
+    await delay();
+    if (!p.substitutoId) throw new ServiceError("INVALID_INPUT", "Escolha outra pessoa ativa como substituta.", "substitutoId");
+    if (!p.de || !p.ate || p.ate < p.de) throw new ServiceError("INVALID_INPUT", "Informe o período (fim igual ou depois do início).", "ate");
+    substituicoesMock.push({ id: Date.now(), substituto: p.substitutoId === "u-ana" ? "Ana Prado" : "Paulo Mendes", de: p.de, ate: p.ate });
+  },
+  async removerSubstituto(id) {
+    await delay();
+    substituicoesMock.splice(substituicoesMock.findIndex((s) => s.id === id), 1);
+  },
+};
+
+export const aprovacaoService: AprovacaoService = DATA_SOURCE === "mock" ? mockAprovacao : supabaseAprovacao;

@@ -60,3 +60,7 @@ verify_jwt = true
 # Gestão Tickets Movidesk: chamada pelo pg_cron com a chave do Vault (x-movidesk-chave); o manual confere o Super admin na função.
 [functions.portal_atendimento-movidesk]
 verify_jwt = false
+
+# Solicitações Financeiras: envio da fila de e-mail (pg_cron, 5 min) com x-atendimento-chave (chave no Vault).
+[functions.portal_atendimento-sf-email]
+verify_jwt = false

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Lock, Paperclip, Plus, Send, Trash2, Upload, X } from "lucide-react";
+import { Ban, Check, CornerUpLeft, Lock, Paperclip, Plus, Send, Trash2, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -11,8 +11,8 @@ import { moeda } from "../cadeia";
 import { ApprovalTimeline, type EtapaTimeline } from "../components/ApprovalTimeline";
 import { FormSection } from "../components/Campos";
 import { StatusChip } from "../components/StatusChip";
-import { useCancelarSolicitacao, useChecagens, useEnviarSolicitacao, useSolicitacao } from "../hooks";
-import { solicitacoesService, type Anexo, type Detalhe, type LinhaEdicao } from "../solicitacoes";
+import { useCancelarSolicitacao, useChecagens, useDecidir, useDetalheExtra, useEnviarSolicitacao, useSolicitacao } from "../hooks";
+import { solicitacoesService, type Anexo, type Decisao, type Detalhe, type LinhaEdicao } from "../solicitacoes";
 import { dataBR, mesBR, NOME_TIPO } from "./formato";
 import "../../atendimento/pages/Atendimento.css";
 import "../financeiro.css";
@@ -491,6 +491,9 @@ function Visao({ d }: { d: Detalhe }) {
               </table>
             </div>
           </FormSection>
+          <Checagens id={d.id} />
+          <Comentarios d={d} />
+          <BarraDecisao d={d} />
         </div>
         <aside className="sf-lateral">
           <section className="card sf-painel">
@@ -500,6 +503,97 @@ function Visao({ d }: { d: Detalhe }) {
         </aside>
       </div>
     </>
+  );
+}
+
+/** Checagens gravadas no envio (regras de aceitação). */
+function Checagens({ id }: { id: number }) {
+  const q = useDetalheExtra(id);
+  const regras = q.data?.regras ?? [];
+  if (!q.data) return null;
+  return (
+    <FormSection titulo="Checagens automáticas">
+      <ul className="sf-regras">
+        {regras.map((r, i) => (
+          <Regra key={i} cod={r.codigo} texto={`${r.nome}${r.detalhe ? ` · ${r.detalhe}` : ""}`}
+            tom={r.resultado === "ok" ? "ok" : r.resultado === "alerta" ? "aviso" : "erro"} res={r.resultado === "ok" ? "OK" : r.resultado === "alerta" ? "Alerta" : "Bloqueio"} />
+        ))}
+        {regras.length === 0 && <Regra cod="—" texto="Sem pendências nas checagens feitas no envio" tom="ok" res="OK" />}
+      </ul>
+    </FormSection>
+  );
+}
+
+function Comentarios({ d }: { d: Detalhe }) {
+  const com = d.aprovacoes.filter((a) => a.comentario);
+  if (com.length === 0) return null;
+  return (
+    <FormSection titulo="Comentários">
+      <ul className="sf-comentarios">
+        {com.map((a, i) => (
+          <li key={i}>
+            <b>{a.aprovador ?? a.papel}</b> · {a.papel} · ciclo {a.ciclo}
+            {a.decididoEm && <span className="sf-sub">{new Date(a.decididoEm).toLocaleString("pt-BR")} · {ROTULO_APROVACAO[a.status] ?? a.status}</span>}
+            <p>{a.comentario}</p>
+          </li>
+        ))}
+      </ul>
+    </FormSection>
+  );
+}
+
+/** DecisionBar: Reprovar (contorno vermelho), Devolver (contorno roxo), Aprovar (verde). Devolver e reprovar exigem comentário. */
+function BarraDecisao({ d }: { d: Detalhe }) {
+  const ids = useId();
+  const extra = useDetalheExtra(d.id);
+  const decidir = useDecidir();
+  const [comentario, setComentario] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  if (!extra.data?.podeDecidir) return null;
+  const etapa = extra.data.etapa;
+
+  const agir = (decisao: Decisao) => {
+    if (decisao !== "aprovar" && !comentario.trim()) return setErro("Escreva o motivo antes de devolver ou reprovar.");
+    setErro(null);
+    decidir.mutate(
+      { id: d.id, decisao, comentario: comentario.trim() || null },
+      {
+        onSuccess: (r) => {
+          toast.success(decisao === "aprovar" ? (r.status === "em_conferencia" ? "Aprovada: foi para o Financeiro" : `Aprovada${r.proximo ? `: segue para ${r.proximo}` : ""}`)
+            : decisao === "devolver" ? "Devolvida ao solicitante" : "Reprovada");
+          setComentario("");
+        },
+        onError: (e) => setErro(e instanceof ServiceError ? e.message : "Não foi possível registrar a decisão."),
+      },
+    );
+  };
+
+  return (
+    <section className="card sf-decisao" aria-labelledby={`${ids}-t`}>
+      <h3 id={`${ids}-t`} className="sr-only">Decisão</h3>
+      <div className="field sf-decisao__campo">
+        <label className="field__label" htmlFor={`${ids}-c`}>
+          Comentário <span className="field__optional">(obrigatório para devolver ou reprovar)</span>
+        </label>
+        <textarea id={`${ids}-c`} className="input" rows={2} maxLength={2000} value={comentario} onChange={(e) => setComentario(e.target.value)}
+          placeholder={etapa ? `Etapa ${etapa.nivel} · ${etapa.papel}${etapa.emNomeDe ? ` (substituindo ${etapa.emNomeDe})` : ""}` : ""} />
+        {erro && <span className="field__error" role="alert">{erro}</span>}
+      </div>
+      <div className="sf-decisao__botoes">
+        <button type="button" className="btn sf-btn-reprovar" disabled={decidir.isPending} onClick={() => agir("reprovar")}>
+          <Ban size={16} aria-hidden="true" />
+          Reprovar
+        </button>
+        <button type="button" className="btn sf-btn-devolver" disabled={decidir.isPending} onClick={() => agir("devolver")}>
+          <CornerUpLeft size={16} aria-hidden="true" />
+          Devolver para ajuste
+        </button>
+        <button type="button" className="btn sf-btn-aprovar" disabled={decidir.isPending} onClick={() => agir("aprovar")}>
+          <Check size={16} aria-hidden="true" />
+          Aprovar
+        </button>
+      </div>
+    </section>
   );
 }
 

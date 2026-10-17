@@ -97,6 +97,7 @@ export function SinoAvisos({ ativo }: { ativo: boolean }) {
                         if (!n.lida) ler.mutate([n.id]);
                         setAberto(false);
                         if (n.ticketId) navigate(`${getMenuItem("gestao_chamados_tickets").path}/${n.ticketId}`);
+                        else if (n.link?.startsWith("/")) navigate(n.link);
                         else if (n.titulo.startsWith("Gerencial:")) navigate(`${getMenuItem("gestao_chamados_gerencial").path}/alertas`);
                       }}
                     >

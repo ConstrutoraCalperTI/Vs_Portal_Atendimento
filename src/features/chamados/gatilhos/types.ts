@@ -113,6 +113,8 @@ export interface Notificacao {
   ticketId: number | null;
   titulo: string;
   texto: string;
+  /** Caminho no portal (ex.: Solicitações Financeiras), quando o aviso não é de ticket. */
+  link?: string | null;
   lida: boolean;
   criadoEm: string;
 }

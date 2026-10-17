@@ -420,3 +420,21 @@
 @media (max-width: 860px) {
   .sf-inicio { grid-template-columns: 1fr; }
 }
+
+/* ---------- Fase 3: aprovação ---------- */
+.sf-sub { display: block; color: var(--muted); font-size: 12px; }
+.sf-contador { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; text-align: center; }
+.sf-substituto { margin-bottom: 16px; }
+.sf-substituto__acao { justify-content: flex-end; }
+.sf-substituicoes { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.sf-substituicoes li { display: flex; align-items: center; gap: 8px; }
+.sf-comentarios { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
+.sf-comentarios p { margin: 6px 0 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--table-head); }
+.sf-decisao { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 14px 16px; box-shadow: 0 -8px 24px -16px rgba(0, 0, 0, 0.25); }
+.sf-decisao__campo { flex: 1 1 100%; }
+.sf-decisao__botoes { display: flex; flex-wrap: wrap; gap: 10px; margin-left: auto; }
+.sf-decisao__botoes .btn { min-height: 48px; padding: 0 20px; }
+.sf-btn-reprovar { border: 1px solid var(--danger-fg); background: var(--surface); color: var(--danger-fg); }
+.sf-btn-devolver { border: 1px solid var(--violet-fg); background: var(--surface); color: var(--violet-fg); }
+.sf-btn-aprovar { border: 1px solid var(--success-fg); background: var(--success-fg); color: #fff; }
+.sf-btn-aprovar:hover { filter: brightness(0.92); }
