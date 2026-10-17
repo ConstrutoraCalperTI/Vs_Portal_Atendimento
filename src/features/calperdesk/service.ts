@@ -2,6 +2,8 @@ import type { Json } from "../../lib/database.types";
 import { central, supabase } from "../../lib/supabase";
 import { APP_SCHEMA, edgeFunction } from "../../config/app";
 import { fromFunction, fromPostgrest } from "../configuracoes/services/supabase/errors";
+import { DATA_SOURCE } from "../configuracoes/services";
+import { currentActor } from "../configuracoes/services/mock/runtime";
 import { ServiceError } from "../configuracoes/services/types";
 
 // CalperDESK: app do solicitante (docs/PLANO-calperdesk.md). Regras no banco (RPCs cd_*): só os próprios tickets,
@@ -347,4 +349,22 @@ export function formatarTelefone(v: string | null | undefined): string {
 export function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/).filter((p) => p.length > 2 || /^[A-ZÀ-Ú]/.test(p));
   return ((partes[0]?.[0] ?? "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase() || "?";
+}
+
+// Modo simulado (demonstração): o CalperDESK abre com o usuário do portal, sem setores de chamado; o quadro Financeiro
+// usa as Solicitações Financeiras simuladas.
+if (DATA_SOURCE === "mock") {
+  Object.assign(calperdesk, {
+    async entrar(): Promise<Entrada> {
+      const u = currentActor();
+      return {
+        usuarioId: u.id, nome: u.name, email: u.email, telefone: null, pessoaId: null, perfil: u.role, equipe: true, simulando: false, setores: [],
+        config: { quadros: { meus: true, avisos: false, solucoes: false, whatsapp: false, perfil: true } as Quadros, whatsapp: null, boasVindas: "Como podemos ajudar?" },
+      };
+    },
+    podeAcessar: async () => true,
+    meusChamados: async () => ({ abertos: 0, novos: 0, itens: [] }) as unknown as MeusChamados,
+    avisos: async () => [],
+    empreendimentos: async () => [],
+  });
 }

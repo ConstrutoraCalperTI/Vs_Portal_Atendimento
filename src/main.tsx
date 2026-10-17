@@ -10,6 +10,10 @@ import { AccessProvider } from "./features/configuracoes/access/AccessProvider";
 import { ServiceError } from "./features/configuracoes/services/types";
 import "./index.css";
 import { reloadForNewBuild } from "./lib/staleBuild";
+import { DATA_SOURCE } from "./features/configuracoes/services";
+
+// Modo simulado = modo demonstração: as Solicitações Financeiras já abrem com dados fictícios em todas as etapas.
+if (DATA_SOURCE === "mock") void import("./features/financeiro/demo").then((m) => m.semear());
 
 // Deploy novo com a aba aberta: o Vite avisa quando um arquivo do build antigo não existe mais.
 window.addEventListener("vite:preloadError", (event) => {

@@ -79,6 +79,18 @@ const setores: SetorMock[] = [
   },
 ];
 
+// Setores de obra (Solicitações Financeiras): não recebem chamado, mas têm aprovadores financeiros.
+setores.push(
+  {
+    id: 4, nome: "Obra - Arte Wave", ativo: true, recebeChamados: false, ...regrasPadrao, msgBoasVindas: setores[0].msgBoasVindas, msgForaHorario: setores[0].msgForaHorario,
+    msgEncerramento: setores[0].msgEncerramento, numeros: [], gestores: ["u-wagner"], horarios: horarios("18:00", null),
+  },
+  {
+    id: 5, nome: "Obra - ETEHE Residencial", ativo: true, recebeChamados: false, ...regrasPadrao, msgBoasVindas: setores[0].msgBoasVindas, msgForaHorario: setores[0].msgForaHorario,
+    msgEncerramento: setores[0].msgEncerramento, numeros: [], gestores: ["u-wagner"], horarios: horarios("18:00", null),
+  },
+);
+
 interface AtendenteMock {
   usuarioId: string;
   setorId: number;

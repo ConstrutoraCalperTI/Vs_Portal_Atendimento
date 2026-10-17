@@ -4,7 +4,7 @@ import { DATA_SOURCE } from "../configuracoes/services";
 import { delay } from "../configuracoes/services/mock/runtime";
 import { ServiceError } from "../configuracoes/services/types";
 import type { StatusSolicitacao } from "./components/StatusChip";
-import { BUCKET, registros, rpc, sha256, validarArquivo, type Item, type LeituraOcr, type TipoSolicitacao } from "./solicitacoes";
+import { BUCKET, ocrMock, registros, regrasItemMock, rpc, sha256, validarArquivo, type Item, type LeituraOcr, type TipoSolicitacao } from "./solicitacoes";
 
 // Solicitações Financeiras, Fase 5 (migration 20261017140000): fila do Financeiro, conferência item a item, pendência
 // do solicitante, pagamento programado e paga. O lançamento no SIENGE entra na parte 2 da fase.
@@ -111,7 +111,8 @@ const supabaseConferencia: ConferenciaService = {
 };
 
 // ---------- Modo simulado: trabalha sobre os registros em memória ----------
-const decisoes = new Map<number, { status: Item["statusConferencia"]; glosa: number; obs: string | null }>();
+/** Decisões por item no modo simulado (a demonstração já traz itens conferidos). */
+export const decisoes = new Map<number, { status: Item["statusConferencia"]; glosa: number; obs: string | null }>();
 const FILA: StatusSolicitacao[] = ["em_conferencia", "pendencia_solicitante", "lancamento_gerado", "pagamento_programado", "comprovacao_pendente",
   "comprovacao_em_conferencia", "devolucao_pendente"];
 
@@ -122,8 +123,10 @@ const mockConferencia: ConferenciaService = {
     const conta = (s: StatusSolicitacao) => lista.filter((d) => d.status === s).length;
     return {
       kpis: {
-        aConferir: conta("em_conferencia"), aConferirValor: 0, pendencia: conta("pendencia_solicitante"), lancamentoGerado: conta("lancamento_gerado"),
-        pagamentoProgramado: conta("pagamento_programado"), aComprovar: conta("comprovacao_pendente") + conta("comprovacao_em_conferencia"), aComprovarVencidos: 0, pagasMes: 0, pagasMesValor: 0,
+        aConferir: conta("em_conferencia"), aConferirValor: lista.filter((d) => d.status === "em_conferencia").reduce((s, d) => s + (d.valorAPagar ?? d.totalDespesas), 0), pendencia: conta("pendencia_solicitante"), lancamentoGerado: conta("lancamento_gerado"),
+        pagamentoProgramado: conta("pagamento_programado"), aComprovar: conta("comprovacao_pendente") + conta("comprovacao_em_conferencia"), aComprovarVencidos: 0,
+        pagasMes: [...registros.values()].filter((d) => d.status === "paga" || d.status === "encerrada").length,
+        pagasMesValor: [...registros.values()].filter((d) => d.status === "paga" || d.status === "encerrada").reduce((s, d) => s + (d.valorAPagar ?? d.totalDespesas), 0),
       },
       lista: lista.map((d) => ({
         id: d.id, numero: d.numero, tipo: d.tipo, status: d.status, solicitante: d.solicitante.nome, setor: d.setor?.nome ?? null, valor: d.totalDespesas,
@@ -143,7 +146,7 @@ const mockConferencia: ConferenciaService = {
         return {
           id: i.id, ordem: i.ordem, data: i.data, valor: i.valor ?? 0, descricao: i.descricao, motivo: i.motivo, origem: i.origem,
           status: x?.status ?? "pendente", valorGlosado: x?.glosa ?? 0, obs: x?.obs ?? null,
-          anexos: i.anexos.map((a) => ({ ...a, ocrStatus: "lido", ocr: null })), regras: [],
+          anexos: i.anexos.map((a) => ({ ...a, ocrStatus: "lido", ocr: ocrMock.get(a.id) ?? null })), regras: regrasItemMock.get(i.id) ?? [],
         };
       }),
       gerais: [],

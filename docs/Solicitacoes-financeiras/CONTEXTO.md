@@ -234,3 +234,9 @@ Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
 - Na simulação da Administração (`?simular=`), o Financeiro fica indisponível: as solicitações são sempre da própria pessoa.
 - README do módulo: `docs/Solicitacoes-financeiras/README.md` (rotas, estados, tabelas, RPCs, Edge Functions, variáveis, app e o roteiro do piloto).
 - **Pendente do Wagner (não é código):** piloto com 1 equipe de obra por 1 competência mensal e aposentadoria das planilhas dessa equipe.
+
+### Modo demonstração (17/10/2026)
+- Pedido do Wagner: apresentar à gerência com dados fictícios antes da fase de cadastros. `npm run demo` (arquivo `.env.demo`: `VITE_DATA_SOURCE=mock`, sem Supabase) e `npm run demo:build` (pasta `dist-demo/`, para hospedagem estática).
+- `src/features/financeiro/demo.ts` popula o modo simulado ao iniciar (`src/main.tsx`): 14 solicitações em todas as etapas, com os nomes do mockup aprovado. Também traz cupons, pedidos e NF desenhados em SVG, com a leitura pronta, setores de obra com aprovadores, fundo fixo e o SIENGE ligado em homologação simulada. Roteiro em `DEMONSTRACAO.md`.
+- O modo simulado ganhou mapas exportados para a demonstração (`ocrMock`, `regrasItemMock`, `regrasEnvioMock`, `contadorMock`, `decisoes`, `cfg`/`titulos` do SIENGE, `configs`/`mockCadastros`). "Minhas solicitações" filtra pelo usuário do "Ver como". O CalperDESK também tem modo simulado (`entrar`, `podeAcessar`, `meusChamados`, `avisos`, `empreendimentos`).
+- Nada do modo demonstração toca o Supabase; com o Supabase configurado (sem `--mode demo`), o portal funciona como antes.

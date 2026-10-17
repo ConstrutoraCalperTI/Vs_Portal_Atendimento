@@ -314,10 +314,15 @@ const supabaseSolicitacoes: SolicitacoesService = {
 // ---------- Modo simulado ----------
 /** Registros do modo simulado (também usados pela conferência simulada). */
 export const registros = new Map<number, Detalhe>();
+/** Leitura de cada anexo no modo simulado (Declarado × comprovante da conferência). */
+export const ocrMock = new Map<number, LeituraOcr>();
+/** Regras por item e as gravadas no envio, no modo simulado. */
+export const regrasItemMock = new Map<number, { codigo: string; resultado: "ok" | "alerta" | "bloqueio"; detalhe: string }[]>();
+export const regrasEnvioMock = new Map<number, DetalheExtra["regras"]>();
+/** Próximo número e id do modo simulado (a demonstração começa depois dos dela). */
+export const contadorMock = { solicitacao: 1, item: 1 };
 /** Arquivos do modo simulado (também usados pelo adiantamento simulado). */
 export const arquivos = new Map<string, Blob>();
-let proximo = 1;
-let proximoItem = 1;
 
 function exigirEditavel(id: number): Detalhe {
   const d = registros.get(id);
@@ -392,27 +397,42 @@ function checar(d: Detalhe): Checagem[] {
   return r;
 }
 
+const NOMES_REGRA: Record<string, string> = {
+  R01: "Comprovante anexado", R02: "Legível", R03: "Data no período", R04: "Valor confere", R05: "Documento fiscal", R06: "Sem duplicidade", R07: "Categoria permitida",
+  R08: "Limite por categoria", R09: "Prazo de envio", R10: "Saldo do fundo fixo", A01: "Documento de origem", A02: "Valor × pedido", A03: "Favorecido × pedido",
+  A04: "Titularidade bancária", A05: "Rateio", A06: "Adiantamento em aberto", A07: "Comprovação",
+};
+
+function etapaMock(d: Detalhe): LinhaLista["etapa"] {
+  const a = d.aprovacoes.find((x) => x.ciclo === d.ciclo && x.status === "aguardando");
+  if (!a) return null;
+  return { papel: a.papel, nivel: a.nivel, de: d.aprovacoes.filter((x) => x.ciclo === d.ciclo && x.status !== "nao_exigido" && x.status !== "pulado").length };
+}
+
 const mockSolicitacoes: SolicitacoesService = {
   async minhas() {
     await delay();
-    const lista = [...registros.values()].filter((d) => d.status !== "cancelada");
+    const eu = currentActor().id;
+    const lista = [...registros.values()].filter((d) => d.status !== "cancelada" && d.solicitante.id === eu).sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm));
     const conta = (s: StatusSolicitacao[]) => lista.filter((d) => s.includes(d.status)).length;
+    const pagas = lista.filter((d) => ["paga", "encerrada"].includes(d.status));
     return {
       kpis: {
         rascunho: conta(["rascunho"]), emAprovacao: conta(["em_aprovacao"]), devolvida: conta(["devolvida", "pendencia_solicitante"]),
-        noFinanceiro: conta(["em_conferencia", "lancamento_gerado", "pagamento_programado"]), aComprovar: conta(["comprovacao_pendente"]), pagasMes: 0, pagasMesValor: 0,
+        noFinanceiro: conta(["em_conferencia", "lancamento_gerado", "pagamento_programado"]), aComprovar: conta(["comprovacao_pendente"]), pagasMes: pagas.length,
+        pagasMesValor: pagas.reduce((s, d) => s + (d.valorAPagar ?? d.totalDespesas), 0),
       },
       temFundoFixo: true,
       temSetor: true,
       lista: lista.map((d) => ({
         id: d.id, numero: d.numero, tipo: d.tipo, status: d.status, competencia: d.competencia, vencimento: d.adiantamento?.vencimento ?? null, valor: d.totalDespesas,
-        pagarAte: d.pagarAte, atualizadoEm: d.atualizadoEm, etapa: d.status === "em_aprovacao" ? { papel: "Gestor", nivel: 1, de: 1 } : null,
+        pagarAte: d.pagarAte, atualizadoEm: d.atualizadoEm, etapa: etapaMock(d),
       })),
     };
   },
   async criar(tipo) {
     await delay();
-    const id = proximo++;
+    const id = contadorMock.solicitacao++;
     const hoje = new Date();
     const de = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
     const ate = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().slice(0, 10);
@@ -443,7 +463,7 @@ const mockSolicitacoes: SolicitacoesService = {
     Object.assign(d, { competencia: p.competencia, periodoDe: p.periodoDe, periodoAte: p.periodoAte, centroCusto: p.centroCusto });
     const mapa = p.itens.map((l, i) => {
       const atual = d.itens.find((x) => x.id === l.id);
-      const item: Item = { ...(atual ?? { anexos: [], origem: "manual", statusConferencia: "pendente" }), id: atual?.id ?? proximoItem++, ordem: i + 1,
+      const item: Item = { ...(atual ?? { anexos: [], origem: "manual", statusConferencia: "pendente" }), id: atual?.id ?? contadorMock.item++, ordem: i + 1,
         data: l.data, valor: l.valor, descricao: l.descricao, motivo: l.motivo, categoriaId: l.categoriaId } as Item;
       return item;
     });
@@ -592,8 +612,10 @@ const mockAprovacao: AprovacaoService = {
         const a = d.aprovacoes.find((x) => x.status === "aguardando");
         return {
           id: d.id, numero: d.numero, tipo: d.tipo, status: d.status, solicitante: d.solicitante.nome, setor: d.setor?.nome ?? null, valor: d.totalDespesas,
-          atualizadoEm: d.atualizadoEm, nivel: a?.nivel ?? null, papel: a?.papel ?? null, de: d.aprovacoes.length, desde: d.enviadoEm,
-          prazoEm: new Date(Date.now() + 46 * 3600_000).toISOString(), escaladoEm: null, substitutoDe: null, alertas: 0,
+          atualizadoEm: d.atualizadoEm, nivel: a?.nivel ?? null, papel: a?.papel ?? null,
+          de: d.aprovacoes.filter((x) => x.ciclo === d.ciclo && x.status !== "nao_exigido" && x.status !== "pulado").length, desde: d.enviadoEm,
+          prazoEm: a?.prazoEm ?? null, escaladoEm: a?.prazoEm && Date.parse(a.prazoEm) < Date.now() ? a.prazoEm : null, substitutoDe: null,
+          alertas: (regrasEnvioMock.get(d.id) ?? []).filter((r) => r.resultado !== "ok").length,
           decisao: d.aprovacoes.find((x) => x.status === "aprovado") ? "aprovado" : null, decididoEm: null,
         };
       });
@@ -604,7 +626,10 @@ const mockAprovacao: AprovacaoService = {
     await delay();
     const d = registros.get(id);
     const a = d?.aprovacoes.find((x) => x.status === "aguardando");
-    return { podeDecidir: !!a, etapa: a ? { nivel: a.nivel, papel: a.papel, prazoEm: a.prazoEm, emNomeDe: null } : null, regras: [] };
+    const regras: DetalheExtra["regras"] = d?.tipo === "adiantamento" && d.adiantamento
+      ? checarAdiantamentoMock(d).map((c) => ({ codigo: c.codigo, nome: NOMES_REGRA[c.codigo] ?? c.codigo, resultado: c.resultado, detalhe: c.detalhe, itemId: null }))
+      : regrasEnvioMock.get(id) ?? [];
+    return { podeDecidir: !!a, etapa: a ? { nivel: a.nivel, papel: a.papel, prazoEm: a.prazoEm, emNomeDe: null } : null, regras };
   },
   async decidir({ id, decisao, comentario }) {
     await delay();
@@ -746,7 +771,7 @@ const mockLeitura: LeituraService = {
       filaMock.set(solId, lista.filter((x) => x.id !== p.anexoId));
       const d = registros.get(solId);
       if (!d) break;
-      const id = proximoItem++;
+      const id = contadorMock.item++;
       d.itens.push({ id, ordem: d.itens.length + 1, data: p.data, valor: p.valor, descricao: p.descricao, motivo: p.motivo, categoriaId: p.categoriaId,
         origem: "ocr_confirmado", statusConferencia: "pendente", anexos: [{ id: a.id, nome: a.nome, path: a.path, mime: a.mime, tamanho: 0 }] });
       recalcular(d);

@@ -169,14 +169,15 @@ const USUARIOS: Opcao[] = [
   { id: "u-roberto", nome: "Roberto Alves" },
   { id: "u-ana", nome: "Ana Prado" },
 ];
-const configs = new Map<number, ConfigSetorFinanceiro>();
+/** Configuração por setor no modo simulado (a demonstração preenche os setores de obra e o Financeiro). */
+export const configs = new Map<number, ConfigSetorFinanceiro>();
 const padrao = (setorId: number): ConfigSetorFinanceiro => ({
   setorId, obra: false, financeiro: false, modoAprovacao: "sequencial", prazoHoras: 48, acaoPrazoVencido: "escalar", centroCustoPadrao: null,
   prazoComprovacaoDias: 30, acaoComprovacaoVencida: "avisar_bloquear", limiteAdiantamentosAbertos: null, reembolso: [],
   adiantamento: PAPEIS_ADIANTAMENTO.map((papel) => ({ papel, aprovadorId: null, substitutoId: null, alcadaMinima: null })),
 });
 const CATEGORIAS = ["Material de obra", "Ferramentas", "EPI", "Combustível", "Transporte", "Estacionamento", "Alimentação", "Copa/mantimentos", "Material de escritório", "Outros"];
-const mockCadastros: CadastrosFinanceiros = {
+export const mockCadastros: CadastrosFinanceiros = {
   fundos: [],
   categorias: CATEGORIAS.map((nome, i) => ({ id: i + 1, nome, descricao: null, palavrasChave: [], tetoValor: null, ativo: true })),
   regras: [

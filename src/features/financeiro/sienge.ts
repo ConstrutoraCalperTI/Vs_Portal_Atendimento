@@ -80,11 +80,12 @@ const supabaseSienge: SiengeService = {
 };
 
 // ---------- Modo simulado ----------
-const cfg: ConfigSienge = {
+/** Configuração do modo simulado (a demonstração liga a integração em homologação). */
+export const cfg: ConfigSienge = {
   ativo: false, ambiente: "homologacao", subdominio: null, usuario: null, senhaDefinida: false, senhaDefinidaEm: null, empresaId: null, tipoDocumento: null,
   indexadorId: null, planoReembolso: null, planoFundoFixo: null, planoAdiantamento: null, centroCustoPadrao: null, ultimoTeste: null, atualizadoEm: new Date().toISOString(),
 };
-const titulos = new Map<number, string>();
+export const titulos = new Map<number, string>();
 const mockSienge: SiengeService = {
   async config() {
     await delay();
