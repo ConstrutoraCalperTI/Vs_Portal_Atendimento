@@ -336,6 +336,15 @@ const definitions = [
     alwaysVisible: true,
   },
   {
+    id: "sf_conferencia",
+    label: "Conferência financeira",
+    path: "/financeiro/conferencia",
+    icon: ListChecks,
+    group: "principal",
+    description: "Fila do Financeiro: conferência item a item, lançamento no SIENGE e pagamento. Marque para o perfil do setor Financeiro.",
+    parent: "solicitacoes_financeiras",
+  },
+  {
     id: "sf_cadastros",
     label: "Cadastros financeiros",
     path: "/financeiro/cadastros",

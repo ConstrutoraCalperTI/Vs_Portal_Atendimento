@@ -171,7 +171,7 @@ export function validarArquivo(arquivo: File): ServiceError | null {
   return null;
 }
 
-async function rpc<T>(nome: string, args?: Record<string, unknown>): Promise<T> {
+export async function rpc<T>(nome: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(nome as never, args as never);
   if (error) throw fromPostgrest(error);
   return data as T;
@@ -229,7 +229,8 @@ const supabaseSolicitacoes: SolicitacoesService = {
 };
 
 // ---------- Modo simulado ----------
-const registros = new Map<number, Detalhe>();
+/** Registros do modo simulado (também usados pela conferência simulada). */
+export const registros = new Map<number, Detalhe>();
 const arquivos = new Map<string, Blob>();
 let proximo = 1;
 let proximoItem = 1;

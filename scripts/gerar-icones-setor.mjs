@@ -72,6 +72,7 @@ const MENU = [
   ["sf_minhas", "fluent-color:document-text-24"],
   ["sf_nova", "fluent-color:clipboard-text-edit-24"],
   ["sf_aprovacoes", "fluent-color:person-available-24"],
+  ["sf_conferencia", "flat-color-icons:inspection"],
   ["sf_cadastros", "fluent-color:settings-24"],
   ["configuracoes", "fluent-color:settings-24"],
   ["manage_users", "fluent-color:people-24"],

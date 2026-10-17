@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { financeiroService, type ConfigSetorFinanceiro, type SalvarCategoria, type SalvarRegra } from "./service";
+import { conferenciaService, type DecisaoItem } from "./conferencia";
 import { aprovacaoService, solicitacoesService, type AbaAprovacao, type Decisao, type TipoSolicitacao } from "./solicitacoes";
 
 const CHAVE = ["financeiro"] as const;
@@ -60,3 +61,18 @@ export function useDetalheExtra(id: number) {
 export const useDecidir = () => useMuda((p: { id: number; decisao: Decisao; comentario: string | null }) => aprovacaoService.decidir(p));
 export const useDefinirSubstituto = () => useMuda((p: { substitutoId: string; de: string; ate: string }) => aprovacaoService.definirSubstituto(p));
 export const useRemoverSubstituto = () => useMuda((id: number) => aprovacaoService.removerSubstituto(id));
+
+// ---------- Conferência (Fase 5) ----------
+export function useFilaConferencia() {
+  return useQuery({ queryKey: [...CHAVE, "conferencia"], queryFn: () => conferenciaService.fila(), refetchInterval: 60_000 });
+}
+
+export function useConferencia(id: number) {
+  return useQuery({ queryKey: [...CHAVE, "conferencia", id], queryFn: () => conferenciaService.itens(id), enabled: id > 0 });
+}
+
+export const useDecidirItem = () => useMuda((p: { itemId: number; decisao: DecisaoItem; valorGlosa: number | null; obs: string | null }) => conferenciaService.decidirItem(p));
+export const usePedirAjuste = () => useMuda((p: { id: number; comentario: string }) => conferenciaService.pedirAjuste(p));
+export const usePendenciaResponder = () => useMuda((p: { id: number; resposta: string }) => conferenciaService.pendenciaResponder(p));
+export const useProgramarPagamento = () => useMuda((p: { id: number; data: string }) => conferenciaService.programarPagamento(p));
+export const useMarcarPaga = () => useMuda((id: number) => conferenciaService.marcarPaga(id));

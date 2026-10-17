@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Ban, Check, CornerUpLeft, Lock, Paperclip, Plus, Send, Trash2, Upload, X } from "lucide-react";
+import { Ban, Check, CornerUpLeft, Eye, Lock, Paperclip, Plus, Send, Trash2, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -10,8 +10,10 @@ import { NotFound } from "../../../pages/NotFound";
 import { moeda } from "../cadeia";
 import { ApprovalTimeline, type EtapaTimeline } from "../components/ApprovalTimeline";
 import { FormSection } from "../components/Campos";
+import { FormPreview } from "../components/FormPreview";
+import { conferenciaService } from "../conferencia";
 import { StatusChip } from "../components/StatusChip";
-import { useCancelarSolicitacao, useChecagens, useDecidir, useDetalheExtra, useEnviarSolicitacao, useSolicitacao } from "../hooks";
+import { useCancelarSolicitacao, useChecagens, useConferencia, useDecidir, useDetalheExtra, useEnviarSolicitacao, usePendenciaResponder, useSolicitacao } from "../hooks";
 import { solicitacoesService, type Anexo, type Decisao, type Detalhe, type Item, type LinhaEdicao } from "../solicitacoes";
 import { LeituraComprovantes } from "./LeituraComprovantes";
 import { dataBR, mesBR, NOME_TIPO } from "./formato";
@@ -53,6 +55,7 @@ function Formulario({ d }: { d: Detalhe }) {
   const [erroSalvar, setErroSalvar] = useState<string | null>(null);
   const [enviando, setEnviando] = useState<number | null>(null);
   const [cancelarAberto, setCancelarAberto] = useState(false);
+  const [preview, setPreview] = useState(false);
   const enviar = useEnviarSolicitacao();
   const cancelar = useCancelarSolicitacao();
   const checagens = useChecagens(d.id, true);
@@ -167,6 +170,10 @@ function Formulario({ d }: { d: Detalhe }) {
           <span className={`sf-salvo${erroSalvar ? " sf-salvo--erro" : ""}`} role="status">
             {erroSalvar ?? (salvoEm ? `Rascunho salvo às ${salvoEm.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Rascunho salvo automaticamente")}
           </span>
+          <button type="button" className="btn btn--outline" onClick={() => setPreview(true)}>
+            <Eye size={15} aria-hidden="true" />
+            Pré-visualizar
+          </button>
           {cancelarAberto ? (
             <>
               <button type="button" className="btn btn--outline" onClick={() => setCancelarAberto(false)}>Voltar</button>
@@ -322,6 +329,7 @@ function Formulario({ d }: { d: Detalhe }) {
           </section>
         </aside>
       </div>
+      <FormPreview d={d} aberto={preview} onFechar={() => setPreview(false)} />
     </>
   );
 }
@@ -443,6 +451,7 @@ function Visao({ d }: { d: Detalhe }) {
   const navegar = useNavigate();
   const cancelar = useCancelarSolicitacao();
   const [confirmar, setConfirmar] = useState(false);
+  const [preview, setPreview] = useState(false);
   const fundo = d.tipo === "fundo_fixo";
   return (
     <>
@@ -453,6 +462,10 @@ function Visao({ d }: { d: Detalhe }) {
           <p className="sf-ph__s">{d.solicitante.nome} · {d.setor?.nome ?? "Sem setor"}{d.enviadoEm ? ` · enviada em ${new Date(d.enviadoEm).toLocaleString("pt-BR")}` : ""} · ciclo {d.ciclo}</p>
         </div>
         <div className="sf-ph__acoes">
+          <button type="button" className="btn btn--outline" onClick={() => setPreview(true)}>
+            <Eye size={15} aria-hidden="true" />
+            Ver formulário
+          </button>
           {d.podeCancelar && (confirmar ? (
             <>
               <button type="button" className="btn btn--outline" onClick={() => setConfirmar(false)}>Voltar</button>
@@ -466,6 +479,7 @@ function Visao({ d }: { d: Detalhe }) {
           ))}
         </div>
       </div>
+      {d.status === "pendencia_solicitante" && <Pendencia d={d} />}
       <div className="sf-dupla">
         <div className="sf-coluna">
           <FormSection titulo="Dados">
@@ -513,7 +527,58 @@ function Visao({ d }: { d: Detalhe }) {
           </section>
         </aside>
       </div>
+      <FormPreview d={d} aberto={preview} onFechar={() => setPreview(false)} />
     </>
+  );
+}
+
+/** Pendência do Financeiro: o solicitante troca o comprovante dos itens em ajuste e responde. */
+function Pendencia({ d }: { d: Detalhe }) {
+  const ids = useId();
+  const qc = useQueryClient();
+  const c = useConferencia(d.id);
+  const responder = usePendenciaResponder();
+  const [resposta, setResposta] = useState("");
+  const pedido = [...d.eventos].reverse().find((e) => e.tipo === "pendencia_aberta");
+  const ajustes = (c.data?.itens ?? []).filter((i) => i.status === "ajuste");
+  const anexar = async (itemId: number, arquivo: File) => {
+    try {
+      await conferenciaService.pendenciaAnexar({ solicitacaoId: d.id, solicitanteId: d.solicitante.id, itemId, arquivo });
+      toast.success("Comprovante anexado");
+      void qc.invalidateQueries({ queryKey: ["financeiro"] });
+    } catch (e) {
+      toast.error(e instanceof ServiceError ? e.message : "Não foi possível anexar.");
+    }
+  };
+  if (!c.data) return null;
+  return (
+    <section className="card sf-painel sf-pendencia" aria-labelledby={`${ids}-t`}>
+      <h3 id={`${ids}-t`}>Pendência do Financeiro</h3>
+      {pedido && <p className="sf-pendencia__msg">{String(pedido.payload.comentario ?? "")}</p>}
+      <ul className="sf-comentarios">
+        {ajustes.map((i) => (
+          <li key={i.id}>
+            <b>Linha {i.ordem}</b> · {i.descricao} · {moeda(i.valor)}
+            {i.obs && <p>{i.obs}</p>}
+            <label className="btn btn--outline btn--sm sf-pendencia__anexar">
+              <Upload size={14} aria-hidden="true" />
+              Enviar novo comprovante
+              <input type="file" hidden accept="image/jpeg,image/png,image/heic,image/heif,image/webp,application/pdf"
+                onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void anexar(i.id, f); }} />
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div className="field">
+        <label className="field__label" htmlFor={`${ids}-r`}>Resposta ao Financeiro</label>
+        <textarea id={`${ids}-r`} className="input" rows={2} maxLength={2000} value={resposta} onChange={(e) => setResposta(e.target.value)} />
+      </div>
+      <button type="button" className="btn btn--primary" disabled={responder.isPending || !resposta.trim()}
+        onClick={() => responder.mutate({ id: d.id, resposta }, { onSuccess: () => toast.success("Respondida: voltou para a conferência"), onError: (e) => toast.error(e instanceof ServiceError ? e.message : "Não foi possível responder.") })}>
+        <Send size={15} aria-hidden="true" />
+        Responder e devolver ao Financeiro
+      </button>
+    </section>
   );
 }
 
