@@ -4,6 +4,7 @@ import { ModuleCard } from "../components/ModuleCard";
 import { modules, type ModuleCardData } from "../data/modules";
 import { useAccess } from "../features/configuracoes/access/useAccess";
 import { HomeTicketsSummary } from "../features/dashboard/HomeTicketsSummary";
+import { HomeFinanceiro } from "../features/financeiro/HomeFinanceiro";
 import { EmptyState } from "../features/configuracoes/components/EmptyState";
 import "./Home.css";
 
@@ -55,13 +56,18 @@ export function Home() {
         </div>
       </header>
 
-      {/* Quem atende chamados vê só o resumo; os cards de módulo ficam para os demais perfis (o menu continua igual). */}
+      {/* Quem atende chamados vê só o resumo; os cards de módulo ficam para os demais perfis (o menu continua igual).
+          O resumo das Solicitações Financeiras vem para todos os perfis, conforme as telas que cada um abre. */}
+      {/* Perfil do Financeiro: o resumo financeiro vem antes de tudo. */}
+      {canOpen("sf_conferencia") && <HomeFinanceiro key={`sf-${user?.id}`} />}
       {canOpen("gestao_chamados") ? (
         <HomeTicketsSummary key={user?.id} />
       ) : visible.length === 0 ? (
+        canOpen("sf_minhas") ? null : (
         <div className="card">
           <EmptyState icon={LayoutGrid} title="Nenhum módulo liberado" description="Peça ao administrador para liberar os módulos do seu perfil." />
         </div>
+        )
       ) : (
         bySection(visible).map(([section, items]) => (
           <section key={section} aria-label={section}>
@@ -74,6 +80,7 @@ export function Home() {
           </section>
         ))
       )}
+      {!canOpen("sf_conferencia") && <HomeFinanceiro key={`sf-${user?.id}`} />}
     </>
   );
 }

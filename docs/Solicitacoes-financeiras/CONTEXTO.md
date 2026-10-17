@@ -240,3 +240,12 @@ Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
 - `src/features/financeiro/demo.ts` popula o modo simulado ao iniciar (`src/main.tsx`): 14 solicitações em todas as etapas, com os nomes do mockup aprovado. Também traz cupons, pedidos e NF desenhados em SVG, com a leitura pronta, setores de obra com aprovadores, fundo fixo e o SIENGE ligado em homologação simulada. Roteiro em `DEMONSTRACAO.md`.
 - O modo simulado ganhou mapas exportados para a demonstração (`ocrMock`, `regrasItemMock`, `regrasEnvioMock`, `contadorMock`, `decisoes`, `cfg`/`titulos` do SIENGE, `configs`/`mockCadastros`). "Minhas solicitações" filtra pelo usuário do "Ver como". O CalperDESK também tem modo simulado (`entrar`, `podeAcessar`, `meusChamados`, `avisos`, `empreendimentos`).
 - Nada do modo demonstração toca o Supabase; com o Supabase configurado (sem `--mode demo`), o portal funciona como antes.
+
+### Página Inicial — resumo financeiro (17/10/2026)
+- Pedido do Wagner: o perfil Financeiro via "Nenhum módulo liberado" na Página Inicial. Agora a Home mostra `HomeFinanceiro` (`src/features/financeiro/HomeFinanceiro.tsx`), no visual do resumo de chamados (`.ts-card`). Cada bloco aparece conforme a tela que o perfil abre:
+  - **Conferência financeira** (`sf_conferencia`): a conferir (com valor e quantas vencem em até 3 dias), pendência do solicitante, lançamento gerado, pagamento programado, adiantamentos a comprovar (vencidos), pagas no mês, e o painel "Próximos pagamentos" pelo "pagar até";
+  - **Aprovações financeiras**: só para quem é aprovador (aguardando você, prazo vencido, com alerta, adiantamentos);
+  - **Minhas solicitações financeiras**: todo colaborador; para o Financeiro, só se ele tiver solicitação própria.
+- Para o perfil Financeiro, o bloco vem antes de tudo; para os demais, depois dos chamados e dos módulos. O "Nenhum módulo liberado" não aparece mais para quem tem as Solicitações Financeiras.
+- Os cards abrem as telas já filtradas: a fila do Financeiro aceita `?etapa=` (em_conferencia, pendencia_solicitante, lancamento_gerado, pagamento_programado, comprovar, paga, todas) e Minhas solicitações aceita `?status=`.
+- Migration `20261017170000_portal_atendimento_sf_perfil_financeiro.sql` (aditiva, aplicada): o perfil `financeiro` abre a tela `sf_conferencia`. A regra de dados não muda: só quem é do setor marcado como financeiro (ou admin) confere.

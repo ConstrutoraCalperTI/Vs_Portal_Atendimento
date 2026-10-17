@@ -214,6 +214,7 @@ const rolePermissions: Record<RoleKey, PermissionRules> = {
     manage_permissions: true,
     view_audit_logs: true,
     manage_sessions: true,
+    sf_conferencia: true,
   },
   ti: {
     ...CONFIG_DENIED,
@@ -229,7 +230,7 @@ const rolePermissions: Record<RoleKey, PermissionRules> = {
     view_audit_logs: true,
     manage_sessions: true,
   },
-  financeiro: { ...CONFIG_DENIED, gestao_atendimento_central: true },
+  financeiro: { ...CONFIG_DENIED, gestao_atendimento_central: true, sf_conferencia: true },
   // Operador = agente (vai ser renomeado): atende chamados, então vê Gestão de Chamados e o resumo na Página Inicial.
   operador: { ...CONFIG_DENIED, gestao_atendimento_central: true, gestao_chamados: true, gestao_chamados_visao_geral: true, gestao_chamados_tickets: true },
 };

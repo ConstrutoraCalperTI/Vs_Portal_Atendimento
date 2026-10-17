@@ -583,3 +583,11 @@
 .sf-rateio td:nth-child(2), .sf-rateio th:nth-child(2) { width: 150px; }
 .sf-rateio td:nth-child(3), .sf-rateio th:nth-child(3) { width: 140px; }
 .sf-rateio td:last-child, .sf-rateio th:last-child { width: 48px; }
+
+/* ---------- Página Inicial: resumo das Solicitações Financeiras (cards .ts-card do resumo de chamados) ---------- */
+.hf { display: grid; gap: 28px; margin-top: 8px; }
+.hf .ts-panel { margin-top: 16px; }
+.hf-cards--seis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hf-carregando { min-height: 132px; background: var(--neutral-bg); }
+@media (max-width: 900px) { .hf-cards--seis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .hf-cards--seis { grid-template-columns: 1fr; } }

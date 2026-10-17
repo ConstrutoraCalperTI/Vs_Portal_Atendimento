@@ -1,6 +1,6 @@
 import { Calculator, CalendarClock, CircleCheckBig, CircleDot, Clock, FileText, Hash, Hourglass, Inbox, Plus, Receipt, SearchX, Tags, UserPen, Wallet } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { ThLabel } from "../../../components/ds";
 import { IconeIlustrativo } from "../../../components/ds/IconeColorido";
@@ -23,7 +23,9 @@ export function MinhasSolicitacoes() {
   const q = useMinhasSolicitacoes();
   const [busca, setBusca] = useState("");
   const [tipo, setTipo] = useState<TipoSolicitacao | "">("");
-  const [status, setStatus] = useState<StatusSolicitacao | "">("");
+  // ?status= (cards da Página Inicial) abre o histórico já filtrado.
+  const [params] = useSearchParams();
+  const [status, setStatus] = useState<StatusSolicitacao | "">(() => (params.get("status") as StatusSolicitacao | null) ?? "");
   if (q.isPending) return <PageSkeleton />;
   if (q.isError) return <ErrorState message="Não foi possível carregar as suas solicitações." onRetry={() => void q.refetch()} />;
   const { kpis, lista } = q.data;

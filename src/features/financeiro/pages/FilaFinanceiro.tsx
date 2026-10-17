@@ -1,6 +1,6 @@
 import { CalendarClock, CircleCheckBig, CircleDot, HardDrive, Hash, Hourglass, Inbox, ListChecks, SearchX, Tags, User, UserPen, Wallet } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { ThLabel } from "../../../components/ds";
 import { IconeIlustrativo } from "../../../components/ds/IconeColorido";
 import { PageSkeleton } from "../../../components/PageSkeleton";
@@ -21,7 +21,9 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 
 export function FilaFinanceiro() {
   const q = useFilaConferencia();
-  const [filtro, setFiltro] = useState<Filtro>("em_conferencia");
+  // ?etapa= (cards da Página Inicial) abre a fila já filtrada.
+  const [params] = useSearchParams();
+  const [filtro, setFiltro] = useState<Filtro>(() => (params.get("etapa") as Filtro | null) ?? "em_conferencia");
   const [busca, setBusca] = useState("");
   if (q.isPending) return <PageSkeleton />;
   if (q.isError) return <ErrorState message="Não foi possível carregar a fila do Financeiro." onRetry={() => void q.refetch()} />;
