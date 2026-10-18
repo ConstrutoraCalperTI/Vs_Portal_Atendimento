@@ -94,7 +94,7 @@ function construir(t: DashboardTicket): TicketDetalhe {
     solicitante: { pessoaId: null, nome: t.requester, contato: `${t.requester.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, ".")}@calper.com.br`, departamento: null },
     setorSolicitanteId: setorSolicitanteMock.get(t.id) ?? null,
     setorSolicitante: nomeSetorMock(setorSolicitanteMock.get(t.id) ?? null),
-    setorId: 1,
+    setorId: CAD.equipes.find((e) => e.nome === t.team)?.setorId ?? 20,
     equipeId: CAD.equipes.find((e) => e.nome === t.team)?.id ?? null,
     responsavelId: t.owner?.id ?? null,
     servicoId: t.service_id,

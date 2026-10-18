@@ -3,6 +3,7 @@ import type { Json } from "../../lib/database.types";
 import { supabase } from "../../lib/supabase";
 import { DATA_SOURCE } from "../configuracoes/services";
 import { currentActor, delay, recordAudit } from "../configuracoes/services/mock/runtime";
+import { GESTOR_DO_SETOR, nomeDoSetor, SETOR_DO_USUARIO } from "../atendimento/services/setoresProducao";
 import { fromPostgrest } from "../configuracoes/services/supabase/errors";
 import { ServiceError } from "../configuracoes/services/types";
 
@@ -164,11 +165,11 @@ const supabaseFinanceiro: FinanceiroService = {
 
 // ---------- Modo simulado (mesmas validações das RPCs) ----------
 const USUARIOS: Opcao[] = [
-  { id: "u-marina", nome: "Marina Costa" },
-  { id: "u-paulo", nome: "Paulo Mendes" },
-  { id: "u-roberto", nome: "Roberto Alves" },
-  { id: "u-ana", nome: "Ana Prado" },
-];
+  { id: "u-wagner", nome: "Wagner Antunes" }, { id: "u-marcos", nome: "Marcos Prado" }, { id: "u-paula", nome: "Paula Nunes" },
+  { id: "u-renato", nome: "Renato Lopes" }, { id: "u-helena", nome: "Helena Costa" }, { id: "u-carla", nome: "Carla Mendes" },
+  { id: "u-gustavo", nome: "Gustavo Reis" }, { id: "u-fernanda", nome: "Fernanda Dias" }, { id: "u-ana", nome: "Ana Lima" },
+  { id: "u-bruno", nome: "Bruno Rocha" }, { id: "u-roberto", nome: "Roberto Alves" },
+]
 /** Configuração por setor no modo simulado (a demonstração preenche os setores de obra e o Financeiro). */
 export const configs = new Map<number, ConfigSetorFinanceiro>();
 const padrao = (setorId: number): ConfigSetorFinanceiro => ({
@@ -235,7 +236,11 @@ const mockFinanceiro: FinanceiroService = {
   async setor(setorId) {
     await delay();
     const c = configs.get(setorId) ?? padrao(setorId);
-    return { ...structuredClone(c), setor: `Setor ${setorId}`, podeEditar: currentActor().role === ADMIN_ROLE || currentActor().role === SUPER_ADMIN_ROLE, pessoas: 0, gestores: [] };
+    const g = GESTOR_DO_SETOR[setorId];
+    return {
+      ...structuredClone(c), setor: nomeDoSetor(setorId) ?? `Setor ${setorId}`, podeEditar: currentActor().role === ADMIN_ROLE || currentActor().role === SUPER_ADMIN_ROLE,
+      pessoas: Object.values(SETOR_DO_USUARIO).filter((s) => s === setorId).length, gestores: g ? [{ id: g.id, nome: g.nome }] : [],
+    };
   },
   async usuarios() {
     await delay();

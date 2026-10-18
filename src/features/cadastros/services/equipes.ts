@@ -1,3 +1,4 @@
+import { SETORES_PRODUCAO } from "../../atendimento/services/setoresProducao";
 import type { Json } from "../../../lib/database.types";
 import { supabase } from "../../../lib/supabase";
 import { DATA_SOURCE } from "../../configuracoes/services";
@@ -63,11 +64,7 @@ const supabaseEquipes: EquipesService = {
 };
 
 // ---------- Modo simulado ----------
-const SETORES = [
-  { id: 1, nome: "Financeiro" },
-  { id: 2, nome: "Relacionamento com o cliente" },
-  { id: 3, nome: "Assistência técnica" },
-];
+const SETORES = SETORES_PRODUCAO.map(({ id, nome }) => ({ id, nome }));
 interface EquipeMock {
   id: number;
   nome: string;
@@ -79,14 +76,14 @@ interface EquipeMock {
 }
 let seq = 10;
 const equipes: EquipeMock[] = [
-  { id: 1, nome: "Cobrança", setorId: 1, descricao: "Boletos em atraso e acordos.", ativa: true, liderId: "u-ana", membros: ["u-ana", "u-bruno"] },
-  { id: 2, nome: "Contas a receber", setorId: 1, descricao: null, ativa: true, liderId: null, membros: ["u-ana", "u-carla"] },
-  { id: 3, nome: "2ª via e boletos", setorId: 1, descricao: null, ativa: true, liderId: null, membros: ["u-bruno"] },
-  { id: 4, nome: "Vistoria", setorId: 3, descricao: "Visitas técnicas nos imóveis.", ativa: true, liderId: "u-helena", membros: ["u-helena"] },
-  { id: 5, nome: "Plantão de sábado", setorId: 2, descricao: null, ativa: false, liderId: "u-fernanda", membros: ["u-gustavo", "u-fernanda"] },
-  // Equipes internas da TI (sem setor): as mesmas dos tickets de exemplo da Gestão de Chamados.
-  { id: 6, nome: "Sistemas", setorId: null, descricao: "ERP, portais internos e acessos.", ativa: true, liderId: "u-wagner", membros: ["u-wagner", "u-ana", "u-bruno", "u-carla"] },
-  { id: 7, nome: "Infraestrutura", setorId: null, descricao: "Rede, VPN, impressão e equipamentos.", ativa: true, liderId: "u-marcos", membros: ["u-wagner", "u-ana", "u-bruno", "u-marcos"] },
+  { id: 1, nome: "Contas a pagar", setorId: 23, descricao: "Pagamentos, reembolsos e fundo fixo.", ativa: true, liderId: "u-fernanda", membros: ["u-fernanda", "u-ana", "u-bruno"] },
+  { id: 2, nome: "Contas a receber", setorId: 23, descricao: null, ativa: true, liderId: null, membros: ["u-ana", "u-bruno"] },
+  { id: 3, nome: "Compras e documentos", setorId: 22, descricao: "Compras internas e documentos.", ativa: true, liderId: "u-carla", membros: ["u-carla", "u-gustavo"] },
+  { id: 4, nome: "Monitoramento", setorId: 21, descricao: "Câmeras das obras e gravações.", ativa: true, liderId: "u-renato", membros: ["u-renato", "u-helena"] },
+  { id: 5, nome: "Plantão de sábado", setorId: 21, descricao: null, ativa: false, liderId: "u-helena", membros: ["u-helena"] },
+  // Equipes da TI: as mesmas dos tickets de exemplo da Gestão de Chamados.
+  { id: 6, nome: "Sistemas", setorId: 20, descricao: "ERP, portais internos e acessos.", ativa: true, liderId: "u-wagner", membros: ["u-wagner", "u-ana", "u-bruno", "u-carla"] },
+  { id: 7, nome: "Infraestrutura", setorId: 20, descricao: "Rede, VPN, impressão e equipamentos.", ativa: true, liderId: "u-marcos", membros: ["u-wagner", "u-ana", "u-bruno", "u-marcos"] },
 ];
 
 /** Modo simulado: equipes ativas e membros, para as visões de Tickets (sem exigir a permissão de Equipes). */

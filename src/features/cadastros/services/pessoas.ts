@@ -213,10 +213,31 @@ const pessoas: PessoaMock[] = [
     ],
   }),
   mk(3, "pessoa", "João Castro", { origem: "email", origemDetalhe: "cobranca@calper.com.br", contatos: [{ tipo: "email", valor: "joao@casanovamoveis.com.br", principal: true }, { tipo: "whatsapp", valor: "5521984442020", principal: true }] }),
-  mk(4, "pessoa", "Paulo Henrique", { origem: "whatsapp", origemDetalhe: "WhatsApp da Assistência técnica", ultimoContatoEm: iso(26), contatos: [{ tipo: "whatsapp", valor: "5521973573360", principal: true }] }),
+  mk(4, "pessoa", "Paulo Henrique", { origem: "whatsapp", origemDetalhe: "WhatsApp do CFTV", ultimoContatoEm: iso(26), contatos: [{ tipo: "whatsapp", valor: "5521973573360", principal: true }] }),
   mk(5, "departamento", "Condomínio Arte Wave", { contatos: [{ tipo: "email", valor: "sindico@artewave.com.br", principal: true }], ultimoContatoEm: iso(96) }),
   mk(6, "pessoa", "Cláudia Pires", { documento: "", habilitada: false, origem: "email", contatos: [{ tipo: "email", valor: "claudia.pires@gmail.com", principal: true }], ultimoContatoEm: iso(48) }),
 ];
+// Colaboradores da Calper (fictícios), cada um no seu setor (mesmos ids da produção: setoresProducao.ts).
+const colaborador = (id: number, nome: string, email: string, setorId: number, cargo: string) =>
+  mk(id, "pessoa", nome, {
+    classificacao: "Colaborador", setorId, origem: "manual", ultimoContatoEm: iso(24),
+    contatos: [{ tipo: "email", valor: email, principal: true }], observacoes: cargo,
+  });
+pessoas.push(
+  colaborador(20, "Wagner Antunes", "wagner.antunes@calper.com.br", 20, "Coordenador de TI"),
+  colaborador(21, "Marcos Prado", "marcos.prado@calper.com.br", 20, "Gestor de TI · Infraestrutura"),
+  colaborador(22, "Paula Nunes", "paula.nunes@calper.com.br", 20, "Gestora de TI · Sistemas"),
+  colaborador(23, "Diego Ramos", "diego.ramos@calper.com.br", 20, "Analista de suporte"),
+  colaborador(24, "Renato Lopes", "renato.lopes@calper.com.br", 21, "Gestor do CFTV"),
+  colaborador(25, "Helena Costa", "helena.costa@calper.com.br", 21, "Operadora de monitoramento"),
+  colaborador(26, "João Silva", "joao.silva@calper.com.br", 21, "Técnico de CFTV"),
+  colaborador(27, "Carla Mendes", "carla.mendes@calper.com.br", 22, "Gestora administrativa"),
+  colaborador(28, "Gustavo Reis", "gustavo.reis@calper.com.br", 22, "Assistente administrativo"),
+  colaborador(29, "Carla Nunes", "carla.nunes@calper.com.br", 22, "Auxiliar administrativa"),
+  colaborador(30, "Fernanda Dias", "fernanda.dias@calper.com.br", 23, "Analista financeira · Conferência"),
+  colaborador(31, "Ana Lima", "ana.lima@calper.com.br", 23, "Analista de contas a receber"),
+  colaborador(32, "Bruno Rocha", "bruno.rocha@calper.com.br", 23, "Assistente financeiro"),
+);
 pessoas[1]!._relacoesIds = [{ pessoaId: 1, cargo: "Financeiro", souMembro: true }];
 pessoas[2]!._relacoesIds = [{ pessoaId: 1, cargo: "Sócio", souMembro: true }];
 pessoas[0]!._relacoesIds = [{ pessoaId: 2, cargo: "Financeiro", souMembro: false }, { pessoaId: 3, cargo: "Sócio", souMembro: false }];

@@ -255,3 +255,13 @@ Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
 - Os anexos clicados (linhas, detalhe, preview do formulário, documento de origem, comprovação) abrem no `VisualizadorAnexo`, uma janela dentro do sistema montada nas telas das Solicitações Financeiras. Fora delas (ex.: app), cai na nova aba.
 - CSP (`vercel.json`): `connect-src` ganhou `blob:`, para o PDF da demonstração (o arquivo fica em memória). Em produção, o PDF vem da URL assinada do Storage (`*.supabase.co`, já permitido).
 - Armadilha: um contêiner com `place-items: center` encolhe o filho mesmo em `display: block`, nos Chrome recentes (justify-self em layout de bloco). O palco do PDF usa `place-items: normal`.
+
+### Demonstração com os setores da produção (17/10/2026)
+- Correção pedida pelo Wagner: a demonstração tinha setores inventados. Agora `src/features/atendimento/services/setoresProducao.ts` é a fonte única dos setores simulados, igual à produção (32 setores, mesmos ids e nomes, "recebe chamado" em TI -  Suporte, CFTV, Administrativo e Financeiro; Obra, Obra - Arte Design, Obra - Arte Wave e Obra - Arte Jardim como setores de obra; Financeiro como setor financeiro). Ela é usada por Setores e números, Central Email, Equipes, Gestão de Chamados (cadastros, setor do solicitante, empreendimentos) e Solicitações Financeiras.
+- Pessoas fictícias ligadas aos setores (cadastro de Pessoas, classificação Colaborador):
+  - TI: Wagner Antunes, Marcos Prado, Paula Nunes (gestora), Diego Ramos;
+  - CFTV: Renato Lopes (gestor), Helena Costa, João Silva;
+  - Administrativo: Carla Mendes (gestora), Gustavo Reis, Carla Nunes;
+  - Financeiro: Fernanda Dias (gestora), Ana Lima, Bruno Rocha.
+- Diretor das alçadas: Roberto Alves.
+- As solicitações da demonstração saem desses setores e são aprovadas pelo gestor do setor. Como nenhum dos 4 é de obra, o Planejamento aparece como "não exigido". Rascunho novo pega o setor e o gestor de quem está logado (`SETOR_DO_USUARIO`, `GESTOR_DO_SETOR`).

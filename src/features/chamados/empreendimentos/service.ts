@@ -78,8 +78,8 @@ const NOMES = ["ARTE WAVE SURF RESIDENCES", "CONDOMINIO ARTE WAVE", "CONDOMINIO 
 const mock: CadastroEmpreendimentos = {
   empreendimentos: NOMES.map((nome, i) => ({ id: i + 1, nome, apelidos: [], cidade: null, endereco: null, observacao: null, ativo: true, tickets: 0 })),
   setores: [
-    { setorId: 1, setor: "TI", pedirNoApp: false, iaLigada: false, limiar: 80 },
-    { setorId: 2, setor: "CFTV", pedirNoApp: true, iaLigada: true, limiar: 80 },
+    { setorId: 20, setor: "TI -  Suporte", pedirNoApp: false, iaLigada: false, limiar: 80 },
+    { setorId: 21, setor: "CFTV", pedirNoApp: true, iaLigada: true, limiar: 80 },
   ],
 };
 const noTicket = new Map<number, number | null>();

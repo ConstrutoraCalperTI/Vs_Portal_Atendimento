@@ -1,3 +1,4 @@
+import { SETORES_PRODUCAO } from "./setoresProducao";
 import type { PermissionId } from "../../../config/menuRegistry";
 import { isEffectivelyAllowed } from "../../configuracoes/access/policy";
 import { db as dbPortal } from "../../configuracoes/services/mock/db";
@@ -54,42 +55,24 @@ const horarios = (fecha: string, sabado: [string, string] | null): Horario[] =>
 
 const regrasPadrao = { limiteSimultaneo: 5, atendenteSemRespostaMin: 30, encerrarAposHoras: 23, alertaFilaMin: 15, alertaClienteMin: 5 };
 
-const setores: SetorMock[] = [
-  {
-    id: 1, nome: "Financeiro", ativo: true, recebeChamados: true, ...regrasPadrao,
-    msgBoasVindas: "Olá! Você falou com o Financeiro da Calper. Em instantes alguém da equipe vai te atender. 🙂",
-    msgForaHorario: "Recebemos sua mensagem! O Financeiro atende de segunda a sexta, das 8h às 18h.",
-    msgEncerramento: "Atendimento do Financeiro encerrado. Se precisar, é só mandar nova mensagem.",
-    numeros: [{ id: 1, numero: "5521999990002", ativo: true, naConta: true }], gestores: ["u-marcos"], horarios: horarios("18:00", null),
-  },
-  {
-    id: 2, nome: "Relacionamento com o cliente", ativo: true, recebeChamados: true, ...regrasPadrao,
-    msgBoasVindas: "Olá! Aqui é o Relacionamento com o Cliente Calper. Já já falamos com você. 🙂",
-    msgForaHorario: "Recebemos sua mensagem! Atendemos de segunda a sexta, das 8h às 20h, e sábado das 9h às 13h.",
-    msgEncerramento: "Atendimento encerrado. Obrigado por falar com a Calper!",
-    numeros: [{ id: 2, numero: "5521999990003", ativo: true, naConta: true }, { id: 3, numero: "5521999990005", ativo: true, naConta: true }],
-    gestores: ["u-paula"], horarios: horarios("20:00", ["09:00", "13:00"]),
-  },
-  {
-    id: 3, nome: "Assistência técnica", ativo: true, recebeChamados: true, ...regrasPadrao,
-    msgBoasVindas: "Olá! Assistência técnica Calper. Conte o que aconteceu e, se puder, envie fotos. 🙂",
-    msgForaHorario: "Recebemos sua mensagem! A Assistência técnica atende de segunda a sexta, das 8h às 17h.",
-    msgEncerramento: "Chamado encerrado. Qualquer coisa, é só escrever de novo.",
-    numeros: [{ id: 4, numero: "5521999990004", ativo: true, naConta: true }], gestores: ["u-renato"], horarios: horarios("17:00", null),
-  },
-];
+// Setores iguais aos da produção (setoresProducao.ts). Recebem chamado: TI - Suporte, CFTV,
+// Administrativo e Financeiro; os demais existem para o cadastro de Pessoas e as Solicitações Financeiras.
+const msgPadrao = (nome: string) => ({
+  msgBoasVindas: `Olá! Você falou com o ${nome} da Calper. Em instantes alguém da equipe vai te atender. 🙂`,
+  msgForaHorario: `Recebemos sua mensagem! O ${nome} atende de segunda a sexta, das 8h às 18h.`,
+  msgEncerramento: `Atendimento do ${nome} encerrado. Se precisar, é só mandar nova mensagem.`,
+});
+const setor = (id: number, nome: string, recebeChamados = false, extra: Partial<SetorMock> = {}): SetorMock => ({
+  id, nome, ativo: true, recebeChamados, ...regrasPadrao, ...msgPadrao(nome.trim()), numeros: [], gestores: [], horarios: horarios("18:00", null), ...extra,
+});
+const extras: Record<number, Partial<SetorMock>> = {
+  20: { gestores: ["u-paula", "u-marcos"], numeros: [{ id: 5, numero: "5521999990001", ativo: true, naConta: true }] },
+  21: { gestores: ["u-renato"], numeros: [{ id: 4, numero: "5521999990004", ativo: true, naConta: true }] },
+  22: { gestores: ["u-carla"], numeros: [{ id: 2, numero: "5521999990003", ativo: true, naConta: true }, { id: 3, numero: "5521999990005", ativo: true, naConta: true }] },
+  23: { gestores: ["u-fernanda"], numeros: [{ id: 1, numero: "5521999990002", ativo: true, naConta: true }] },
+};
+const setores: SetorMock[] = SETORES_PRODUCAO.map((x) => setor(x.id, x.nome, x.recebeChamados, extras[x.id]));
 
-// Setores de obra (Solicitações Financeiras): não recebem chamado, mas têm aprovadores financeiros.
-setores.push(
-  {
-    id: 4, nome: "Obra - Arte Wave", ativo: true, recebeChamados: false, ...regrasPadrao, msgBoasVindas: setores[0].msgBoasVindas, msgForaHorario: setores[0].msgForaHorario,
-    msgEncerramento: setores[0].msgEncerramento, numeros: [], gestores: ["u-wagner"], horarios: horarios("18:00", null),
-  },
-  {
-    id: 5, nome: "Obra - ETEHE Residencial", ativo: true, recebeChamados: false, ...regrasPadrao, msgBoasVindas: setores[0].msgBoasVindas, msgForaHorario: setores[0].msgForaHorario,
-    msgEncerramento: setores[0].msgEncerramento, numeros: [], gestores: ["u-wagner"], horarios: horarios("18:00", null),
-  },
-);
 
 interface AtendenteMock {
   usuarioId: string;
@@ -102,12 +85,14 @@ interface AtendenteMock {
 }
 
 const atendentes: AtendenteMock[] = [
-  { usuarioId: "u-ana", setorId: 1, apto: true, pausa: false, onlineEm: haMin(0.5), hoje: 9, medioSeg: 660 },
-  { usuarioId: "u-bruno", setorId: 1, apto: true, pausa: false, onlineEm: haMin(1), hoje: 7, medioSeg: 840 },
-  { usuarioId: "u-carla", setorId: 1, apto: false, pausa: false, onlineEm: null, hoje: 0, medioSeg: null },
-  { usuarioId: "u-fernanda", setorId: 2, apto: true, pausa: true, onlineEm: haMin(1), hoje: 5, medioSeg: 540 },
-  { usuarioId: "u-gustavo", setorId: 2, apto: true, pausa: false, onlineEm: haMin(0.2), hoje: 3, medioSeg: 720 },
-  { usuarioId: "u-helena", setorId: 3, apto: true, pausa: false, onlineEm: haMin(2), hoje: 4, medioSeg: 1080 },
+  { usuarioId: "u-ana", setorId: 23, apto: true, pausa: false, onlineEm: haMin(0.5), hoje: 9, medioSeg: 660 },
+  { usuarioId: "u-bruno", setorId: 23, apto: true, pausa: false, onlineEm: haMin(1), hoje: 7, medioSeg: 840 },
+  { usuarioId: "u-fernanda", setorId: 23, apto: true, pausa: true, onlineEm: haMin(1), hoje: 5, medioSeg: 540 },
+  { usuarioId: "u-carla", setorId: 22, apto: false, pausa: false, onlineEm: null, hoje: 0, medioSeg: null },
+  { usuarioId: "u-gustavo", setorId: 22, apto: true, pausa: false, onlineEm: haMin(0.2), hoje: 3, medioSeg: 720 },
+  { usuarioId: "u-helena", setorId: 21, apto: true, pausa: false, onlineEm: haMin(2), hoje: 4, medioSeg: 1080 },
+  { usuarioId: "u-marcos", setorId: 20, apto: true, pausa: false, onlineEm: haMin(0.8), hoje: 6, medioSeg: 900 },
+  { usuarioId: "u-paula", setorId: 20, apto: true, pausa: false, onlineEm: haMin(3), hoje: 4, medioSeg: 780 },
 ];
 
 interface ConversaMock extends Omit<Conversa, "numero" | "atendenteNome" | "totalAtendimentos"> {
@@ -132,24 +117,24 @@ const M = (autor: Mensagem["autor"], texto: string, quando: string, autorNome: s
 
 const base = { naoLidas: 0, notaInterna: null, atendenteId: null, atendenteDesde: null, filaDesde: null, ultimoAtendenteId: null, ultimaMsgAtendenteEm: null } as const;
 const conversas: ConversaMock[] = [
-  { ...base, id: 1, setorId: 1, numeroId: 1, telefone: "5521981234455", nome: "Mariana Souza", modo: "fila", filaDesde: haMin(19.3), ticket: 10241, ultimaMsgClienteEm: haMin(18), ultimaMsgEm: haMin(18), ultimaPrevia: "Preciso da 2ª via do boleto", naoLidas: 2, clienteDesde: haMin(20) },
-  { ...base, id: 2, setorId: 1, numeroId: 1, telefone: "5521988771122", nome: null, modo: "fila", filaDesde: haMin(13.7), ticket: 10242, ultimaMsgClienteEm: haMin(13.7), ultimaMsgEm: haMin(13.7), ultimaPrevia: "Posso pagar com PIX?", naoLidas: 1, clienteDesde: haMin(14) },
-  { ...base, id: 3, setorId: 1, numeroId: 1, telefone: "5521997771010", nome: "Ricardo Alves", modo: "atendente", atendenteId: "u-ana", atendenteDesde: haMin(25.4), ticket: 10236, ultimaMsgClienteEm: haMin(24), ultimaMsgAtendenteEm: haMin(20), ultimaMsgEm: haMin(20), ultimaPrevia: "Te envio agora", clienteDesde: "2026-09-12T13:00:00.000Z" },
-  { ...base, id: 4, setorId: 1, numeroId: 1, telefone: "5521984442020", nome: "João Castro", modo: "atendente", atendenteId: "u-bruno", atendenteDesde: haMin(19.9), ticket: 10238, ultimaMsgClienteEm: haMin(6.2), ultimaMsgAtendenteEm: haMin(15), ultimaMsgEm: haMin(6.2), ultimaPrevia: "Certo, aguardo seu retorno", clienteDesde: haMin(30) },
-  { ...base, id: 5, setorId: 2, numeroId: 2, telefone: "5521991230099", nome: "Silvia Barata", modo: "fila", filaDesde: haMin(5.5), ticket: 10243, ultimaMsgClienteEm: haMin(5.5), ultimaMsgEm: haMin(5.5), ultimaPrevia: "Quero remarcar minha visita", naoLidas: 1, clienteDesde: "2026-05-02T13:00:00.000Z" },
-  { ...base, id: 6, setorId: 2, numeroId: 3, telefone: "5521985557788", nome: "Letícia Figueiredo", modo: "atendente", atendenteId: "u-gustavo", atendenteDesde: haMin(16.6), ticket: 10239, ultimaMsgClienteEm: haMin(10), ultimaMsgAtendenteEm: haMin(2), ultimaMsgEm: haMin(2), ultimaPrevia: "Já encaminhei seu pedido", clienteDesde: "2026-08-02T13:00:00.000Z" },
-  { ...base, id: 7, setorId: 3, numeroId: 4, telefone: "5521973573360", nome: "Paulo Henrique", modo: "fila", filaDesde: haMin(28.1), ticket: 10240, ultimaMsgClienteEm: haMin(28), ultimaMsgEm: haMin(28), ultimaPrevia: "Infiltração no banheiro do apto 302", naoLidas: 2, clienteDesde: "2026-10-05T13:00:00.000Z" },
-  { ...base, id: 8, setorId: 1, numeroId: 1, telefone: "5521990012233", nome: "Cláudia Pires", modo: "encerrada", ultimoAtendenteId: "u-ana", ticket: 10199, ultimaMsgClienteEm: haMin(1500), ultimaMsgAtendenteEm: haMin(1497), ultimaMsgEm: haMin(1495), ultimaPrevia: "Atendimento encerrado", clienteDesde: "2026-06-01T13:00:00.000Z" },
+  { ...base, id: 1, setorId: 23, numeroId: 1, telefone: "5521981234455", nome: "Mariana Souza", modo: "fila", filaDesde: haMin(19.3), ticket: 10241, ultimaMsgClienteEm: haMin(18), ultimaMsgEm: haMin(18), ultimaPrevia: "Preciso da 2ª via do boleto", naoLidas: 2, clienteDesde: haMin(20) },
+  { ...base, id: 2, setorId: 23, numeroId: 1, telefone: "5521988771122", nome: null, modo: "fila", filaDesde: haMin(13.7), ticket: 10242, ultimaMsgClienteEm: haMin(13.7), ultimaMsgEm: haMin(13.7), ultimaPrevia: "Posso pagar com PIX?", naoLidas: 1, clienteDesde: haMin(14) },
+  { ...base, id: 3, setorId: 23, numeroId: 1, telefone: "5521997771010", nome: "Ricardo Alves", modo: "atendente", atendenteId: "u-ana", atendenteDesde: haMin(25.4), ticket: 10236, ultimaMsgClienteEm: haMin(24), ultimaMsgAtendenteEm: haMin(20), ultimaMsgEm: haMin(20), ultimaPrevia: "Te envio agora", clienteDesde: "2026-09-12T13:00:00.000Z" },
+  { ...base, id: 4, setorId: 23, numeroId: 1, telefone: "5521984442020", nome: "João Castro", modo: "atendente", atendenteId: "u-bruno", atendenteDesde: haMin(19.9), ticket: 10238, ultimaMsgClienteEm: haMin(6.2), ultimaMsgAtendenteEm: haMin(15), ultimaMsgEm: haMin(6.2), ultimaPrevia: "Certo, aguardo seu retorno", clienteDesde: haMin(30) },
+  { ...base, id: 5, setorId: 22, numeroId: 2, telefone: "5521991230099", nome: "Silvia Barata", modo: "fila", filaDesde: haMin(5.5), ticket: 10243, ultimaMsgClienteEm: haMin(5.5), ultimaMsgEm: haMin(5.5), ultimaPrevia: "Quero remarcar minha visita", naoLidas: 1, clienteDesde: "2026-05-02T13:00:00.000Z" },
+  { ...base, id: 6, setorId: 22, numeroId: 3, telefone: "5521985557788", nome: "Letícia Figueiredo", modo: "atendente", atendenteId: "u-gustavo", atendenteDesde: haMin(16.6), ticket: 10239, ultimaMsgClienteEm: haMin(10), ultimaMsgAtendenteEm: haMin(2), ultimaMsgEm: haMin(2), ultimaPrevia: "Já encaminhei seu pedido", clienteDesde: "2026-08-02T13:00:00.000Z" },
+  { ...base, id: 7, setorId: 21, numeroId: 4, telefone: "5521973573360", nome: "Paulo Henrique", modo: "fila", filaDesde: haMin(28.1), ticket: 10240, ultimaMsgClienteEm: haMin(28), ultimaMsgEm: haMin(28), ultimaPrevia: "A câmera do portão da obra está sem imagem", naoLidas: 2, clienteDesde: "2026-10-05T13:00:00.000Z" },
+  { ...base, id: 8, setorId: 23, numeroId: 1, telefone: "5521990012233", nome: "Cláudia Pires", modo: "encerrada", ultimoAtendenteId: "u-ana", ticket: 10199, ultimaMsgClienteEm: haMin(1500), ultimaMsgAtendenteEm: haMin(1497), ultimaMsgEm: haMin(1495), ultimaPrevia: "Atendimento encerrado", clienteDesde: "2026-06-01T13:00:00.000Z" },
 ];
 const boas = (id: number) => setores.find((s) => s.id === id)!.msgBoasVindas;
-mensagens.set(1, [M("cliente", "Boa noite", haMin(19.5)), M("auto", boas(1), haMin(19.4)), M("cliente", "Preciso da 2ª via do boleto", haMin(18)), M("sistema", "Entrou na fila do Financeiro", haMin(19.3))]);
-mensagens.set(2, [M("cliente", "Posso pagar com PIX?", haMin(13.7)), M("auto", boas(1), haMin(13.6)), M("sistema", "Entrou na fila do Financeiro", haMin(13.6))]);
-mensagens.set(3, [M("cliente", "Quero o extrato das parcelas", haMin(26)), M("auto", boas(1), haMin(26)), M("sistema", "Ana Lima assumiu a conversa", haMin(25.4)), M("atendente", "Oi Ricardo, aqui é a Ana! Vou gerar para você.", haMin(25), "Ana Lima"), M("cliente", "Obrigado!", haMin(24)), M("atendente", "Te envio agora", haMin(20), "Ana Lima")]);
+mensagens.set(1, [M("cliente", "Boa noite", haMin(19.5)), M("auto", boas(23), haMin(19.4)), M("cliente", "Preciso da 2ª via do boleto", haMin(18)), M("sistema", "Entrou na fila do Financeiro", haMin(19.3))]);
+mensagens.set(2, [M("cliente", "Posso pagar com PIX?", haMin(13.7)), M("auto", boas(23), haMin(13.6)), M("sistema", "Entrou na fila do Financeiro", haMin(13.6))]);
+mensagens.set(3, [M("cliente", "Quero o extrato das parcelas", haMin(26)), M("auto", boas(23), haMin(26)), M("sistema", "Ana Lima assumiu a conversa", haMin(25.4)), M("atendente", "Oi Ricardo, aqui é a Ana! Vou gerar para você.", haMin(25), "Ana Lima"), M("cliente", "Obrigado!", haMin(24)), M("atendente", "Te envio agora", haMin(20), "Ana Lima")]);
 mensagens.set(4, [M("cliente", "Boa tarde, preciso renegociar", haMin(21)), M("sistema", "Bruno Rocha assumiu a conversa", haMin(19.9)), M("atendente", "Boa tarde, João! Vamos ver as opções.", haMin(15), "Bruno Rocha"), M("cliente", "Certo, aguardo seu retorno", haMin(6.2))]);
-mensagens.set(5, [M("cliente", "Boa noite! Quero remarcar minha visita", haMin(5.5)), M("auto", boas(2), haMin(5.5)), M("sistema", "Entrou na fila do Relacionamento com o cliente", haMin(5.5))]);
+mensagens.set(5, [M("cliente", "Boa noite! Quero remarcar minha visita", haMin(5.5)), M("auto", boas(22), haMin(5.5)), M("sistema", "Entrou na fila do Administrativo", haMin(5.5))]);
 mensagens.set(6, [M("cliente", "Oi, preciso de uma declaração", haMin(17)), M("sistema", "Gustavo Reis assumiu a conversa", haMin(16.6)), M("atendente", "Oi Letícia! Qual declaração?", haMin(15), "Gustavo Reis"), M("cliente", "De quitação", haMin(10)), M("atendente", "Já encaminhei seu pedido", haMin(2), "Gustavo Reis")]);
-mensagens.set(7, [M("cliente", "Infiltração no banheiro do apto 302", haMin(28.1)), M("auto", boas(3), haMin(28)), M("sistema", "Entrou na fila da Assistência técnica", haMin(28))]);
-mensagens.set(8, [M("cliente", "Recebi o boleto, obrigada", haMin(1500)), M("atendente", "Por nada, Cláudia!", haMin(1497), "Ana Lima"), M("auto", setores[0]!.msgEncerramento, haMin(1495)), M("sistema", "Ana Lima encerrou a conversa", haMin(1495))]);
+mensagens.set(7, [M("cliente", "A câmera do portão da obra está sem imagem", haMin(28.1)), M("auto", boas(21), haMin(28)), M("sistema", "Entrou na fila do CFTV", haMin(28))]);
+mensagens.set(8, [M("cliente", "Recebi o boleto, obrigada", haMin(1500)), M("atendente", "Por nada, Cláudia!", haMin(1497), "Ana Lima"), M("auto", setores.find((s) => s.id === 23)!.msgEncerramento, haMin(1495)), M("sistema", "Ana Lima encerrou a conversa", haMin(1495))]);
 
 // Tickets fechados dos últimos 70 dias (base dos indicadores do Monitor), gerados de forma fixa.
 interface TicketMock {
@@ -165,9 +150,10 @@ const tickets: TicketMock[] = [];
 {
   let semente = 7;
   const rnd = () => ((semente = (semente * 16807) % 2147483647) / 2147483647);
-  const porSetor: Record<number, string[]> = { 1: ["u-ana", "u-bruno"], 2: ["u-fernanda", "u-gustavo"], 3: ["u-helena"] };
+  const porSetor: Record<number, string[]> = { 23: ["u-ana", "u-bruno", "u-fernanda"], 22: ["u-carla", "u-gustavo"], 21: ["u-helena"], 20: ["u-marcos", "u-paula"] };
+  const ids = [23, 22, 21, 20];
   for (let i = 0; i < 1400; i++) {
-    const setorId = 1 + Math.floor(rnd() * 3);
+    const setorId = ids[Math.floor(rnd() * ids.length)]!;
     const equipe = porSetor[setorId]!;
     const entrou = agora - rnd() * 70 * 86_400_000;
     const assumido = entrou + (2 + rnd() * 14) * 60_000;

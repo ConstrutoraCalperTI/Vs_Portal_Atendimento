@@ -2,6 +2,7 @@ import type { Json } from "../../lib/database.types";
 import { supabase } from "../../lib/supabase";
 import { DATA_SOURCE } from "../configuracoes/services";
 import { currentActor, delay } from "../configuracoes/services/mock/runtime";
+import { DIRETOR, GESTOR_DO_SETOR, nomeDoSetor, SETOR_DO_USUARIO, SETORES_PRODUCAO } from "../atendimento/services/setoresProducao";
 import { fromFunction, fromPostgrest } from "../configuracoes/services/supabase/errors";
 import { edgeFunction } from "../../config/app";
 import { ServiceError } from "../configuracoes/services/types";
@@ -331,23 +332,33 @@ function exigirEditavel(id: number): Detalhe {
   return d;
 }
 
+/** Setor e gestor de quem está logado no modo simulado (os setores da produção; TI quando não há cadastro). */
+function setorMock(): number {
+  try {
+    return SETOR_DO_USUARIO[currentActor().id] ?? 20;
+  } catch {
+    return 20;
+  }
+}
+const gestorMock = () => GESTOR_DO_SETOR[setorMock()] ?? GESTOR_DO_SETOR[20];
+
 /** Adiantamento novo no modo simulado. */
 function adiantamentoVazio(hoje: string): DadosAdiantamento {
   return {
     obra: "Obra - Arte Wave", contaCaixa: null, contaPagamento: null, centroCusto: "00.00114", centroApuracao: null, valor: null, favorecido: null, favorecidoDoc: null,
     finalidade: null, formaPagamento: "deposito", banco: null, agencia: null, conta: null, tipoConta: "corrente", vencimento: null, prazoComprovacao: null,
     dataPreenchimento: hoje, pedidoNumero: null, pedidoData: null, pedidoFornecedor: null, pedidoFornecedorDoc: null, pedidoValor: null, pedidoPercentual: null,
-    pedidoCondicao: null, statusComprovacao: null, pagoEm: null, siengeSaldoId: null, siengeSaldoErro: null, prazoDias: 30, setorObra: true, ehSolicitante: true, rateio: [],
-    documentos: [], arquivosComprovacao: [], comprovacoes: [], checagensComprovacao: [], obras: ["Obra - Arte Wave", "Obra - ETEHE Residencial"],
+    pedidoCondicao: null, statusComprovacao: null, pagoEm: null, siengeSaldoId: null, siengeSaldoErro: null, prazoDias: 30, setorObra: false, ehSolicitante: true, rateio: [],
+    documentos: [], arquivosComprovacao: [], comprovacoes: [], checagensComprovacao: [], obras: SETORES_PRODUCAO.filter((s) => s.obra).map((s) => s.nome),
   };
 }
 
 /** Cadeia do adiantamento no modo simulado (mesma regra do banco: planejamento em obra, gerente sempre, diretor e presidente acima da alçada). */
 export function cadeiaAdiantamentoMock(valor: number): EtapaPrevista[] {
   return [
-    { nivel: 1, papel: "Planejamento", exigido: true, pulado: false, motivo: "despesa de obra", aprovador: "Paulo Mendes", substituto: null },
-    { nivel: 2, papel: "Gerente", exigido: true, pulado: false, motivo: "sempre", aprovador: "Marina Costa", substituto: "Ana Prado" },
-    { nivel: 3, papel: "Diretor", exigido: valor > 5000, pulado: false, motivo: valor > 5000 ? "acima da alçada" : "não exigido para este valor", aprovador: "Roberto Alves", substituto: null },
+    { nivel: 1, papel: "Planejamento", exigido: false, pulado: false, motivo: "não exigido: o setor não é de obra", aprovador: null, substituto: null },
+    { nivel: 2, papel: "Gerente", exigido: true, pulado: false, motivo: "sempre", aprovador: gestorMock().nome, substituto: gestorMock().substituto },
+    { nivel: 3, papel: "Diretor", exigido: valor > 5000, pulado: false, motivo: valor > 5000 ? "acima da alçada" : "não exigido para este valor", aprovador: DIRETOR.nome, substituto: null },
     { nivel: 4, papel: "Presidente", exigido: valor > 20000, pulado: false, motivo: valor > 20000 ? "acima da alçada" : "não exigido para este valor", aprovador: null, substituto: null },
   ];
 }
@@ -365,7 +376,7 @@ function recalcular(d: Detalhe) {
   if (d.tipo === "fundo_fixo") d.saldoFinal = (d.saldoInicial ?? 0) - d.totalDespesas;
   d.atualizadoEm = new Date().toISOString();
   d.cadeiaPrevista = [
-    { nivel: 1, papel: "Gestor", exigido: true, pulado: false, motivo: "sempre", aprovador: "Marina Costa", substituto: "Ana Prado" },
+    { nivel: 1, papel: "Gestor", exigido: true, pulado: false, motivo: "sempre", aprovador: gestorMock().nome, substituto: gestorMock().substituto },
   ];
 }
 
@@ -438,7 +449,7 @@ const mockSolicitacoes: SolicitacoesService = {
     const ate = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().slice(0, 10);
     const d: Detalhe = {
       id, numero: `SF-${hoje.getFullYear()}-${String(id).padStart(4, "0")}`, tipo, status: "rascunho", ciclo: 1, podeEditar: true, podeCancelar: true,
-      solicitante: { id: currentActor().id, nome: currentActor().name, cpfMascarado: "***.456.789-**" }, setor: { id: 1, nome: "Obra - Arte Wave" },
+      solicitante: { id: currentActor().id, nome: currentActor().name, cpfMascarado: "***.456.789-**" }, setor: { id: setorMock(), nome: nomeDoSetor(setorMock()) ?? "—" },
       competencia: de, periodoDe: de, periodoAte: ate, centroCusto: null,
       valorFundoFixo: tipo === "fundo_fixo" ? 1000 : null, saldoInicial: tipo === "fundo_fixo" ? 1000 : null, totalDespesas: 0,
       saldoFinal: tipo === "fundo_fixo" ? 1000 : null, valorGlosado: 0, valorAPagar: 0, pagarAte: null, enviadoEm: null, aceiteEm: null,
@@ -525,7 +536,7 @@ const mockSolicitacoes: SolicitacoesService = {
     if (bloq.length) throw new ServiceError("INVALID_INPUT", `${bloq[0].codigo}: ${bloq[0].detalhe}`);
     d.status = "em_aprovacao";
     d.enviadoEm = d.aceiteEm = new Date().toISOString();
-    d.aprovacoes = [{ ciclo: d.ciclo, nivel: 1, papel: "Gestor", status: "aguardando", comentario: null, aprovador: "Marina Costa", substituto: "Ana Prado", prazoEm: null, decididoEm: null }];
+    d.aprovacoes = [{ ciclo: d.ciclo, nivel: 1, papel: "Gestor", status: "aguardando", comentario: null, aprovador: gestorMock().nome, substituto: gestorMock().substituto, prazoEm: null, decididoEm: null }];
     d.eventos.push({ tipo: "enviada", em: d.enviadoEm, ator: currentActor().name, payload: {} });
     return { status: "em_aprovacao", alertas: 0 };
   },
@@ -620,7 +631,7 @@ const mockAprovacao: AprovacaoService = {
         };
       });
     return { contagem: [...registros.values()].filter((d) => d.status === "em_aprovacao").length, ehAprovador: true, substituicoes: substituicoesMock,
-      usuarios: [{ id: "u-ana", nome: "Ana Prado" }, { id: "u-paulo", nome: "Paulo Mendes" }], lista };
+      usuarios: [{ id: "u-marcos", nome: "Marcos Prado" }, { id: "u-helena", nome: "Helena Costa" }, { id: "u-gustavo", nome: "Gustavo Reis" }, { id: "u-ana", nome: "Ana Lima" }], lista };
   },
   async extra(id) {
     await delay();
@@ -655,7 +666,7 @@ const mockAprovacao: AprovacaoService = {
     await delay();
     if (!p.substitutoId) throw new ServiceError("INVALID_INPUT", "Escolha outra pessoa ativa como substituta.", "substitutoId");
     if (!p.de || !p.ate || p.ate < p.de) throw new ServiceError("INVALID_INPUT", "Informe o período (fim igual ou depois do início).", "ate");
-    substituicoesMock.push({ id: Date.now(), substituto: p.substitutoId === "u-ana" ? "Ana Prado" : "Paulo Mendes", de: p.de, ate: p.ate });
+    substituicoesMock.push({ id: Date.now(), substituto: ({ "u-marcos": "Marcos Prado", "u-helena": "Helena Costa", "u-gustavo": "Gustavo Reis", "u-ana": "Ana Lima" } as Record<string, string>)[p.substitutoId] ?? p.substitutoId, de: p.de, ate: p.ate });
   },
   async removerSubstituto(id) {
     await delay();

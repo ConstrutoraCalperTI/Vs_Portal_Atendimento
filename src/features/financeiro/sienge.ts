@@ -109,7 +109,7 @@ const mockSienge: SiengeService = {
   async listas() {
     await delay();
     return {
-      centrosCusto: [{ id: 114, nome: "ETEHE RESIDENCIAL" }, { id: 120, nome: "ARTE WAVE" }],
+      centrosCusto: [{ id: 114, nome: "SEDE ADMINISTRATIVA" }, { id: 120, nome: "OBRA - ARTE WAVE" }, { id: 121, nome: "OBRA - ARTE JARDIM" }],
       planos: [{ id: "2010101", nome: "Reembolso de despesas" }, { id: "2010102", nome: "Fundo fixo" }, { id: "2010103", nome: "Adiantamento a fornecedor" }],
       documentos: [{ id: "AV", nome: "Aviso de débito" }],
       padroes: { planoReembolso: cfg.planoReembolso, planoFundoFixo: cfg.planoFundoFixo, planoAdiantamento: cfg.planoAdiantamento, centroCustoPadrao: cfg.centroCustoPadrao },

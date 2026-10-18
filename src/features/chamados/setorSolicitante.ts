@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { DATA_SOURCE } from "../configuracoes/services";
 import { delay } from "../configuracoes/services/mock/runtime";
 import { fromPostgrest } from "../configuracoes/services/supabase/errors";
+import { SETORES_PRODUCAO } from "../atendimento/services/setoresProducao";
 
 // Setor do solicitante (docs/PLANO-setor-solicitante.md, migration 20261016100000). Qualquer setor ativo, inclusive os
 // que não recebem chamado. No ticket nasce do setor da pessoa; trocar no ticket atualiza também o cadastro dela.
@@ -22,13 +23,7 @@ async function rpc<T>(nome: string, args?: Record<string, unknown>): Promise<T> 
   return data as T;
 }
 
-const MOCK_SETORES: OpcaoSetor[] = [
-  { id: 1, nome: "TI", recebeChamados: true },
-  { id: 2, nome: "CFTV", recebeChamados: true },
-  { id: 3, nome: "Administrativo", recebeChamados: true },
-  { id: 4, nome: "Comercial", recebeChamados: false },
-  { id: 5, nome: "Financeiro", recebeChamados: true },
-];
+const MOCK_SETORES: OpcaoSetor[] = SETORES_PRODUCAO.map(({ id, nome, recebeChamados }) => ({ id, nome, recebeChamados }));
 export const setorSolicitanteMock = new Map<number, number | null>();
 
 const service = {

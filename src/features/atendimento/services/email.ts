@@ -153,7 +153,8 @@ const supabaseEmail: EmailService = {
 
 type ContaMock = ContaEmail & { senha: string | null; historico: boolean };
 let seq = 20;
-const setorPorNome = (nome: string) => ({ Financeiro: 1, "Relacionamento com o cliente": 2, "Assistência técnica": 3 } as Record<string, number>)[nome] ?? 3;
+// Setores que recebem chamado, com os ids da produção (src/features/atendimento/services/mock.ts).
+const setorPorNome = (nome: string) => ({ "TI -  Suporte": 20, CFTV: 21, Administrativo: 22, Financeiro: 23 } as Record<string, number>)[nome] ?? 20;
 const base = (id: number, nome: string, email: string, setor: string, extra: Partial<ContaMock> = {}): ContaMock => ({
   ...contaNova(setorPorNome(setor)),
   id, nome, email, setorNome: setor, nomeRemetente: `Calper · ${nome}`, senhaMascara: null, status: "conectado", ultimoErro: null,
@@ -161,15 +162,15 @@ const base = (id: number, nome: string, email: string, setor: string, extra: Par
   oauthEmail: email, oauthAutorizadoEm: new Date(Date.now() - 86_400_000).toISOString(), oauthAutorizadoPor: "Wagner Antunes", ...extra,
 });
 const contas: ContaMock[] = [
-  base(1, "CFTV", "cftv@calper.com.br", "Assistência técnica", { padraoDoSetor: true }),
+  base(1, "CFTV", "cftv@calper.com.br", "CFTV", { padraoDoSetor: true }),
   base(2, "Cobrança", "cobranca@calper.com.br", "Financeiro", { naFila: 1, padraoDoSetor: true }),
-  base(3, "Comercial", "comercial@calper.com.br", "Relacionamento com o cliente"),
-  base(4, "Dept° Pessoal", "dp@calper.com.br", "Financeiro", {
+  base(3, "Administrativo", "administrativo@calper.com.br", "Administrativo", { padraoDoSetor: true }),
+  base(4, "Dept° Pessoal", "dp@calper.com.br", "Administrativo", {
     provedor: "manual", modo: "imap_smtp", imapHost: "imap.exemplo.com.br", smtpHost: "smtp.exemplo.com.br", usuario: "dp@calper.com.br",
     senhaMascara: "••••••••4f", senha: "x", status: "falha", ultimoErro: "Invalid credentials (Failure)", ultimaLeituraEm: new Date(Date.now() - 7_200_000).toISOString(),
   }),
-  base(5, "Jurídico", "juridico@calper.com.br", "Relacionamento com o cliente", { status: "aguardando", ultimaLeituraEm: null, historico: false, oauthEmail: null, oauthAutorizadoEm: null, oauthAutorizadoPor: null }),
-  base(6, "chamados.sistemas@calper.com.br", "chamados.sistemas@calper.com.br", "Assistência técnica", { habilitada: false, status: "aguardando", ultimaLeituraEm: null }),
+  base(5, "Jurídico", "juridico@calper.com.br", "Administrativo", { status: "aguardando", ultimaLeituraEm: null, historico: false, oauthEmail: null, oauthAutorizadoEm: null, oauthAutorizadoPor: null }),
+  base(6, "chamados.sistemas@calper.com.br", "chamados.sistemas@calper.com.br", "TI -  Suporte", { padraoDoSetor: true, status: "aguardando", ultimaLeituraEm: null }),
 ];
 
 const appMock: AppGoogle = { clientId: null, definidoEm: null };

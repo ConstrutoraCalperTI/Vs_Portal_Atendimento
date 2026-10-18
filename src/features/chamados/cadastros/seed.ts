@@ -30,15 +30,18 @@ function servico(id: number, paiId: number | null, setorId: number, nivel: numbe
 
 export const CADASTROS_INICIAIS: Cadastros = {
   setores: [
-    { id: 1, nome: "TI", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: null },
-    { id: 2, nome: "CFTV", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: 8 },
-    { id: 3, nome: "Administrativo", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: 9 },
+    // Os que recebem chamado na produção (mesmos ids e nomes de setoresProducao.ts).
+    { id: 20, nome: "TI -  Suporte", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: null },
+    { id: 21, nome: "CFTV", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: 8 },
+    { id: 22, nome: "Administrativo", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: 9 },
+    { id: 23, nome: "Financeiro", ativo: true, recebeChamados: true, slaPadraoHoras: 8, equipePadraoId: 10 },
   ],
   equipes: [
-    { id: 6, nome: "Sistemas", setorId: 1, ativa: true, descricaoIa: "Sistemas e software: ERP Sienge, portais internos, acessos e senhas de sistemas." },
-    { id: 7, nome: "Infraestrutura", setorId: 1, ativa: true, descricaoIa: "Rede, Wi-Fi, VPN, firewall e liberação de sites, impressoras, computadores e periféricos." },
-    { id: 8, nome: "CFTV", setorId: 2, ativa: true, descricaoIa: "Câmeras, gravações e monitoramento." },
-    { id: 9, nome: "Administração", setorId: 3, ativa: true, descricaoIa: "Reembolsos, compras, documentos e solicitações internas." },
+    { id: 6, nome: "Sistemas", setorId: 20, ativa: true, descricaoIa: "Sistemas e software: ERP Sienge, portais internos, acessos e senhas de sistemas." },
+    { id: 7, nome: "Infraestrutura", setorId: 20, ativa: true, descricaoIa: "Rede, Wi-Fi, VPN, firewall e liberação de sites, impressoras, computadores e periféricos." },
+    { id: 8, nome: "CFTV", setorId: 21, ativa: true, descricaoIa: "Câmeras, gravações e monitoramento." },
+    { id: 9, nome: "Administração", setorId: 22, ativa: true, descricaoIa: "Compras, documentos e solicitações internas." },
+    { id: 10, nome: "Financeiro", setorId: 23, ativa: true, descricaoIa: "Pagamentos, boletos, notas fiscais, reembolsos e fundo fixo." },
   ],
   urgencias: [
     { id: 1, nome: "Urgente", ordem: 1, cor: "vermelho", descricao: "Operação parada, obra inteira sem sistema ou rede.", padrao: false, ativa: true },

@@ -6,14 +6,19 @@ import {
   type Anexo, type Aprovacao, type DadosAdiantamento, type Detalhe, type Evento, type Item, type LeituraOcr,
 } from "./solicitacoes";
 import type { StatusSolicitacao } from "./components/StatusChip";
+import { DIRETOR, GESTOR_DO_SETOR, SETORES_PRODUCAO } from "../atendimento/services/setoresProducao";
 
 // Modo demonstração (VITE_DATA_SOURCE=mock): solicitações fictícias em todas as etapas, para apresentar o módulo à
 // gerência antes dos cadastros reais. Nada vai para o Supabase. Os nomes seguem o mockup aprovado; o usuário que
 // apresenta (Wagner Antunes) é o solicitante das "Minhas solicitações". Comprovantes e pedidos são desenhados em SVG.
 
 const EU = { id: "u-wagner", nome: "Wagner Antunes", cpfMascarado: "***.456.789-**" };
-const SETOR = { id: 4, nome: "Obra - Arte Wave" };
-const SETOR_ETEHE = { id: 5, nome: "Obra - ETEHE Residencial" };
+// Setores da produção que atendem (setoresProducao.ts): cada solicitante está no seu.
+const TI = { id: 20, nome: "TI -  Suporte" };
+const CFTV = { id: 21, nome: "CFTV" };
+const ADM = { id: 22, nome: "Administrativo" };
+/** Marca o gestor do setor do solicitante nas etapas (trocado em criar()). */
+const GESTOR = "§gestor";
 const pessoa = (id: string, nome: string) => ({ id, nome, cpfMascarado: "***.321.654-**" });
 const JOAO = pessoa("demo-joao", "João Silva");
 const CARLA = pessoa("demo-carla", "Carla Nunes");
@@ -107,7 +112,7 @@ function itensDe(sol: number, ds: Despesa[]): Item[] {
 type Passo = { papel: string; aprovador: string; status: Aprovacao["status"]; dias?: number; comentario?: string | null };
 function aprovacoes(ciclo: number, passos: Passo[]): Aprovacao[] {
   return passos.map((p, i) => ({
-    ciclo, nivel: i + 1, papel: p.papel, status: p.status, comentario: p.comentario ?? null, aprovador: p.aprovador, substituto: p.papel === "Gestor" || p.papel === "Gerente" ? "Ana Prado" : null,
+    ciclo, nivel: i + 1, papel: p.papel, status: p.status, comentario: p.comentario ?? null, aprovador: p.aprovador, substituto: null,
     prazoEm: p.status === "aguardando" ? ts((p.dias ?? 0) + 2) : null, decididoEm: ["aprovado", "devolvido", "reprovado"].includes(p.status) ? ts(p.dias ?? -1, 11 + i) : null,
   }));
 }
@@ -148,17 +153,20 @@ function criar(b: Base): Detalhe {
   const d: Detalhe = {
     id, numero: `SF-2026-${String(id).padStart(4, "0")}`, tipo: b.tipo, status: b.status, ciclo,
     podeEditar: ["rascunho", "devolvida"].includes(b.status), podeCancelar: ["rascunho", "devolvida"].includes(b.status),
-    solicitante: b.solicitante, setor: b.setor ?? SETOR, competencia: mes.de, periodoDe: b.tipo === "adiantamento" ? null : mes.de, periodoAte: b.tipo === "adiantamento" ? null : mes.ate,
+    solicitante: b.solicitante, setor: b.setor ?? TI, competencia: mes.de, periodoDe: b.tipo === "adiantamento" ? null : mes.de, periodoAte: b.tipo === "adiantamento" ? null : mes.ate,
     centroCusto: "00.00114", valorFundoFixo: b.fundo?.valor ?? null, saldoInicial: b.fundo?.saldoInicial ?? null, totalDespesas: total,
     saldoFinal: b.fundo ? b.fundo.saldoInicial - total : null, valorGlosado: glosa, valorAPagar: total - glosa, pagarAte: b.pagarAte ?? null,
     enviadoEm: b.enviado != null ? ts(b.enviado) : null, aceiteEm: b.enviado != null ? ts(b.enviado) : null, criadoEm: ts((b.enviado ?? 0) - 1), atualizadoEm: ts(b.enviado ?? 0, 16),
-    itens, aprovacoes: b.aprov ? aprovacoes(ciclo, b.aprov) : [], eventos: eventos(b.enviado, b.extraEventos), cadeiaPrevista: null, categorias: CATS,
+    itens, aprovacoes: b.aprov ? aprovacoes(ciclo, b.aprov).map((a) => {
+      const g = GESTOR_DO_SETOR[(b.setor ?? TI).id];
+      return a.aprovador === GESTOR ? { ...a, aprovador: g.nome, substituto: g.substituto } : a;
+    }) : [], eventos: eventos(b.enviado, b.extraEventos), cadeiaPrevista: null, categorias: CATS,
   };
   if (b.adiantamento) d.adiantamento = adiantamento(d, b.adiantamento);
   if (b.regrasEnvio) regrasEnvioMock.set(id, b.regrasEnvio.map((r) => ({ ...r, itemId: null })));
   if (d.podeEditar) d.cadeiaPrevista = b.tipo === "adiantamento"
     ? cadeiaAdiantamentoMock(total)
-    : [{ nivel: 1, papel: "Gestor", exigido: true, pulado: false, motivo: "sempre", aprovador: "Marina Costa", substituto: "Ana Prado" }];
+    : [{ nivel: 1, papel: "Gestor", exigido: true, pulado: false, motivo: "sempre", aprovador: GESTOR_DO_SETOR[(b.setor ?? TI).id].nome, substituto: GESTOR_DO_SETOR[(b.setor ?? TI).id].substituto }];
   registros.set(id, d);
   return d;
 }
@@ -169,11 +177,11 @@ function adiantamento(d: Detalhe, a: Partial<DadosAdiantamento> & { valor: numbe
     itens: [[a.finalidade?.split(" - ")[0]?.slice(0, 26) ?? "ITEM", a.pedidoValor ?? a.valor]], rodape: `Condição: ${a.pedidoCondicao ?? "à vista"}`,
   }));
   const base: DadosAdiantamento = {
-    obra: "ETEHE RESIDENCIAL", contaCaixa: "11401", contaPagamento: "SICOOB - C/C 30.062-4 (ETEHE)", centroCusto: "00.00114", centroApuracao: null,
+    obra: "Obra - Arte Wave", contaCaixa: "11401", contaPagamento: "SICOOB - C/C 30.062-4", centroCusto: "00.00114", centroApuracao: null,
     favorecido: null, favorecidoDoc: null, finalidade: null, formaPagamento: "deposito", banco: "ITAU", agencia: "2847", conta: "98667-2", tipoConta: "corrente",
     vencimento: data(3), prazoComprovacao: data(33), dataPreenchimento: d.criadoEm.slice(0, 10), pedidoNumero: null, pedidoData: data(-10), pedidoFornecedor: null,
     pedidoFornecedorDoc: null, pedidoValor: null, pedidoPercentual: 50, pedidoCondicao: "50% sinal - 50% após a entrega", statusComprovacao: null, pagoEm: null,
-    siengeSaldoId: null, siengeSaldoErro: null, prazoDias: 30, setorObra: true, ehSolicitante: d.solicitante.id === EU.id,
+    siengeSaldoId: null, siengeSaldoErro: null, prazoDias: 30, setorObra: false, ehSolicitante: d.solicitante.id === EU.id,
     rateio: [{ id: 1, tarefa: "29.02.20", porcentagem: 100, valor: a.valor }], documentos: [{ ...pedido, status: "lido", ocr: null }], arquivosComprovacao: [],
     comprovacoes: [], checagensComprovacao: [], obras: null, ...a,
   };
@@ -210,7 +218,7 @@ const R_OK = (cods: string[]) => cods.map((c) => ({ codigo: c, nome: { R01: "Com
 /** Monta a demonstração (uma vez). */
 export function semear() {
   if (registros.size > 0) return;
-  const MARINA = "Marina Costa";
+  const MARINA = GESTOR;
 
   // ---------- Minhas solicitações (Wagner) ----------
   criar({ numero: 149, tipo: "reembolso", status: "rascunho", solicitante: EU, enviado: null, despesas: [
@@ -242,27 +250,27 @@ export function semear() {
   criar({ numero: 151, tipo: "adiantamento", status: "em_aprovacao", solicitante: EU, enviado: 0,
     adiantamento: { valor: 658.4, favorecido: "J.A BLINDAGEM ARQUITETONICA LTDA", favorecidoDoc: "53520864000109", finalidade: "ADIANTAMENTO REFERENTE A COMPRA DE PASSA DOCUMENTOS - 50% DO TOTAL DO PEDIDO",
       pedidoNumero: "001355", pedidoFornecedor: "J.A BLINDAGEM ARQUITETONICA LTDA", pedidoFornecedorDoc: "53520864000109", pedidoValor: 1316.8, vencimento: data(3), prazoComprovacao: data(33) },
-    aprov: [{ papel: "Planejamento", aprovador: "Paulo Mendes", status: "aprovado", dias: 0, comentario: "Tarefa 29.02.20 confere com o cronograma. Ok." },
-      { papel: "Gerente", aprovador: MARINA, status: "aguardando", dias: 0 }, { papel: "Diretor", aprovador: "Roberto Alves", status: "nao_exigido" },
+    aprov: [{ papel: "Planejamento", aprovador: "", status: "nao_exigido" },
+      { papel: "Gerente", aprovador: MARINA, status: "aguardando", dias: 0 }, { papel: "Diretor", aprovador: DIRETOR.nome, status: "nao_exigido" },
       { papel: "Presidente", aprovador: "", status: "nao_exigido" }] });
 
   const adtComprovar = criar({ numero: 142, tipo: "adiantamento", status: "comprovacao_pendente", solicitante: EU, enviado: -30, pagarAte: data(-25),
     adiantamento: { valor: 1200, favorecido: "VIDRACARIA ATLANTICA LTDA", favorecidoDoc: "11222333000144", finalidade: "ADIANTAMENTO PARA FABRICAÇÃO DOS GUARDA-CORPOS DE VIDRO - 50% DO PEDIDO",
       pedidoNumero: "001298", pedidoFornecedor: "VIDRACARIA ATLANTICA LTDA", pedidoFornecedorDoc: "11222333000144", pedidoValor: 2400, vencimento: data(-25), prazoComprovacao: data(5),
       statusComprovacao: "pendente", pagoEm: ts(-25) },
-    aprov: [{ papel: "Planejamento", aprovador: "Paulo Mendes", status: "aprovado", dias: -29 }, { papel: "Gerente", aprovador: MARINA, status: "aprovado", dias: -28 },
-      { papel: "Diretor", aprovador: "Roberto Alves", status: "nao_exigido" }, { papel: "Presidente", aprovador: "", status: "nao_exigido" }] });
+    aprov: [{ papel: "Planejamento", aprovador: "", status: "nao_exigido" }, { papel: "Gerente", aprovador: MARINA, status: "aprovado", dias: -28 },
+      { papel: "Diretor", aprovador: DIRETOR.nome, status: "nao_exigido" }, { papel: "Presidente", aprovador: "", status: "nao_exigido" }] });
   titulos.set(adtComprovar.id, "47930");
 
   // ---------- De outros colaboradores (Aprovações e Conferência) ----------
-  criar({ numero: 152, tipo: "reembolso", status: "em_aprovacao", solicitante: DIEGO, enviado: -3, despesas: [
+  criar({ numero: 152, tipo: "reembolso", status: "em_aprovacao", solicitante: DIEGO, setor: TI, enviado: -3, despesas: [
     { dias: -10, valor: 840, fornecedor: "LOCADORA MOVIDA", cnpj: "21314559000166", motivo: "Transporte", itens: [["LOCACAO VEICULO 3 DIAS", 840]] },
     { dias: -9, valor: 400, fornecedor: "AUTO POSTO IPIRANGA", cnpj: "33337122000127", motivo: "Combustível" },
   ], aprov: [{ papel: "Gestor", aprovador: MARINA, status: "aguardando", dias: -3 }], regrasEnvio: [{ codigo: "R08", nome: "Limite por categoria", resultado: "alerta", detalhe: "Linha 1 acima do teto de Transporte" }] });
   const prazoVencido = registros.get(152)!.aprovacoes[0];
   prazoVencido.prazoEm = ts(-1);
 
-  criar({ numero: 145, tipo: "fundo_fixo", status: "em_conferencia", solicitante: CARLA, setor: SETOR_ETEHE, enviado: -3, pagarAte: data(13), fundo: { valor: 1000, saldoInicial: 1000 },
+  criar({ numero: 145, tipo: "fundo_fixo", status: "em_conferencia", solicitante: CARLA, setor: ADM, enviado: -3, pagarAte: data(13), fundo: { valor: 1000, saldoInicial: 1000 },
     despesas: [
       { dias: -14, valor: 210, fornecedor: "AUTO POSTO SHELL BARRA LTDA", cnpj: "12345678000190", motivo: "Combustível", itens: [["GASOLINA COMUM 35,6L", 210]] },
       { dias: -13, valor: 128.9, fornecedor: "SUPERMERCADO GUANABARA", cnpj: "33015577000183", motivo: "Copa/mantimentos", itens: [["CAFE 500G X2", 44.9], ["FILTRO PAPEL", 12], ["AGUA MINERAL 20L X4", 72]] },
@@ -273,35 +281,35 @@ export function semear() {
     ], aprov: [{ papel: "Gestor", aprovador: MARINA, status: "aprovado", dias: -1 }],
     regrasEnvio: [{ codigo: "R04", nome: "Valor confere", resultado: "alerta", detalhe: "Linha 3: comprovante R$ 168,40 e declarado R$ 186,40" }] });
 
-  criar({ numero: 147, tipo: "reembolso", status: "em_conferencia", solicitante: JOAO, enviado: -2, pagarAte: data(14), despesas: [
+  criar({ numero: 147, tipo: "reembolso", status: "em_conferencia", solicitante: JOAO, setor: CFTV, enviado: -2, pagarAte: data(14), despesas: [
     { dias: -7, valor: 315.8, fornecedor: "TELHANORTE", cnpj: "60000111000122", motivo: "Material de obra", itens: [["CIMENTO CP-II 50KG X6", 215.8], ["AREIA MEDIA 20KG X5", 100]] },
     { dias: -6, valor: 300, fornecedor: "HOTEL CENTRO RIO", cnpj: "22333444000155", motivo: "Outros", itens: [["HOSPEDAGEM 1 DIARIA", 300]] },
   ], aprov: [{ papel: "Gestor", aprovador: MARINA, status: "aprovado", dias: -1 }], regrasEnvio: R_OK(["R01", "R03", "R06"]) });
 
-  criar({ numero: 139, tipo: "reembolso", status: "pagamento_programado", solicitante: JOAO, enviado: -12, pagarAte: data(2), despesas: [
+  criar({ numero: 139, tipo: "reembolso", status: "pagamento_programado", solicitante: JOAO, setor: CFTV, enviado: -12, pagarAte: data(2), despesas: [
     { dias: -16, valor: 72, fornecedor: "ESTAPAR ESTACIONAMENTOS", cnpj: "61079117000105", motivo: "Estacionamento", conferencia: "aceito" },
     { dias: -15, valor: 154.3, fornecedor: "UBER DO BRASIL TECNOLOGIA LTDA", cnpj: "17895646000187", motivo: "Transporte", conferencia: "aceito" },
   ], aprov: [{ papel: "Gestor", aprovador: MARINA, status: "aprovado", dias: -11 }] });
   titulos.set(139, "48102");
 
-  criar({ numero: 138, tipo: "reembolso", status: "reprovada", solicitante: DIEGO, enviado: -15, despesas: [
+  criar({ numero: 138, tipo: "reembolso", status: "reprovada", solicitante: DIEGO, setor: TI, enviado: -15, despesas: [
     { dias: -18, valor: 459, fornecedor: "LOJAS RENNER", cnpj: "92754738000162", motivo: "Outros", itens: [["CAMISA SOCIAL X2", 459]] },
   ], aprov: [{ papel: "Gestor", aprovador: MARINA, status: "reprovado", dias: -14, comentario: "Vestuário não é despesa reembolsável pela política." }] });
 
-  criar({ numero: 153, tipo: "adiantamento", status: "em_conferencia", solicitante: JOAO, setor: SETOR, enviado: -4, pagarAte: data(4),
-    adiantamento: { valor: 6000, favorecido: "CONCRETO FORTE SERVICOS LTDA", favorecidoDoc: "44555666000177", finalidade: "ADIANTAMENTO PARA CONCRETAGEM DA LAJE DO 3º PAVIMENTO - 30% DO PEDIDO",
-      pedidoNumero: "001377", pedidoFornecedor: "CONCRETO FORTE SERVICOS LTDA", pedidoFornecedorDoc: "44555666000177", pedidoValor: 20000, pedidoPercentual: 30,
-      pedidoCondicao: "30% de sinal - saldo na medição", vencimento: data(4), prazoComprovacao: data(34),
-      rateio: [{ id: 1, tarefa: "03.01.10", porcentagem: 70, valor: 4200 }, { id: 2, tarefa: "03.01.20", porcentagem: 30, valor: 1800 }] },
-    aprov: [{ papel: "Planejamento", aprovador: "Paulo Mendes", status: "aprovado", dias: -4 }, { papel: "Gerente", aprovador: MARINA, status: "aprovado", dias: -3 },
-      { papel: "Diretor", aprovador: "Roberto Alves", status: "aprovado", dias: -2, comentario: "Liberado: concretagem programada para a próxima semana." }, { papel: "Presidente", aprovador: "", status: "nao_exigido" }] });
+  criar({ numero: 153, tipo: "adiantamento", status: "em_conferencia", solicitante: JOAO, setor: CFTV, enviado: -4, pagarAte: data(4),
+    adiantamento: { valor: 6000, favorecido: "SEGURA TECH SISTEMAS DE SEGURANCA LTDA", favorecidoDoc: "44555666000177", finalidade: "ADIANTAMENTO PARA AS CÂMERAS E O GRAVADOR DO CFTV DA OBRA - 30% DO PEDIDO",
+      pedidoNumero: "001377", pedidoFornecedor: "SEGURA TECH SISTEMAS DE SEGURANCA LTDA", pedidoFornecedorDoc: "44555666000177", pedidoValor: 20000, pedidoPercentual: 30,
+      pedidoCondicao: "30% de sinal - saldo na instalação", vencimento: data(4), prazoComprovacao: data(34),
+      rateio: [{ id: 1, tarefa: "07.04.10", porcentagem: 70, valor: 4200 }, { id: 2, tarefa: "07.04.20", porcentagem: 30, valor: 1800 }] },
+    aprov: [{ papel: "Planejamento", aprovador: "", status: "nao_exigido" }, { papel: "Gerente", aprovador: MARINA, status: "aprovado", dias: -3 },
+      { papel: "Diretor", aprovador: DIRETOR.nome, status: "aprovado", dias: -2, comentario: "Liberado: instalação programada para a próxima semana." }, { papel: "Presidente", aprovador: "", status: "nao_exigido" }] });
 
-  const devolucao = criar({ numero: 148, tipo: "adiantamento", status: "comprovacao_em_conferencia", solicitante: JOAO, enviado: -35, pagarAte: data(-30),
+  const devolucao = criar({ numero: 148, tipo: "adiantamento", status: "comprovacao_em_conferencia", solicitante: JOAO, setor: CFTV, enviado: -35, pagarAte: data(-30),
     adiantamento: { valor: 1200, favorecido: "SERRALHERIA NOVA ERA LTDA", favorecidoDoc: "55666777000188", finalidade: "ADIANTAMENTO PARA PORTÃO DE SERVIÇO - 50% DO PEDIDO",
       pedidoNumero: "001241", pedidoFornecedor: "SERRALHERIA NOVA ERA LTDA", pedidoFornecedorDoc: "55666777000188", pedidoValor: 2400, vencimento: data(-30), prazoComprovacao: data(0),
       statusComprovacao: "enviada", pagoEm: ts(-30) },
-    aprov: [{ papel: "Planejamento", aprovador: "Paulo Mendes", status: "aprovado", dias: -34 }, { papel: "Gerente", aprovador: MARINA, status: "aprovado", dias: -33 },
-      { papel: "Diretor", aprovador: "Roberto Alves", status: "nao_exigido" }, { papel: "Presidente", aprovador: "", status: "nao_exigido" }] });
+    aprov: [{ papel: "Planejamento", aprovador: "", status: "nao_exigido" }, { papel: "Gerente", aprovador: MARINA, status: "aprovado", dias: -33 },
+      { papel: "Diretor", aprovador: DIRETOR.nome, status: "nao_exigido" }, { papel: "Presidente", aprovador: "", status: "nao_exigido" }] });
   comprovacao(devolucao, { valor: 850, numero: "000874", dias: -5, status: "enviada" });
   titulos.set(devolucao.id, "47811");
 
@@ -309,23 +317,24 @@ export function semear() {
   contadorMock.item = itemId;
 
   // ---------- Cadastros: setores, aprovadores, fundo fixo e SIENGE ----------
-  for (const s of [SETOR.id, SETOR_ETEHE.id]) {
-    configs.set(s, {
-      setorId: s, obra: true, financeiro: false, modoAprovacao: "sequencial", prazoHoras: 48, acaoPrazoVencido: "escalar", centroCustoPadrao: s === SETOR.id ? "00.00114" : "00.00120",
+  for (const s of SETORES_PRODUCAO) {
+    const g = GESTOR_DO_SETOR[s.id];
+    if (!g && !s.obra) continue;
+    configs.set(s.id, {
+      setorId: s.id, obra: s.obra, financeiro: s.financeiro, modoAprovacao: "sequencial", prazoHoras: 48, acaoPrazoVencido: "escalar", centroCustoPadrao: "00.00114",
       prazoComprovacaoDias: 30, acaoComprovacaoVencida: "avisar_bloquear", limiteAdiantamentosAbertos: 3,
-      reembolso: [{ papel: "Gestor", aprovadorId: "u-marina", substitutoId: "u-ana", alcadaMinima: 0 }],
+      reembolso: g ? [{ papel: "Gestor", aprovadorId: g.id, substitutoId: g.substitutoId, alcadaMinima: 0 }] : [],
       adiantamento: [
-        { papel: "planejamento", aprovadorId: "u-paulo", substitutoId: null, alcadaMinima: null },
-        { papel: "gerente", aprovadorId: "u-marina", substitutoId: "u-ana", alcadaMinima: null },
-        { papel: "diretor", aprovadorId: "u-roberto", substitutoId: null, alcadaMinima: 5000 },
-        { papel: "presidente", aprovadorId: "u-wagner", substitutoId: null, alcadaMinima: 20000 },
+        { papel: "planejamento", aprovadorId: null, substitutoId: null, alcadaMinima: null },
+        { papel: "gerente", aprovadorId: g?.id ?? null, substitutoId: g?.substitutoId ?? null, alcadaMinima: null },
+        { papel: "diretor", aprovadorId: DIRETOR.id, substitutoId: null, alcadaMinima: 5000 },
+        { papel: "presidente", aprovadorId: null, substitutoId: null, alcadaMinima: null },
       ],
     } as never);
   }
-  configs.set(1, { ...(configs.get(SETOR.id) as object), setorId: 1, obra: false, financeiro: true } as never);
   mockCadastros.fundos = [
-    { id: 1, usuarioId: "u-wagner", usuario: "Wagner Antunes", setor: SETOR.nome, valor: 1500, vigenteDesde: data(-120) },
-    { id: 2, usuarioId: "demo-carla", usuario: "Carla Nunes", setor: SETOR_ETEHE.nome, valor: 1000, vigenteDesde: data(-200) },
+    { id: 1, usuarioId: "u-wagner", usuario: "Wagner Antunes", setor: TI.nome, valor: 1500, vigenteDesde: data(-120) },
+    { id: 2, usuarioId: "demo-carla", usuario: "Carla Nunes", setor: ADM.nome, valor: 1000, vigenteDesde: data(-200) },
   ];
   Object.assign(cfg, {
     ativo: true, ambiente: "homologacao", subdominio: "calper", usuario: "api.portal", senhaDefinida: true, senhaDefinidaEm: ts(-2), empresaId: 1, tipoDocumento: "AV", indexadorId: 0,
