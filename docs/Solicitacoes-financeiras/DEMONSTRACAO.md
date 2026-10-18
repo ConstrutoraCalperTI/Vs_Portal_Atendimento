@@ -2,7 +2,17 @@
 
 Roteiro para apresentar o módulo à gerência com **dados fictícios**. Nada é gravado no Supabase: tudo roda em memória no navegador. Os cadastros reais (pessoas, setores, aprovadores, fundo fixo, SIENGE) entram depois, na fase de cadastros.
 
-## Como abrir
+## Link publicado
+
+**https://calper-portal-demo.vercel.app**: portal inteiro com dados fictícios, aberto de qualquer computador ou celular. É um projeto separado na Vercel (`calper-portal-demo`), sem Supabase e sem ligação com o portal de produção. Não aparece em buscadores (noindex).
+
+- Entre com `wagner.antunes@calper.com.br` e qualquer senha de 8 caracteres ou mais.
+- Para a visão do Financeiro, use "Ver como" › Fernanda Dias, ou entre com `fernanda.dias@calper.com.br`.
+- App no celular: `https://calper-portal-demo.vercel.app/app/financeiro`.
+- Cada navegador tem a sua cópia dos dados. Recarregar a página volta tudo ao início, e é preciso entrar de novo.
+- Para republicar depois de um ajuste: `npm run demo:publicar` (Vercel CLI logada na conta do projeto).
+
+## Como abrir no computador (sem internet)
 
 ```bash
 npm run demo

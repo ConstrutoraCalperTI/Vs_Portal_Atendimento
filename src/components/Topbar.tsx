@@ -40,7 +40,7 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
 
       <div className="topbar__right">
         {/* Só com dados em memória: com o Supabase não há como entrar na conta de outra pessoa. */}
-        {import.meta.env.DEV && DATA_SOURCE === "mock" && <DevUserSwitcher />}
+        {(import.meta.env.DEV || import.meta.env.MODE === "demo") && DATA_SOURCE === "mock" && <DevUserSwitcher />}
 
         <span className="topbar__status" title={connected ? "Dados no Supabase" : "Dados simulados em memória"}>
           {connected ? <Cloud size={14} aria-hidden="true" /> : <HardDrive size={14} aria-hidden="true" />}
