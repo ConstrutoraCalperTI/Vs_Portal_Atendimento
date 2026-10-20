@@ -28,7 +28,7 @@ import { RoleSheet, type RoleSheetState } from "../roles/RoleSheet";
 import { ServiceError, type PermissionChange, type PermissionRules, type RoleSummary } from "../services/types";
 import "./PerfisPermissoes.css";
 
-const GROUPS: MenuGroup[] = ["principal", "configuracoes"];
+const GROUPS: MenuGroup[] = ["principal", "configuracoes", "treinamento"];
 
 function plural(count: number, singular: string, pluralForm: string): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;

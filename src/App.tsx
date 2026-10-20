@@ -22,6 +22,7 @@ const GestaoAtendimento = lazy(() => import("./pages/GestaoAtendimento").then((m
 const GestaoChamados = lazy(() => import("./pages/GestaoChamados").then((m) => ({ default: m.GestaoChamados })));
 const SolicitacoesFinanceiras = lazy(() => import("./pages/SolicitacoesFinanceiras").then((m) => ({ default: m.SolicitacoesFinanceiras })));
 const GestaoTicketsMovidesk = lazy(() => import("./pages/GestaoTicketsMovidesk").then((m) => ({ default: m.GestaoTicketsMovidesk })));
+const CentroTreinamento = lazy(() => import("./pages/CentroTreinamento").then((m) => ({ default: m.CentroTreinamento })));
 const PermissoesAplicativo = lazy(() =>
   import("./features/configuracoes/pages/PermissoesAplicativo").then((m) => ({ default: m.PermissoesAplicativo })),
 );
@@ -60,6 +61,7 @@ const pages: Record<TopLevelMenuId, ReactElement> = {
   configure_integrations: <Integracoes />,
   view_audit_logs: <Auditoria />,
   manage_sessions: <Sessoes />,
+  centro_treinamento: <CentroTreinamento />,
 };
 
 /** Tela fora do layout carregada sob demanda. */

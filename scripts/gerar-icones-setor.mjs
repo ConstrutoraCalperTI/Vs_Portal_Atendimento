@@ -86,6 +86,7 @@ const MENU = [
   ["integracao_sienge", "flat-color-icons:database"],
   ["view_audit_logs", "fluent-color:history-24"],
   ["manage_sessions", "fluent-color:shield-checkmark-24"],
+  ["centro_treinamento", "flat-color-icons:graduation-cap"],
   // Rodapé do menu (ids próprios, fora do menuRegistry).
   ["rodape_recolher", "flat-color-icons:previous"],
   ["rodape_expandir", "flat-color-icons:next"],

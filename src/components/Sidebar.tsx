@@ -21,6 +21,32 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   // Itens vêm do menuRegistry, filtrados pela permissão do usuário logado.
   const mainItems = menuItemsByGroup("principal").filter((item) => canOpen(item.id));
   const configItems = menuItemsByGroup("configuracoes").filter((item) => canOpen(item.id));
+  // Centro de Treinamento: depois de Configurações.
+  const treinamentoItems = menuItemsByGroup("treinamento").filter((item) => canOpen(item.id));
+
+  const renderItem = (item: MenuItem) => {
+    // Nome na lateral: menuLabel quando houver (ex.: Gestão de Tickets), senão o label.
+    const nome = item.menuLabel ?? item.label;
+    // Item com seções (ex.: Módulo exemplo) vira grupo; as seções liberadas são os subitens.
+    const sections = routeChildrenOf(item.id).filter((section) => hasPermission(section.id));
+    if (sections.length > 0) {
+      const group: NavGroupData = { id: item.id, label: nome, icon: item.icon, rootPath: item.path, items: sections };
+      return collapsed ? <NavFlyout key={item.id} group={group} /> : <NavGroup key={item.id} group={group} />;
+    }
+    return (
+      <li key={item.id}>
+        <NavLink
+          to={item.path}
+          className={({ isActive }) => `sidebar__item${isActive ? " sidebar__item--active" : ""}`}
+          title={collapsed ? nome : undefined}
+          aria-label={collapsed ? nome : undefined}
+        >
+          <IconeMenu id={item.id} icon={item.icon} />
+          {!collapsed && <span>{nome}</span>}
+        </NavLink>
+      </li>
+    );
+  };
 
   return (
     <aside className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`}>
@@ -35,33 +61,13 @@ export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
           </div>
         ) : (
           <ul>
-            {mainItems.map((item) => {
-              // Nome na lateral: menuLabel quando houver (ex.: Gestão de Tickets), senão o label.
-              const nome = item.menuLabel ?? item.label;
-              // Item com seções (ex.: Módulo exemplo) vira grupo; as seções liberadas são os subitens.
-              const sections = routeChildrenOf(item.id).filter((section) => hasPermission(section.id));
-              if (sections.length > 0) {
-                const group: NavGroupData = { id: item.id, label: nome, icon: item.icon, rootPath: item.path, items: sections };
-                return collapsed ? <NavFlyout key={item.id} group={group} /> : <NavGroup key={item.id} group={group} />;
-              }
-              return (
-                <li key={item.id}>
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) => `sidebar__item${isActive ? " sidebar__item--active" : ""}`}
-                    title={collapsed ? nome : undefined}
-                    aria-label={collapsed ? nome : undefined}
-                  >
-                    <IconeMenu id={item.id} icon={item.icon} />
-                    {!collapsed && <span>{nome}</span>}
-                  </NavLink>
-                </li>
-              );
-            })}
+            {mainItems.map(renderItem)}
 
             {/* O grupo some quando nenhum subitem sobra para o perfil. */}
             {configItems.length > 0 &&
               (collapsed ? <NavFlyout group={configGroup(configItems)} /> : <NavGroup group={configGroup(configItems)} />)}
+
+            {treinamentoItems.map(renderItem)}
           </ul>
         )}
       </nav>

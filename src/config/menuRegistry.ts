@@ -14,6 +14,7 @@ import {
   Layers,
   FileText,
   Gauge,
+  GraduationCap,
   HardDrive,
   Home,
   LayoutDashboard,
@@ -46,7 +47,7 @@ import {
 // - Ação (`actionDefinitions`) não tem rota: libera um botão dentro de uma tela e só vale junto
 //   com a permissão do pai.
 
-export type MenuGroup = "principal" | "configuracoes";
+export type MenuGroup = "principal" | "configuracoes" | "treinamento";
 
 interface MenuItemDefinition {
   /** Identificador da permissão que libera o item. */
@@ -454,6 +455,18 @@ const definitions = [
     group: "configuracoes",
     description: "Quem está conectado agora e encerramento de sessões.",
   },
+  // Centro de Treinamento: fica abaixo de Configurações na lateral. Cada tutorial entra como seção
+  // (`parent: "centro_treinamento"`, caminho /centro-treinamento/<funcionalidade>); aberto a todos.
+  {
+    id: "centro_treinamento",
+    label: "Centro de Treinamento",
+    path: "/centro-treinamento",
+    icon: GraduationCap,
+    group: "treinamento",
+    description: "Tutoriais passo a passo de cada funcionalidade do portal.",
+    alwaysVisible: true,
+    subroutes: true,
+  },
 ] as const satisfies readonly MenuItemDefinition[];
 
 const actionDefinitions = [
@@ -504,6 +517,7 @@ export const CONFIG_ROOT_PATH = "/configuracoes";
 export const menuGroups: Record<MenuGroup, { label: string; icon: LucideIcon }> = {
   principal: { label: "Menu principal", icon: Home },
   configuracoes: { label: "Configurações", icon: Settings },
+  treinamento: { label: "Centro de Treinamento", icon: GraduationCap },
 };
 
 const itemsById = new Map<MenuItemId, MenuItem>(menuRegistry.map((item) => [item.id, item]));
