@@ -265,3 +265,20 @@ Valem os tokens de `src/index.css`. Cores soltas nos componentes, não.
   - Financeiro: Fernanda Dias (gestora), Ana Lima, Bruno Rocha.
 - Diretor das alçadas: Roberto Alves.
 - As solicitações da demonstração saem desses setores e são aprovadas pelo gestor do setor. Como nenhum dos 4 é de obra, o Planejamento aparece como "não exigido". Rascunho novo pega o setor e o gestor de quem está logado (`SETOR_DO_USUARIO`, `GESTOR_DO_SETOR`).
+
+### App Financeiro por perfil, Fase 1 — Banco (23/10/2026)
+- Plano: `docs/PLANO-app-financeiro-perfis.md`; mockup aprovado `docs/mockups/app-financeiro-perfis.html` (decisões D1–D5 e P1).
+- Migration `20261023150000_portal_atendimento_sf_acesso_perfil.sql` (aditiva):
+  - `sf_eh_gestor(uuid)`: a pessoa está em Gestão do setor (`at_setor_gestores`) de um setor ativo;
+  - `sf_eh_aprovador(uuid)`: aprovador ou substituto ativo em `sf_setor_aprovador`, ou substituto por período vigente.
+- **Regra única de quem vê o quê:** o bloco `acesso` de `sf_meu_contexto`. O app e o portal leem esse bloco; as RPCs de cada tela continuam conferindo o papel.
+  - `reembolso`: tem setor;
+  - `fundoFixo`: tem setor e é gestor (`temValorFundo` diz se há valor cadastrado);
+  - `adiantamento`: tem setor e não tem comprovação vencida (`adiantamentoBloqueio` traz o motivo);
+  - `aprovacoes`: Admin, ou aprovador/substituto **e** permissão `sf_aprovacoes`;
+  - `conferencia`: Admin, ou setor financeiro **e** permissão `sf_conferencia`;
+  - `cadastros`: Admin.
+  - `sf_meu_contexto` também devolve `ehGestor`.
+- **Fundo fixo só para gestor (D1, P1).** `sf_rascunho_criar('fundo_fixo')` recusa quem não é gestor. A prestação já criada segue até o fim. `sf_minhas.temFundoFixo` = gestor e valor cadastrado. `sf_cadastros_lista` traz `ehGestor` nos fundos e nos usuários.
+- **D3:** a migration marca `sf_aprovacoes` no perfil de cada aprovador ou substituto ativo. Linha que já existe, mesmo desligada, não muda.
+- Testes: `tests/db/financeiro-acesso.db.test.ts`.

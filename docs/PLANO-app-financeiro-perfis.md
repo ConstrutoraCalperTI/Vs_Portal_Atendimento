@@ -42,7 +42,7 @@ Módulo: Solicitações Financeiras. Antes de codar, leia [docs/Solicitacoes-fin
 
 ## Perguntas em aberto (responder antes da fase indicada)
 
-- [ ] **P1 — Fundo fixo de quem não é gestor** (antes da Fase 1 ir para produção).
+- [x] **P1 — Fundo fixo de quem não é gestor.** Aplicada a recomendação na Fase 1 (o Wagner pediu para seguir em 23/10/2026).
   - Hoje basta o valor cadastrado. Com D1, a pessoa precisa ser gestora do setor.
   - *Recomendo:*
     - antes de aplicar, a migration lista quem tem fundo fixo ativo e não é gestor;
@@ -77,20 +77,24 @@ Módulo: Solicitações Financeiras. Antes de codar, leia [docs/Solicitacoes-fin
 
 ## Fases
 
-### Fase 1 — Banco (migration `AAAAMMDDHHMMSS_portal_atendimento_sf_acesso_perfil.sql`, só aditiva)
-- [ ] Função `sf_eh_gestor(uuid)`: a pessoa está em `at_setor_gestores` de algum setor
-- [ ] `sf_meu_contexto` redefinida: mantém os campos de hoje e acrescenta `ehGestor` e o bloco `acesso`
-- [ ] `sf_minhas` redefinida: `temFundoFixo` = gestor **e** valor cadastrado; acrescenta `ehGestor` (o cartão desligado mostra o motivo certo)
-- [ ] `sf_rascunho_criar` redefinida a partir da versão da Fase 5B: fundo fixo exige gestor (P1)
-- [ ] `profile_permissions`: marca `sf_aprovacoes` para o perfil de cada usuário que é aprovador ou substituto ativo hoje (`on conflict do nothing`)
-- [ ] Teste no `test:db` (`tests/db/financeiro-acesso.db.test.ts`):
+### Fase 1 — Banco (migration `20261023150000_portal_atendimento_sf_acesso_perfil.sql`, só aditiva)
+- [x] Função `sf_eh_gestor(uuid)`: a pessoa está em `at_setor_gestores` de algum setor ativo
+- [x] Função `sf_eh_aprovador(uuid)`: aprovador ou substituto ativo, ou substituto por período vigente (`sf_substituicao`)
+- [x] `sf_meu_contexto` redefinida: mantém os campos de hoje e acrescenta `ehGestor` e o bloco `acesso` (com `adiantamentoBloqueio`, o motivo da A06). Admin recebe Aprovações, Conferência e Cadastros
+- [x] `sf_minhas` redefinida: `temFundoFixo` = gestor **e** valor cadastrado; acrescenta `ehGestor` (o cartão desligado mostra o motivo certo)
+- [x] `sf_rascunho_criar` redefinida a partir da versão da Fase 5B: fundo fixo exige gestor (P1)
+- [x] `sf_cadastros_lista` redefinida: `ehGestor` nos fundos e nos usuários (P1: aviso "não é gestor do setor" na Fase 2)
+- [x] `profile_permissions`: marca `sf_aprovacoes` para o perfil de cada usuário que é aprovador ou substituto ativo hoje (`on conflict do nothing`: perfil com a tela desligada fica como está)
+- [x] Teste no `test:db` (`tests/db/financeiro-acesso.db.test.ts`, 14 testes; `financeiro-envio` ajustado ao gestor):
   - o colaborador recebe só reembolso e adiantamento;
   - o gestor recebe o fundo fixo;
   - o gestor sem valor recebe o fundo fixo sem `temValorFundo`;
   - quem não é gestor não cria fundo fixo;
   - o aprovador sem permissão não recebe Aprovações;
   - quem tem a permissão de conferência e não é do Financeiro não recebe Conferência;
-  - o Admin recebe tudo.
+  - o Admin recebe tudo;
+  - o substituto por período recebe Aprovações;
+  - a comprovação vencida bloqueia o adiantamento, com o motivo.
 - [ ] Aplicar a migration no Supabase compartilhado (o Wagner aplica; o modo automático bloqueia escrita em produção)
 
 ### Fase 2 — Serviço, tipos e menu do portal

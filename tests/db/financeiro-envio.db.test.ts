@@ -120,7 +120,10 @@ describe("rascunho", () => {
   });
 
   it("fundo fixo sem cadastro é recusado; com cadastro traz o saldo inicial", async () => {
-    await recusa(gestor, "select portal_atendimento.sf_rascunho_criar('fundo_fixo')", [], /não tem fundo fixo/);
+    // Fundo fixo só para o gestor do setor (20261023150000, D1).
+    await recusa(colab, "select portal_atendimento.sf_rascunho_criar('fundo_fixo')", [], /só para o gestor do setor/);
+    await db.admin.query("insert into portal_atendimento.at_setor_gestores (setor_id, usuario_id) values ($1, $2), ($1, $3)", [obra, gestor, colab]);
+    await recusa(gestor,"select portal_atendimento.sf_rascunho_criar('fundo_fixo')", [], /não tem fundo fixo/);
     await como(colab, async (c) => {
       const d = await rpc(c, "portal_atendimento.sf_detalhe($1)", [await rpc(c, "portal_atendimento.sf_rascunho_criar('fundo_fixo')")]);
       expect([Number(d.valorFundoFixo), Number(d.saldoInicial)]).toEqual([1000, 1000]);
