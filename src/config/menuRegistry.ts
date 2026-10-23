@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
   Archive,
+  BookOpen,
   List,
   Building,
   BarChart3,
@@ -455,17 +456,37 @@ const definitions = [
     group: "configuracoes",
     description: "Quem está conectado agora e encerramento de sessões.",
   },
-  // Centro de Treinamento: fica abaixo de Configurações na lateral. Cada tutorial entra como seção
-  // (`parent: "centro_treinamento"`, caminho /centro-treinamento/<funcionalidade>); aberto a todos.
+  // Centro de Treinamento (docs/PLANO-centro-treinamento.md): fica abaixo de Configurações na lateral. Cada pessoa vê a
+  // trilha do próprio setor em Meus treinamentos (o tour abre em /centro-treinamento/meus/<módulo>); só o Admin gerencia.
   {
     id: "centro_treinamento",
     label: "Centro de Treinamento",
     path: "/centro-treinamento",
     icon: GraduationCap,
     group: "treinamento",
-    description: "Tutoriais passo a passo de cada funcionalidade do portal.",
+    description: "Tutoriais passo a passo na própria tela do sistema. Clique em Começar e siga os balões.",
     alwaysVisible: true,
     subroutes: true,
+  },
+  {
+    id: "centro_treinamento_meus",
+    label: "Meus treinamentos",
+    path: "/centro-treinamento/meus",
+    icon: BookOpen,
+    group: "treinamento",
+    description: "A trilha do seu setor: cada módulo é um tour com balões sobre a tela do sistema.",
+    parent: "centro_treinamento",
+    alwaysVisible: true,
+  },
+  {
+    id: "centro_treinamento_gerenciar",
+    label: "Gerenciar tutoriais",
+    path: "/centro-treinamento/gerenciar",
+    icon: SlidersHorizontal,
+    group: "treinamento",
+    description: "Módulos de cada trilha, os balões de cada tela e quem já concluiu.",
+    parent: "centro_treinamento",
+    adminOnly: true,
   },
 ] as const satisfies readonly MenuItemDefinition[];
 

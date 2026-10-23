@@ -90,63 +90,72 @@ Por isso a tela mostra "Nenhum tutorial publicado".
 - [ ] Aplicar a migration no Supabase compartilhado (aguardando o Wagner autorizar)
 
 ### Fase 2 — Telas capturadas
-- [ ] `scripts/capturar-treinamento.mjs`:
+- [x] `scripts/capturar-treinamento.mjs`:
   - sobe a demo, entra com o usuário fictício e captura as 16 telas do mockup (desktop 1440×900, celular 390×844);
   - grava em `public/treinamento/*.webp`.
-- [ ] Script `treinamento:capturar` no `package.json`
-- [ ] Conferir as capturas: a faixa DEV não aparece, só há dados fictícios e cada tela ficou abaixo de 200 KB
+- [x] Script `treinamento:capturar` no `package.json`
+- [x] Conferir as capturas: a faixa DEV não aparece (`visibility: hidden`, sem mexer no layout), só há dados fictícios e cada tela ficou abaixo de 200 KB (23–108 KB)
+- [x] Os 60 contornos do mockup conferidos sobre as telas novas (desenho dos alvos por script): todos no botão certo
 
 ### Fase 3 — Serviço e tipos
-- [ ] `src/features/treinamento/types.ts` e `service.ts`: chamadas às funções `tr_*` pelo padrão `fromPostgrest`/`fromFunction`
-- [ ] Modo simulado:
+- [x] `src/features/treinamento/types.ts`, `service.ts` e `hooks.ts`: chamadas às funções `tr_*` pelo padrão `fromPostgrest`/`fromFunction`
+- [x] Modo simulado:
   - `src/features/treinamento/seed.ts` com o conteúdo do mockup;
   - progresso em memória;
   - setor pelo `setorMock`.
-- [ ] Hooks TanStack Query: `useMeusTreinamentos`, `useModulo`, `useSalvarProgresso`, `useResponder`
+- [x] Hooks TanStack Query: `useMeusTreinamentos`, `useModulo`, `useSalvarProgresso`, `useResponder`
 
 ### Fase 4 — Tour por balões
-- [ ] Componente `TourPlayer`:
+- [x] Componente `TourPlayer`:
   - a tela inteira, com o alvo contornado e o resto escurecido;
   - o balão se posiciona sozinho (direita, esquerda, abaixo ou acima) e se reposiciona ao redimensionar.
-- [ ] Moldura de celular para os módulos `celular`
-- [ ] Controles:
+- [x] Moldura de celular para os módulos `celular`
+- [x] Controles:
   - Voltar e Próximo;
   - lista de passos ao lado, para pular para qualquer passo;
   - teclado (← → Esc);
   - "Passar sozinho" com ritmo Devagar, Normal ou Rápido.
-- [ ] A troca de imagem lê o passo atual na hora da troca (armadilha do mockup: cliques rápidos mostravam a tela errada)
-- [ ] Salva o passo atual ao avançar e retoma de onde parou
-- [ ] Cartão final:
+- [x] A troca de imagem lê o passo atual na hora da troca (armadilha do mockup: cliques rápidos mostravam a tela errada)
+- [x] Salva o passo atual ao avançar e retoma de onde parou
+- [x] Cartão final:
   - pergunta, com "Acertou" (módulo concluído) ou "Reveja os passos";
   - botão "Praticar na demonstração".
-- [ ] `.classe[hidden] { display: none }` no cartão final (armadilha do mockup: o cartão ficava por cima do módulo seguinte)
+- [x] `.classe[hidden] { display: none }` no cartão final (armadilha do mockup: o cartão ficava por cima do módulo seguinte)
 
 ### Fase 5 — Meus treinamentos
-- [ ] `CentroTreinamento.tsx`:
+- [x] `CentroTreinamento.tsx`:
   - a página inicial passa a ser "Meus treinamentos", no lugar da lista de seções;
   - hero "Olá, <nome>. Sua trilha: <trilha>", com módulos concluídos e minutos.
-- [ ] Cartões dos módulos com capa, papel ("Quem atende", "Quem aprova"…), duração, barra de progresso e Começar, Continuar ou Rever
-- [ ] Aviso para quem não tem setor (P3)
-- [ ] Admin: seletor "Ver como setor"
+- [x] Cartões dos módulos com capa, papel ("Quem atende", "Quem aprova"…), duração, barra de progresso e Começar, Continuar ou Rever
+- [x] Aviso para quem não tem setor (P3)
+- [x] Admin: seletor "Ver como setor"
 
 ### Fase 6 — Gerenciar tutoriais (Admin)
-- [ ] Seção `centro_treinamento_gerenciar` no `menuRegistry`
-- [ ] Tabela de módulos com setores, para quem, balões, duração, concluíram, status, Editar e ▶
-- [ ] Novo módulo, com título, trilha, papel, duração, rota, pergunta e status
-- [ ] Editor de balão:
+- [x] Seções `centro_treinamento_meus` (todos) e `centro_treinamento_gerenciar` (adminOnly) no `menuRegistry`, com ícone colorido (`npm run icones:setor`)
+- [x] Tabela de módulos com setores, para quem, balões, duração, concluíram, status, Editar e ▶
+- [x] Novo módulo, com título, trilha, papel, duração, rota, pergunta e status
+- [x] Editor de balão:
   - lista dos balões do módulo;
   - escolha da tela;
   - contorno arrastável e redimensionável;
   - posição do balão;
   - título e explicação (aviso acima de 220 caracteres);
   - Salvar e Ver no tour.
-- [ ] Progresso por setor: pessoas, concluíram tudo, em andamento e não começaram, com "Ver pessoas"
+- [x] Progresso por setor: pessoas, concluíram tudo, em andamento e não começaram, com "Ver pessoas"
+- [x] Trilha de cada setor (fora do mockup): o Admin troca a trilha de um setor; sem trilha, segue a padrão
 
 ### Fase 7 — Fechamento
-- [ ] `npm run lint`, `npm run build`, `npm test` e `npm run test:db` passando
-- [ ] Teste no navegador, em computador e celular, de um módulo de cada trilha, do começo à pergunta
-- [ ] `npm run demo:publicar`
-- [ ] Atualizar a nota do Cerebro `vs-portal-atendimento-centro-treinamento`
+- [x] `npm run lint`, `npm run build`, `npm test` e `npm run test:db` passando
+- [x] Teste no navegador (Playwright, demo local e publicada), em computador e celular: lista, tour, teclado, pergunta errada/certa, retomada no passo, "ver como" Financeiro, editor com arraste do contorno. Sem erro no console.
+- [x] `npm run demo:publicar` (https://calper-portal-demo.vercel.app/centro-treinamento); a limpeza da pasta temporária agora tolera o EPERM do Windows
+- [x] Atualizar a nota do Cerebro `vs-portal-atendimento-centro-treinamento`
+
+## Como ficou (23/10/2026)
+
+- **Rotas:** `/centro-treinamento` vai para `/centro-treinamento/meus`; o tour abre por cima em `/centro-treinamento/meus/<id do módulo>` (link compartilhável; Esc ou Fechar voltam).
+- **Código:** `src/features/treinamento/` (`types`, `service` com o modo simulado, `hooks`, `TourPlayer`, `MeusTreinamentos`, `GerenciarTutoriais`, `EditorModulo`, `treinamento.css`, `conteudo.ts` só para a demonstração).
+- **Telas:** `public/treinamento/*.webp`, geradas por `npm run treinamento:capturar`. Mudou uma tela do sistema? Rode de novo e confira os contornos em Gerenciar tutoriais.
+- **Pendente:** aplicar a migration `20261023100000_portal_atendimento_treinamento.sql` no Supabase compartilhado. O modo automático do Claude Code bloqueia escrita em produção; o Wagner aplica. Se o portal for publicado antes disso, a tela do Centro de Treinamento mostra erro (as funções `tr_*` não existem): aplique a migration primeiro.
 
 ## Prompt de implementação
 

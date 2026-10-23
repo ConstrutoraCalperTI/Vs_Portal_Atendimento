@@ -1,59 +1,56 @@
-import { GraduationCap } from "lucide-react";
-import { Route, Routes } from "react-router";
+import { lazy, Suspense } from "react";
+import { Navigate, NavLink, Route, Routes } from "react-router";
 import { Breadcrumb } from "../components/Breadcrumb";
-import { ModuleCard } from "../components/ModuleCard";
-import { getMenuItem, routeChildrenOf } from "../config/menuRegistry";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { getMenuItem, type MenuItemId } from "../config/menuRegistry";
 import { useAccess } from "../features/configuracoes/access/useAccess";
-import { EmptyState } from "../features/configuracoes/components/EmptyState";
 import { PageHeader } from "../features/configuracoes/components/PageHeader";
 import { NotFound } from "./NotFound";
+import "../features/configuracoes/pages/Integracoes.css";
+import "../features/treinamento/treinamento.css";
 
-// Centro de Treinamento: item `centro_treinamento` do menuRegistry. Cada tutorial é uma seção
-// (`parent: "centro_treinamento"`) com rota própria abaixo de /centro-treinamento.
+const MeusTreinamentos = lazy(() => import("../features/treinamento/MeusTreinamentos").then((m) => ({ default: m.MeusTreinamentos })));
+const GerenciarTutoriais = lazy(() => import("../features/treinamento/GerenciarTutoriais").then((m) => ({ default: m.GerenciarTutoriais })));
+
+// Centro de Treinamento: item `centro_treinamento` do menuRegistry (docs/PLANO-centro-treinamento.md).
+// Meus treinamentos para todos (a trilha do setor de cada um); Gerenciar tutoriais só para o Admin.
 const page = getMenuItem("centro_treinamento");
 
-function Tutoriais() {
-  const { hasPermission } = useAccess();
-  const tutoriais = routeChildrenOf("centro_treinamento").filter((item) => hasPermission(item.id));
-
-  if (tutoriais.length === 0) {
-    return (
-      <div className="card">
-        <EmptyState icon={GraduationCap} title="Nenhum tutorial publicado" description="Os tutoriais de cada funcionalidade do portal aparecem aqui." />
-      </div>
-    );
-  }
-
-  return (
-    <section>
-      <h2 className="section-title">Tutoriais</h2>
-      <div className="module-grid">
-        {tutoriais.map((item, index) => (
-          <ModuleCard
-            key={item.id}
-            title={item.label}
-            description={item.description ?? ""}
-            icon={item.icon}
-            accent="brand"
-            to={item.path}
-            permission={item.id}
-            index={index}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
+const SECOES: MenuItemId[] = ["centro_treinamento_meus", "centro_treinamento_gerenciar"];
 
 export function CentroTreinamento() {
+  const { hasPermission } = useAccess();
+  const liberadas = SECOES.filter((id) => hasPermission(id)).map((id) => getMenuItem(id));
+  const meus = getMenuItem("centro_treinamento_meus");
+
   return (
     <>
       <Breadcrumb items={[{ label: "Início", to: "/home" }, { label: page.label }]} />
       <PageHeader title={page.label} description={page.description} />
-      <Routes>
-        <Route index element={<Tutoriais />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+
+      {liberadas.length > 1 && (
+        <nav className="section-nav" aria-label={`Seções de ${page.label}`}>
+          {liberadas.map((item) => {
+            const Icone = item.icon;
+            return (
+              <NavLink key={item.id} to={item.path} className={({ isActive }) => `section-nav__link${isActive ? " section-nav__link--active" : ""}`}>
+                <Icone size={16} aria-hidden="true" />
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+      )}
+
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
+          <Route index element={<Navigate to={meus.path} replace />} />
+          <Route path="meus" element={<MeusTreinamentos />} />
+          <Route path="meus/:moduloId" element={<MeusTreinamentos />} />
+          <Route path="gerenciar" element={hasPermission("centro_treinamento_gerenciar") ? <GerenciarTutoriais /> : <NotFound />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }

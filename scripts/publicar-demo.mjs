@@ -29,5 +29,10 @@ try {
   execSync("npx --yes vercel@latest deploy --prod --yes", { stdio: "inherit", cwd: destino });
   console.log("\nDemonstração publicada: https://calper-portal-demo.vercel.app");
 } finally {
-  rmSync(destino, { recursive: true, force: true });
+  // No Windows a CLI da Vercel ainda segura arquivos logo depois do deploy (EPERM): tenta de novo e, se não der, só avisa.
+  try {
+    rmSync(destino, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+  } catch {
+    console.warn(`Não foi possível apagar a pasta temporária ${destino}; apague à mão depois.`);
+  }
 }

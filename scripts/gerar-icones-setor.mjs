@@ -87,6 +87,8 @@ const MENU = [
   ["view_audit_logs", "fluent-color:history-24"],
   ["manage_sessions", "fluent-color:shield-checkmark-24"],
   ["centro_treinamento", "flat-color-icons:graduation-cap"],
+  ["centro_treinamento_meus", "flat-color-icons:reading"],
+  ["centro_treinamento_gerenciar", "fluent-color:settings-24"],
   // Rodapé do menu (ids próprios, fora do menuRegistry).
   ["rodape_recolher", "flat-color-icons:previous"],
   ["rodape_expandir", "flat-color-icons:next"],
