@@ -5,6 +5,7 @@ import { fromFunction, fromPostgrest } from "../configuracoes/services/supabase/
 import { DATA_SOURCE } from "../configuracoes/services";
 import { currentActor } from "../configuracoes/services/mock/runtime";
 import { ServiceError } from "../configuracoes/services/types";
+import { SETOR_ID } from "../atendimento/services/setoresProducao";
 
 // CalperDESK: app do solicitante (docs/PLANO-calperdesk.md). Regras no banco (RPCs cd_*): só os próprios tickets,
 // sessão confiável e e-mail @calper.com.br. Anexos no bucket privado "calperdesk", na pasta do próprio usuário.
@@ -351,19 +352,128 @@ export function iniciais(nome: string): string {
   return ((partes[0]?.[0] ?? "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase() || "?";
 }
 
-// Modo simulado (demonstração): o CalperDESK abre com o usuário do portal, sem setores de chamado; o quadro Financeiro
-// usa as Solicitações Financeiras simuladas.
+// Modo simulado (demonstração): o CalperDESK abre com o usuário do portal, com os 4 setores que recebem chamado
+// (mesmos da produção), os serviços do seed, os empreendimentos simulados (CFTV pede) e chamados em memória.
+// O quadro Financeiro usa as Solicitações Financeiras simuladas.
 if (DATA_SOURCE === "mock") {
+  const SETORES_APP: Departamento[] = [
+    { id: SETOR_ID.ti, nome: "TI - Suporte", icone: "fluent-color:code-block-24", descricao: "Sistemas, acessos, rede, impressoras e equipamentos." },
+    { id: SETOR_ID.cftv, nome: "CFTV", icone: "flat-color-icons:multiple-cameras", descricao: "Câmeras e gravações das obras e da sede." },
+    { id: SETOR_ID.administrativo, nome: "Administrativo", icone: "flat-color-icons:briefcase", descricao: "Compras, documentos e pedidos internos." },
+    { id: SETOR_ID.financeiro, nome: "Financeiro", icone: "flat-color-icons:money-transfer", descricao: "Pagamentos, boletos e notas fiscais." },
+  ];
+  // Raiz da árvore de serviços de cada setor no seed (cadastros/seed.ts).
+  const RAIZ_DO_SETOR: Record<number, number> = { [SETOR_ID.ti]: 1, [SETOR_ID.cftv]: 11, [SETOR_ID.administrativo]: 14 };
+  // Sob demanda: o seed e os empreendimentos simulados não entram no pacote de produção.
+  const seed = () => import("../chamados/cadastros/seed").then((m) => m.CADASTROS_INICIAIS.servicos);
+  const servicosDoSetor = async (setor: number): Promise<Servico[]> => {
+    const raiz = RAIZ_DO_SETOR[setor];
+    if (raiz == null) return [];
+    const todos = await seed();
+    const ids = new Set([raiz]);
+    for (let mudou = true; mudou; ) {
+      mudou = false;
+      for (const s of todos) if (s.paiId != null && ids.has(s.paiId) && !ids.has(s.id)) { ids.add(s.id); mudou = true; }
+    }
+    return todos.filter((s) => ids.has(s.id)).map((s) => ({ id: s.id, paiId: s.paiId, nome: s.nome, nivel: s.nivel, descricao: s.descricao }));
+  };
+  const nomeServico = async (id: number | null) => (await seed()).find((s) => s.id === id)?.nome ?? null;
+  const nomeSetor = (id: number) => SETORES_APP.find((s) => s.id === id)?.nome ?? "Setor";
+  const ST = {
+    novo: { id: 1, nome: "Novo", categoria: "novo" },
+    andamento: { id: 2, nome: "Em atendimento", categoria: "andamento" },
+    resolvido: { id: 5, nome: "Resolvido", categoria: "resolvido" },
+  } satisfies Record<string, StatusTicket>;
+  const horasAtras = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+
+  // Chamados do usuário da demonstração: um em atendimento com resposta nova e um resolvido.
+  const chamados: Chamado[] = [
+    {
+      id: 48290, assunto: "Impressora do 2º andar não imprime", origem: "calperdesk", setor: nomeSetor(SETOR_ID.ti), servico: "Impressão",
+      status: ST.andamento, responsavel: "Bruno Lima", criadoEm: horasAtras(5), slaRespostaAte: horasAtras(1), encerradoEm: null, solucao: null,
+      podeResponder: true, aguardandoConfirmacao: false,
+      acoes: [
+        { numero: 1, direcao: "entrada", canal: "calperdesk", autorNome: "Você", texto: "A impressora do 2º andar mostra \"offline\" e nada sai.", anexos: [], criadoEm: horasAtras(5) },
+        { numero: 2, direcao: "saida", canal: "calperdesk", autorNome: "Bruno Lima", texto: "Reiniciei o spooler. Pode tentar de novo e me dizer se saiu?", anexos: [], criadoEm: horasAtras(1) },
+      ],
+      eventos: [{ tipo: "criado", descricao: "Chamado aberto pelo CalperDESK", autorNome: "Você", criadoEm: horasAtras(5) }],
+    },
+    {
+      id: 48241, assunto: "Acesso ao portal de fornecedores", origem: "calperdesk", setor: nomeSetor(SETOR_ID.ti), servico: "Acessos e usuários",
+      status: ST.resolvido, responsavel: "Marcos Prado", criadoEm: horasAtras(76), slaRespostaAte: horasAtras(72), encerradoEm: horasAtras(70),
+      solucao: "Usuário liberado no portal de fornecedores com o perfil Compras.", podeResponder: false, aguardandoConfirmacao: false,
+      acoes: [
+        { numero: 1, direcao: "entrada", canal: "calperdesk", autorNome: "Você", texto: "Preciso de acesso ao portal de fornecedores.", anexos: [], criadoEm: horasAtras(76) },
+        { numero: 2, direcao: "saida", canal: "calperdesk", autorNome: "Marcos Prado", texto: "Acesso liberado. Entre com o seu e-mail da Calper.", anexos: [], criadoEm: horasAtras(70) },
+      ],
+      eventos: [{ tipo: "criado", descricao: "Chamado aberto pelo CalperDESK", autorNome: "Você", criadoEm: horasAtras(76) }],
+    },
+  ];
+  let proximoId = 48300;
+  const lidos = new Set<number>([48241]);
+  const resumo = (c: Chamado): ChamadoResumo => {
+    const ultima = c.acoes[c.acoes.length - 1];
+    return {
+      id: c.id, assunto: c.assunto, origem: c.origem, setor: c.setor, servico: c.servico, status: c.status, responsavel: c.responsavel,
+      criadoEm: c.criadoEm, slaRespostaAte: c.slaRespostaAte, primeiraRespostaEm: c.acoes.find((a) => a.direcao === "saida")?.criadoEm ?? null,
+      encerradoEm: c.encerradoEm, ultima: ultima ? { autor: ultima.autorNome, texto: ultima.texto, direcao: ultima.direcao, em: ultima.criadoEm } : null,
+      novo: ultima?.direcao === "saida" && !lidos.has(c.id),
+    };
+  };
+  const aberto = (c: Chamado) => c.status.categoria !== "resolvido" && c.status.categoria !== "fechado" && c.status.categoria !== "cancelado";
+  const achar = (id: number) => {
+    const c = chamados.find((x) => x.id === id);
+    if (!c) throw new ServiceError("NOT_FOUND", "Chamado não encontrado.");
+    return c;
+  };
+
   Object.assign(calperdesk, {
     async entrar(): Promise<Entrada> {
       const u = currentActor();
       return {
-        usuarioId: u.id, nome: u.name, email: u.email, telefone: null, pessoaId: null, perfil: u.role, equipe: true, simulando: false, setores: [],
+        usuarioId: u.id, nome: u.name, email: u.email, telefone: null, pessoaId: null, perfil: u.role, equipe: true, simulando: false, setores: SETORES_APP,
         config: { quadros: { meus: true, avisos: false, solucoes: false, whatsapp: false, perfil: true } as Quadros, whatsapp: null, boasVindas: "Como podemos ajudar?" },
       };
     },
     podeAcessar: async () => true,
-    meusChamados: async () => ({ abertos: 0, novos: 0, itens: [] }) as unknown as MeusChamados,
+    servicos: (setor: number) => servicosDoSetor(setor),
+    async empreendimentosDoSetor(setor: number): Promise<EmpreendimentosSetor> {
+      const { empreendimentosService } = await import("../chamados/empreendimentos/service");
+      const cad = await empreendimentosService.carregar();
+      const pedir = cad.setores.some((s) => s.setorId === setor && s.pedirNoApp);
+      return { pedir, lista: pedir ? cad.empreendimentos.filter((e) => e.ativo).map((e) => ({ id: e.id, nome: e.nome, apelidos: e.apelidos, cidade: e.cidade })) : [] };
+    },
+    solucoes: async () => [],
+    async criar(p: NovoChamado) {
+      const servico = await nomeServico(p.servicoId);
+      const assunto = p.descricao.split("\n")[0].slice(0, 80) || "Chamado pelo CalperDESK";
+      const c: Chamado = {
+        id: proximoId++, assunto, origem: "calperdesk", setor: nomeSetor(p.setorId), servico, status: ST.novo, responsavel: null,
+        criadoEm: new Date().toISOString(), slaRespostaAte: new Date(Date.now() + 4 * 3_600_000).toISOString(), encerradoEm: null, solucao: null,
+        podeResponder: true, aguardandoConfirmacao: false,
+        acoes: [{ numero: 1, direcao: "entrada", canal: "calperdesk", autorNome: "Você", texto: p.descricao, anexos: [], criadoEm: new Date().toISOString() }],
+        eventos: [{ tipo: "criado", descricao: "Chamado aberto pelo CalperDESK", autorNome: "Você", criadoEm: new Date().toISOString() }],
+      };
+      chamados.unshift(c);
+      return { id: c.id, servico, slaRespostaAte: c.slaRespostaAte, setor: c.setor ?? "" };
+    },
+    async meusChamados(filtro: "abertos" | "resolvidos" | "todos"): Promise<MeusChamados> {
+      const itens = chamados.filter((c) => (filtro === "todos" ? true : filtro === "abertos" ? aberto(c) : !aberto(c))).map(resumo);
+      return { abertos: chamados.filter(aberto).length, recentes: chamados.length, novos: chamados.map(resumo).filter((r) => r.novo).length, itens };
+    },
+    async chamado(id: number): Promise<Chamado> {
+      lidos.add(id);
+      return structuredClone(achar(id));
+    },
+    async responder(id: number, p: { texto: string; anexos: Anexo[] }) {
+      const c = achar(id);
+      c.acoes.push({ numero: c.acoes.length + 1, direcao: "entrada", canal: "calperdesk", autorNome: "Você", texto: p.texto, anexos: p.anexos, criadoEm: new Date().toISOString() });
+    },
+    async confirmar(id: number, resolveu: boolean) {
+      const c = achar(id);
+      c.aguardandoConfirmacao = false;
+      if (resolveu) { c.status = ST.resolvido; c.encerradoEm = new Date().toISOString(); } else c.status = ST.andamento;
+    },
     avisos: async () => [],
     empreendimentos: async () => [],
   });
